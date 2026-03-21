@@ -7,12 +7,13 @@
 import os
 import re
 import json
+import time
 from typing import Optional, Dict, Any, List
 
 from src.analyzers.python_analyzer import PythonAnalyzer
 from src.llm.client import LLMClient
 from src.llm.prompts import build_python_prompt, build_general_prompt, build_supplement_prompt
-from coverage.runner import CoverageRunner
+from src.coverage.runner import CoverageRunner
 
 
 # 语言扩展名映射
@@ -96,12 +97,12 @@ class TestGenerator:
         :param analysis: AST 分析结果（Python 有，其他语言为 None）
         :return: prompt 字符串
         """
-        if self.language == "python" and analysis:
-            # Python：使用 AST 分析结果构建详细 prompt
-            return build_python_prompt(self.source_code, analysis, self.requirements)
-        else:
-            # 其他语言：使用通用 prompt，让 LLM 自行分析
-            return build_general_prompt(self.source_code, self.language, self.requirements)
+        # 如果 不使用Python的 ast分析器，将下方的if注释掉，直接走通用 prompt 模式
+        # if self.language == "python" and analysis: 
+        #     # Python：使用 AST 分析结果构建详细 prompt
+        #     return build_python_prompt(self.source_code, analysis, self.requirements)
+        # 其他语言：使用通用 prompt，让 LLM 自行分析
+        return build_general_prompt(self.source_code, self.language, self.requirements)
 
     def _parse_llm_response(self, response: str) -> List[Dict]:
         """
@@ -123,15 +124,55 @@ class TestGenerator:
             if isinstance(test_cases, list):
                 return test_cases
             return [test_cases]  # 如果返回的是单个对象，包装为列表
-        except json.JSONDecodeError:
-            print(f"[警告] 无法解析 LLM 响应为 JSON，尝试宽松匹配...")
+        except json.JSONDecodeError as e:
+            # 打印出错位置附近的内容，方便调试
+            pos = e.pos if hasattr(e, 'pos') else -1
+            if pos > 0:
+                start = max(0, pos - 80)
+                end = min(len(json_str), pos + 80)
+                print(f"[警告] 第一次解析失败: {e}")
+                print(f"[DEBUG] 出错位置附近内容: ...{json_str[start:end]}...")
+            else:
+                print(f"[警告] 第一次解析失败: {e}")
             # 宽松匹配：找到第一个 [ 到最后一个 ] 之间的内容
             bracket_match = re.search(r'\[.*\]', json_str, re.DOTALL)
             if bracket_match:
+                raw = bracket_match.group()
                 try:
-                    return json.loads(bracket_match.group())
+                    return json.loads(raw)
+                except json.JSONDecodeError as e2:
+                    print(f"[警告] 第二次解析失败: {e2}")
+                    # 尝试修复被截断的 JSON：补全缺失的括号
+                    # 统计未闭合的括号数
+                    open_braces = raw.count('{') - raw.count('}')
+                    open_brackets = raw.count('[') - raw.count(']')
+                    # 移除最后一个不完整的对象（从最后一个 { 开始截断）
+                    if open_braces > 0:
+                        last_complete = raw.rfind('},')
+                        if last_complete > 0:
+                            raw = raw[:last_complete + 1]  # 保留到最后一个完整的 }
+                        raw += '}' * max(0, open_braces - 1)  # 补齐剩余 }
+                    raw += ']' * max(0, open_brackets)  # 补齐 ]
+                    try:
+                        result = json.loads(raw)
+                        print(f"[修复] 成功修复截断的 JSON")
+                        if isinstance(result, list):
+                            return result
+                        return [result]
+                    except json.JSONDecodeError:
+                        pass
+            # 最后兜底：逐个提取 JSON 对象
+            print("[警告] 尝试逐个提取 JSON 对象...")
+            objects = re.findall(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', json_str, re.DOTALL)
+            parsed = []
+            for obj_str in objects:
+                try:
+                    parsed.append(json.loads(obj_str))
                 except json.JSONDecodeError:
-                    pass
+                    continue
+            if parsed:
+                print(f"[修复] 逐个提取成功，得到 {len(parsed)} 个测试用例")
+                return parsed
             print("[错误] 无法从 LLM 响应中提取测试用例")
             return []
 
@@ -172,15 +213,13 @@ class TestGenerator:
 
             # 生成方法名：取 id 转小写
             method_name = f"test_{tc_id.lower().replace('-', '_')}"
-            # 构建输入参数字符串
-            args_str = ", ".join(f"{k}={repr(v)}" for k, v in input_data.items()) if isinstance(input_data, dict) else repr(input_data)
+
+            # 根据 input 和 expected_output 生成测试体
+            body = self._build_test_body(input_data, expected, func_names)
 
             test_methods.append(f"""    def {method_name}(self):
         \"\"\"{tc_id}: {desc}\"\"\"
-        # 输入: {input_data}
-        # 期望输出: {expected}
-        # TODO: 根据实际函数签名调整调用方式
-        pass""")
+{body}""")
 
         methods_str = "\n\n".join(test_methods)
 
@@ -201,6 +240,69 @@ class Test{module_name.title().replace('_', '')}:
 """
         return test_code
 
+    def _build_test_body(self, input_data: Any, expected: Any, func_names: List[str]) -> str:
+        """
+        根据测试用例的 input 和 expected_output 生成测试方法体
+        自动识别被调用的函数、是否期望异常等。
+        :param input_data: 输入参数（字典或其他）
+        :param expected: 期望输出（字符串描述）
+        :param func_names: 被测模块中的函数名列表
+        :return: 缩进好的测试方法体代码
+        """
+        expected_str = str(expected)
+        lines = []
+
+        # 判断是否期望抛出异常
+        is_exception = False
+        exception_type = ""
+        for exc in ["ValueError", "TypeError", "KeyError", "IndexError", "RuntimeError", "Exception"]:
+            if exc in expected_str:
+                is_exception = True
+                exception_type = exc
+                break
+
+        # 从 input 推断调用的函数名
+        target_func = None
+        if isinstance(input_data, dict):
+            # 根据参数名匹配函数（简单启发式）
+            param_keys = set(input_data.keys())
+            for fn in func_names:
+                if fn == "convert_small_number" and param_keys == {"num"}:
+                    target_func = fn
+                    break
+                elif fn == "convert_number" and "system" in param_keys:
+                    target_func = fn
+                    break
+                elif fn == "max_value" and "system" in param_keys:
+                    target_func = fn
+                    break
+            if not target_func and func_names:
+                target_func = func_names[0]  # 默认用第一个函数
+
+        if not target_func:
+            # 无法推断函数，生成占位代码
+            lines.append(f"        # 输入: {input_data}")
+            lines.append(f"        # 期望输出: {expected}")
+            lines.append(f"        pass  # TODO: 根据实际函数签名调整")
+            return "\n".join(lines)
+
+        # 构建函数调用参数
+        if isinstance(input_data, dict):
+            args = ", ".join(f"{repr(v)}" for v in input_data.values())
+        else:
+            args = repr(input_data)
+
+        if is_exception:
+            # 期望异常的测试
+            lines.append(f"        with pytest.raises({exception_type}):")
+            lines.append(f"            {target_func}({args})")
+        else:
+            # 正常断言的测试
+            lines.append(f"        result = {target_func}({args})")
+            lines.append(f"        assert result == {repr(expected_str)}")
+
+        return "\n".join(lines)
+
     def _save_outputs(self, test_cases: List[Dict], test_code: str,
                       analysis: Optional[Dict] = None,
                       coverage_report: Optional[Dict] = None) -> Dict[str, str]:
@@ -215,10 +317,12 @@ class Test{module_name.title().replace('_', '')}:
         os.makedirs(self.output_dir, exist_ok=True)
 
         module_name = os.path.splitext(os.path.basename(self.source_path))[0]
+        # 复用闭环阶段的时间戳（如果有），否则生成新的
+        timestamp = getattr(self, '_run_timestamp', None) or time.strftime("%Y%m%d_%H%M%S")
         saved_files = {}
 
         # 1. 保存结构化测试用例 JSON
-        cases_path = os.path.join(self.output_dir, f"test_cases_{module_name}.json")
+        cases_path = os.path.join(self.output_dir, f"test_cases_{module_name}_{timestamp}.json")
         result = {
             "source_file": os.path.basename(self.source_path),
             "language": self.language,
@@ -233,7 +337,7 @@ class Test{module_name.title().replace('_', '')}:
         saved_files["test_cases"] = cases_path
 
         # 2. 保存可运行的测试文件
-        test_path = os.path.join(self.output_dir, f"test_{module_name}.py")
+        test_path = os.path.join(self.output_dir, f"test_{module_name}_{timestamp}.py")
         with open(test_path, "w", encoding="utf-8") as f:
             f.write(test_code)
         saved_files["test_file"] = test_path
@@ -259,6 +363,9 @@ class Test{module_name.title().replace('_', '')}:
 
         print(f"[3] 调用 LLM ({self.llm_provider})...")
         response = self.llm_client.chat(prompt)
+        print(f"[DEBUG] LLM 响应长度: {len(response)} 字符")
+        print(f"[DEBUG] LLM 响应前500字符:\n{response[:500]}\n{'='*50}")
+        print(f"[DEBUG] LLM 响应后200字符:\n{response[-200:]}\n{'='*50}")
 
         print(f"[4] 解析 LLM 响应...")
         test_cases = self._parse_llm_response(response)
@@ -272,7 +379,8 @@ class Test{module_name.title().replace('_', '')}:
         if not no_coverage and self.language == "python":
             # 先保存测试文件，才能运行覆盖率
             module_name = os.path.splitext(os.path.basename(self.source_path))[0]
-            temp_test_path = os.path.join(self.output_dir, f"test_{module_name}.py")
+            self._run_timestamp = time.strftime("%Y%m%d_%H%M%S")
+            temp_test_path = os.path.join(self.output_dir, f"test_{module_name}_{self._run_timestamp}.py")
             os.makedirs(self.output_dir, exist_ok=True)
             with open(temp_test_path, "w", encoding="utf-8") as f:
                 f.write(test_code)

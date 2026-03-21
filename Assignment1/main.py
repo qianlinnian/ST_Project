@@ -28,18 +28,62 @@ from src.generators.test_generator import TestGenerator
 from src.experiment.tracker import ExperimentTracker
 
 
+def interactive_mode():
+    """
+    交互式参数输入模式
+    当直接运行 python main.py（不带任何参数）时进入此模式。
+    每个参数都有默认值，直接回车即可使用默认值。
+    """
+    print("=" * 60)
+    print("白盒测试用例生成工具 - 交互式配置")
+    print("（直接回车使用默认值）")
+    print("=" * 60)
+
+    source = input(f"\n源文件路径 [targets/convert_number_to_words.py]: ").strip()
+    source = source or "targets/convert_number_to_words.py"
+
+    llm = input(f"LLM 后端 (deepseek/openai/google/github) [deepseek]: ").strip()
+    llm = llm or "deepseek"
+
+    requirement = input(f"需求文档路径（可选，直接回车跳过）: ").strip()
+    requirement = requirement or None
+
+    compare_input = input(f"是否对比所有 LLM？(y/n) [n]: ").strip().lower()
+    compare = compare_input == "y"
+
+    output = input(f"输出目录 [output]: ").strip()
+    output = output or "output"
+
+    no_cov_input = input(f"是否跳过覆盖率闭环？(y/n) [y]: ").strip().lower()
+    no_coverage = no_cov_input != "n"  # 默认跳过
+
+    max_rounds = input(f"最大闭环轮次 [3]: ").strip()
+    max_rounds = int(max_rounds) if max_rounds else 3
+
+    config = input(f"配置文件路径 [config.yaml]: ").strip()
+    config = config or "config.yaml"
+
+    # 构造与 argparse 兼容的命名空间对象
+    args = argparse.Namespace(
+        source=source, llm=llm, requirement=requirement,
+        compare=compare, output=output, no_coverage=no_coverage,
+        max_rounds=max_rounds, config=config
+    )
+    return args
+
+
 def main():
     # ---- 解析命令行参数 ----
     parser = argparse.ArgumentParser(
         description="白盒测试用例生成工具 - AST分析 + LLM 自动生成"
     )
     parser.add_argument(
-        "--source", required=True,
-        help="被测源代码文件路径（必选）"
+        "--source",
+        help="被测源代码文件路径"
     )
     parser.add_argument(
         "--llm", default="deepseek",
-        help="LLM 后端名称：deepseek / qwen / google / github（默认 deepseek）"
+        help="LLM 后端名称：deepseek / openai / google / github（默认 deepseek）"
     )
     parser.add_argument(
         "--requirement",
@@ -68,6 +112,10 @@ def main():
 
     args = parser.parse_args()
 
+    # 如果没有指定 --source，进入交互模式
+    if not args.source:
+        args = interactive_mode()
+
     # ---- 检查源文件是否存在 ----
     if not os.path.exists(args.source):
         print(f"[错误] 源文件不存在: {args.source}")
@@ -89,6 +137,10 @@ def run_single(args) -> dict:
     print(f"白盒测试用例生成工具")
     print(f"源文件: {args.source}")
     print(f"LLM: {args.llm}")
+    print(f"需求文档: {args.requirement or '无'}")
+    print(f"输出目录: {args.output}")
+    print(f"对比模式: {'是' if args.compare else '否'}")
+    print(f"最大闭环轮次: {args.max_rounds}")
     print(f"闭环: {'关闭' if args.no_coverage else f'开启（最多 {args.max_rounds} 轮）'}")
     print(f"=" * 60)
 
