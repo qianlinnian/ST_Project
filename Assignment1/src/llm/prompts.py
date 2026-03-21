@@ -14,7 +14,7 @@ from typing import Dict, Any, Optional, List
 def build_python_prompt(source_code: str, analysis: Dict[str, Any],
                         requirements: Optional[str] = None) -> str:
     """
-    构建首次生成 prompt（Python，有 AST 分析结果）
+    构建首次生成 prompt（对于Python，有 AST 分析结果）
     将源代码和 AST 分析出的函数、分支、条件、路径信息一起发给 LLM，
     让它针对这些结构生成高覆盖率的测试用例。
 
