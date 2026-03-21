@@ -388,3 +388,110 @@ class TestNumToWords:
         """TC015: 覆盖 L102 处理十亿的逻辑"""
         assert num_to_words(1000000000) == "one billion"
 ```
+
+---
+
+## 创新点设计
+
+### 创新点1：多 LLM 集成投票（Multi-LLM Ensemble Voting）
+
+**动机**：单个 LLM 生成的测试用例可能存在偏差或遗漏。通过多个 LLM 同时生成，再投票合并，可以提高测试用例的质量和覆盖率。
+
+**核心思路**：
+1. 对同一份源代码，同时调用多个 LLM 后端（如 DeepSeek、ChatGPT、Gemini）生成测试用例
+2. 对所有 LLM 生成的测试用例进行**去重与合并**：
+   - 基于测试用例的 `input` 字段去重（相同输入 → 同一用例）
+   - 对于相同输入但不同 `expected_output` 的情况 → **投票表决**，多数一致的结果作为最终期望输出
+3. 合并后的测试用例集具有更高的覆盖率和准确性
+
+**新增文件**：`src/generators/ensemble_generator.py`
+
+**核心类**：`EnsembleGenerator`
+- `__init__(source_path, providers: List[str], config_path)` — 初始化多个 LLM
+- `run() -> dict` — 并行调用多个 LLM → 合并投票 → 返回最终结果
+- `_merge_test_cases(all_results: List[List[Dict]]) -> List[Dict]` — 去重合并
+- `_vote_expected_output(candidates: List) -> Any` — 投票表决期望输出
+
+**命令行使用**：
+```bash
+# 集成投票模式：用多个 LLM 生成并投票合并
+python main.py --source targets/code.py --ensemble
+
+# 指定参与投票的 LLM
+python main.py --source targets/code.py --ensemble --providers deepseek,openai,google
+```
+
+**评估指标对比**：
+| 指标 | 单 LLM | 集成投票 |
+|------|--------|---------|
+| 测试用例数 | N | >= N（合并后可能更多） |
+| 覆盖率 | 依赖单个模型 | 多模型互补，覆盖更全 |
+| 准确率 | 依赖单个模型 | 投票机制减少错误 |
+
+---
+
+### 创新点2：Prompt 策略对比实验（Prompt Strategy Comparison）
+
+**动机**：不同的 Prompt 策略对 LLM 的输出质量有显著影响。通过系统对比不同策略，可以找到最适合白盒测试生成的 Prompt 设计方式。
+
+**对比的三种 Prompt 策略**：
+
+#### 策略1：Zero-Shot（零样本）
+直接给出任务描述，不提供任何示例。
+```
+你是一个白盒测试专家。请为以下代码生成测试用例...
+```
+
+#### 策略2：Few-Shot（少样本）
+在 Prompt 中提供 2-3 个示例测试用例，让 LLM 学习输出格式和风格。
+```
+你是一个白盒测试专家。以下是一些测试用例示例：
+[示例1: ...]
+[示例2: ...]
+请参照以上格式，为以下代码生成测试用例...
+```
+
+#### 策略3：Chain-of-Thought（思维链）
+引导 LLM 逐步分析代码结构，先推理再生成。
+```
+你是一个白盒测试专家。请按以下步骤进行：
+1. 首先，逐行分析代码，列出所有分支和条件
+2. 然后，为每个分支设计能触发该分支的输入
+3. 接着，推导每个输入对应的期望输出
+4. 最后，整理为标准 JSON 格式的测试用例
+```
+
+**实现方式**：
+- 在 `src/llm/prompts.py` 中新增三种策略的 prompt 构建函数：
+  - `build_zero_shot_prompt()` — 零样本 prompt
+  - `build_few_shot_prompt()` — 含示例的 prompt
+  - `build_cot_prompt()` — 思维链 prompt
+- 在 `main.py` 中增加 `--strategy` 和 `--compare-strategies` 参数
+
+**命令行使用**：
+```bash
+# 指定使用某种策略
+python main.py --source targets/code.py --llm deepseek --strategy cot
+
+# 对比三种策略的效果
+python main.py --source targets/code.py --llm deepseek --compare-strategies
+```
+
+**评估维度**：
+| 维度 | Zero-Shot | Few-Shot | Chain-of-Thought |
+|------|-----------|----------|------------------|
+| 生成速度 | 快（prompt 短） | 中等 | 慢（推理步骤多） |
+| 输出格式准确性 | 可能不规范 | 格式一致（有示例参考） | 格式较好 |
+| 覆盖率 | 基线水平 | 可能更高 | 预期最高（逐步推理） |
+| Token 消耗 | 最少 | 中等 | 最多 |
+
+---
+
+### 创新点实现优先级
+
+| 优先级 | 创新点 | 复杂度 | 预期效果 |
+|--------|--------|--------|----------|
+| 1 | Prompt 策略对比 | 中等 | 直接展示不同策略的效果差异 |
+| 2 | 多 LLM 集成投票 | 较高 | 展示多模型协作的优势 |
+
+两个创新点均不需要修改被测目标源代码，符合项目约束。
