@@ -88,7 +88,6 @@ class CoverageRunner:
         # 步骤3：解析覆盖率 JSON
         report = self._parse_coverage_json(coverage_json)
         report["test_results"] = test_results
-        report["test_output"] = test_output
 
         # 清理临时文件
         for f in [coverage_data, coverage_json]:
@@ -169,17 +168,16 @@ class CoverageRunner:
         """
         # Jest 的覆盖率输出目录
         coverage_dir = os.path.join(self.project_root, "coverage")
-        summary_path = os.path.join(coverage_dir, "coverage-summary.json")
+        coverage_json_path = os.path.join(coverage_dir, "coverage-final.json")
 
-        # 构建 Jest 命令
+        # 构建 Jest 命令（使用 json reporter 获取行级覆盖信息）
         source_rel = os.path.relpath(self.source_path, self.project_root).replace(os.sep, '/')
-        # 用绝对路径直接指定测试文件，并用 --testPathPattern 匹配
         test_file_pattern = self.test_path.replace("\\", "/")
         run_cmd = [
             "npx", "jest",
             "--testPathPattern", test_file_pattern,
             "--coverage",
-            "--coverageReporters=json-summary",
+            "--coverageReporters=json",
             f"--collectCoverageFrom={source_rel}",
             "--no-cache",
         ]
@@ -190,19 +188,19 @@ class CoverageRunner:
             capture_output=True,
             text=True,
             cwd=self.project_root,
-            shell=True,  # Windows 下 npx 需要 shell
+            shell=True,
             encoding="utf-8",
-            errors="replace",  # 避免 GBK 编码错误
+            errors="replace",
         )
 
-        # 收集 Jest 测试结果
+        # 从 Jest 输出中解析 passed/failed 数量
         test_output = (result.stdout or "") + (result.stderr or "")
         test_results = self._parse_jest_output(test_output)
 
-        # 解析覆盖率 JSON
-        report = self._parse_jest_coverage(summary_path)
+        # 解析覆盖率 JSON（行级信息从文件读取，不依赖控制台输出）
+        report = self._parse_jest_coverage(coverage_json_path)
         report["test_results"] = test_results
-        report["test_output"] = test_output
+        # 不保存 test_output 到报告（避免编码乱码，覆盖率信息已从 JSON 获取）
 
         # 清理覆盖率目录
         if os.path.exists(coverage_dir):
@@ -233,12 +231,13 @@ class CoverageRunner:
         results["total"] = results["passed"] + results["failed"]
         return results
 
-    def _parse_jest_coverage(self, summary_path: str) -> Dict[str, Any]:
+    def _parse_jest_coverage(self, json_path: str) -> Dict[str, Any]:
         """
-        解析 Jest 生成的 coverage-summary.json
-        结构: {"total": {"statements": {"total": N, "covered": N, "pct": 85}, "branches": {...}}, ...}
+        解析 Jest 生成的 coverage-final.json（json reporter）
+        结构: {"文件绝对路径": {"statementMap": {...}, "s": {...}, "branchMap": {...}, "b": {...}}}
+        从中提取语句/分支覆盖率和未覆盖的行号。
         """
-        if not os.path.exists(summary_path):
+        if not os.path.exists(json_path):
             return {
                 "statement_coverage": 0.0,
                 "branch_coverage": 0.0,
@@ -246,18 +245,55 @@ class CoverageRunner:
                 "uncovered_branches": [],
             }
 
-        with open(summary_path, "r", encoding="utf-8") as f:
+        with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        total = data.get("total", {})
-        stmts = total.get("statements", {})
-        branches = total.get("branches", {})
+        total_stmts = 0
+        covered_stmts = 0
+        total_branches = 0
+        covered_branches = 0
+        uncovered_lines = []
+        uncovered_branches = []
+
+        for file_path, file_data in data.items():
+            # 语句覆盖：s 是 {语句ID: 执行次数}，statementMap 是 {语句ID: {start: {line}, end: {line}}}
+            stmt_map = file_data.get("statementMap", {})
+            s = file_data.get("s", {})
+            for stmt_id, count in s.items():
+                total_stmts += 1
+                if count > 0:
+                    covered_stmts += 1
+                else:
+                    # 记录未覆盖的行号
+                    loc = stmt_map.get(stmt_id, {})
+                    start_line = loc.get("start", {}).get("line", 0)
+                    if start_line and start_line not in uncovered_lines:
+                        uncovered_lines.append(start_line)
+
+            # 分支覆盖：b 是 {分支ID: [分支1执行次数, 分支2执行次数, ...]}
+            branch_map = file_data.get("branchMap", {})
+            b = file_data.get("b", {})
+            for branch_id, counts in b.items():
+                for i, count in enumerate(counts):
+                    total_branches += 1
+                    if count > 0:
+                        covered_branches += 1
+                    else:
+                        loc = branch_map.get(branch_id, {})
+                        line = loc.get("loc", {}).get("start", {}).get("line", 0)
+                        branch_type = loc.get("type", "branch")
+                        uncovered_branches.append(f"L{line}: {branch_type} branch-{i}")
+
+        uncovered_lines.sort()
+
+        stmt_pct = (covered_stmts / total_stmts * 100) if total_stmts > 0 else 0.0
+        branch_pct = (covered_branches / total_branches * 100) if total_branches > 0 else 0.0
 
         return {
-            "statement_coverage": stmts.get("pct", 0.0),
-            "branch_coverage": branches.get("pct", 0.0),
-            "uncovered_lines": [],       # json-summary 不包含行级别信息
-            "uncovered_branches": [],    # 如需要可改用 json reporter
+            "statement_coverage": round(stmt_pct, 2),
+            "branch_coverage": round(branch_pct, 2),
+            "uncovered_lines": uncovered_lines,
+            "uncovered_branches": uncovered_branches,
         }
 
     def get_uncovered_lines(self) -> List[int]:
