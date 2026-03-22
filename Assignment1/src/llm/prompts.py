@@ -28,7 +28,7 @@ def build_python_prompt(source_code: str, analysis: Dict[str, Any],
     branches_str = json.dumps(analysis["branches"], indent=2, ensure_ascii=False)
     conditions_str = json.dumps(analysis["conditions"], indent=2, ensure_ascii=False)
     paths_str = json.dumps(analysis["paths"], indent=2, ensure_ascii=False)
-
+    print(f"运行 build_python_prompt\n")
     # 需求文档部分（可选）
     req_section = ""
     if requirements:
@@ -63,7 +63,7 @@ def build_python_prompt(source_code: str, analysis: Dict[str, Any],
 4. **路径覆盖**：覆盖所有可行的执行路径
 
 ## 输出格式
-请严格返回 JSON 数组，每个测试用例包含以下字段：
+请严格返回 JSON 数组（注意：JSON 中不能使用 `10**18` 等编程表达式，必须写成完整数字如 `1000000000000000000`）：
 ```json
 [
   {{
@@ -111,7 +111,7 @@ def build_general_prompt(source_code: str, language: str,
    - 路径覆盖：覆盖所有可行路径
 
 ## 输出格式
-请严格返回 JSON 数组：
+请严格返回 JSON 数组（注意：JSON 中不能使用 `10**18` 等编程表达式，必须写成完整数字如 `1000000000000000000`）：
 ```json
 [
   {{

@@ -5,9 +5,15 @@
 - Google Gemini：使用 google-generativeai 库单独处理
 """
 
+import os
 import yaml
 from openai import OpenAI
 from typing import Optional, Union
+
+# 设置代理（用于访问 Google 等需要代理的服务）
+os.environ.setdefault("HTTP_PROXY", "http://127.0.0.1:7894")
+os.environ.setdefault("HTTPS_PROXY", "http://127.0.0.1:7894")
+
 import google.generativeai as genai
 
 
@@ -73,16 +79,19 @@ class LLMClient:
         """
         通过 OpenAI 兼容接口调用 LLM（适用于 deepseek, openai, siliconflow, github）
         """
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": "你是一个专业的白盒测试专家，擅长分析代码结构并生成高覆盖率的测试用例。"},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=temperature,
-        )
-        # 提取返回文本
-        return response.choices[0].message.content
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "你是一个专业的白盒测试专家，擅长分析代码结构并生成高覆盖率的测试用例。"},
+                    {"role": "user", "content": prompt},
+                ],
+                temperature=temperature,
+            )
+            # 提取返回文本
+            return response.choices[0].message.content
+        except Exception as e:
+            raise RuntimeError(f"[{self.provider}] API 调用失败: {e}")
 
     def _chat_gemini(self, prompt: str, temperature: float) -> str:
         """
@@ -90,8 +99,17 @@ class LLMClient:
         """
         # 将系统提示和用户 prompt 合并（Gemini 不支持 system role 的相同方式）
         full_prompt = "你是一个专业的白盒测试专家，擅长分析代码结构并生成高覆盖率的测试用例。\n\n" + prompt
-        response = self.gemini_model.generate_content(
-            full_prompt,
-            generation_config={"temperature": temperature},
-        )
-        return response.text
+        try:
+            response = self.gemini_model.generate_content(
+                full_prompt,
+                generation_config={"temperature": temperature},
+            )
+            return response.text
+        except Exception as e:
+            error_msg = str(e)
+            if "RESOURCE_EXHAUSTED" in error_msg or "429" in error_msg or "quota" in error_msg.lower():
+                raise RuntimeError(f"[Google] API 免费额度已用完，请稍后重试或更换模型。详情: https://ai.google.dev/gemini-api/docs/rate-limits")
+            elif "NOT_FOUND" in error_msg:
+                raise RuntimeError(f"[Google] 模型 '{self.model}' 不存在，请检查 config.yaml 中的 model 配置")
+            else:
+                raise RuntimeError(f"[Google] API 调用失败: {error_msg}")
