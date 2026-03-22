@@ -69,12 +69,13 @@ class ExperimentTracker:
             return "暂无实验记录。"
 
         # 表头
-        header = f"{'LLM':<15} {'模型':<30} {'用例数':>6} {'耗时':>8} {'语句覆盖':>8} {'分支覆盖':>8} {'轮次':>4} {'通过/失败':>10}"
+        header = f"{'测试项目':<35} {'LLM':<15} {'模型':<30} {'用例数':>6} {'耗时':>8} {'语句覆盖':>8} {'分支覆盖':>8} {'轮次':>4} {'通过/失败':>10}"
         separator = "-" * len(header)
 
         rows = [header, separator]
         for r in records:
             row = (
+                f"{r.get('source_file', '-'):<35} "
                 f"{r.get('llm_provider', '-'):<15} "
                 f"{r.get('llm_model', '-'):<30} "
                 f"{r.get('test_count', 0):>6} "
@@ -99,10 +100,11 @@ class ExperimentTracker:
         if format == "markdown":
             # 导出为 Markdown 表格
             md = "# 实验对比报告\n\n"
-            md += "| LLM | 模型 | 用例数 | 耗时 | 语句覆盖 | 分支覆盖 | 轮次 | 通过/失败 | 时间 |\n"
-            md += "|-----|------|--------|------|----------|----------|------|-----------|------|\n"
+            md += "| 测试项目 | LLM | 模型 | 用例数 | 耗时 | 语句覆盖 | 分支覆盖 | 轮次 | 通过/失败 | 时间 |\n"
+            md += "|----------|-----|------|--------|------|----------|----------|------|-----------|------|\n"
             for r in self.records:
                 md += (
+                    f"| {r.get('source_file', '-')} "
                     f"| {r.get('llm_provider', '-')} "
                     f"| {r.get('llm_model', '-')} "
                     f"| {r.get('test_count', 0)} "

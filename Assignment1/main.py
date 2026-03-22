@@ -63,11 +63,14 @@ def interactive_mode():
     config = input(f"配置文件路径 [config.yaml]: ").strip()
     config = config or "config.yaml"
 
+    use_ast_input = input(f"是否使用 AST 分析辅助？(y/n) [n]: ").strip().lower()
+    use_ast = use_ast_input == "y"
+
     # 构造与 argparse 兼容的命名空间对象
     args = argparse.Namespace(
         source=source, llm=llm, requirement=requirement,
         compare=compare, output=output, no_coverage=no_coverage,
-        max_rounds=max_rounds, config=config
+        max_rounds=max_rounds, config=config, ast=use_ast
     )
     return args
 
@@ -108,6 +111,10 @@ def main():
     parser.add_argument(
         "--config", default="config.yaml",
         help="配置文件路径（默认 config.yaml）"
+    )
+    parser.add_argument(
+        "--ast", action="store_true",
+        help="使用 AST 分析辅助生成（仅 Python 有效，默认不使用）"
     )
 
     args = parser.parse_args()
@@ -154,6 +161,7 @@ def run_single(args) -> dict:
         config_path=args.config,
         max_rounds=args.max_rounds,
         output_dir=args.output,
+        use_ast=args.ast,
     )
     result = generator.run(no_coverage=args.no_coverage)
 

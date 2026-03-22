@@ -39,7 +39,8 @@ class TestGenerator:
 
     def __init__(self, source_path: str, requirement_path: Optional[str] = None,
                  llm_provider: str = "deepseek", config_path: str = "config.yaml",
-                 max_rounds: int = 3, output_dir: str = "output"):
+                 max_rounds: int = 3, output_dir: str = "output",
+                 use_ast: bool = False):
         """
         :param source_path: 被测源代码文件路径
         :param requirement_path: 可选，需求文档路径
@@ -67,6 +68,9 @@ class TestGenerator:
 
         # 检测编程语言
         self.language = self._detect_language(source_path)
+
+        # 是否使用 AST 分析辅助
+        self.use_ast = use_ast
 
         # 初始化 LLM 客户端
         self.llm_client = LLMClient(provider=llm_provider, config_path=config_path)
@@ -97,11 +101,10 @@ class TestGenerator:
         :param analysis: AST 分析结果（Python 有，其他语言为 None）
         :return: prompt 字符串
         """
-        # 如果 不使用Python的 ast分析器，将下方的if注释掉，直接走通用 prompt 模式
-        # if self.language == "python" and analysis: 
-        #     # Python：使用 AST 分析结果构建详细 prompt
-        #     return build_python_prompt(self.source_code, analysis, self.requirements)
-        # 其他语言：使用通用 prompt，让 LLM 自行分析
+        if self.use_ast and self.language == "python" and analysis:
+            # 使用 AST 分析结果构建详细 prompt
+            return build_python_prompt(self.source_code, analysis, self.requirements)
+        # 通用 prompt，让 LLM 自行分析代码结构
         return build_general_prompt(self.source_code, self.language, self.requirements)
 
     def _parse_llm_response(self, response: str) -> List[Dict]:
