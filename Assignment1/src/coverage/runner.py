@@ -1,8 +1,9 @@
 """
 测试运行 + 覆盖率测量
-职责：运行生成的测试代码，使用 coverage.py 测量覆盖率，返回结构化报告。
+职责：运行生成的测试代码，测量覆盖率，返回结构化报告。
 支持的语言：
   - Python：使用 pytest + coverage.py
+  - JavaScript：使用 Jest + --coverage
 """
 
 import os
@@ -26,6 +27,8 @@ class CoverageRunner:
         self.source_path = os.path.abspath(source_path)
         self.test_path = os.path.abspath(test_path)
         self.language = language
+        # 项目根目录（Assignment1）
+        self.project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
     def run(self) -> Dict[str, Any]:
         """
@@ -34,6 +37,8 @@ class CoverageRunner:
         """
         if self.language == "python":
             return self._run_python_coverage()
+        elif self.language == "javascript":
+            return self._run_js_coverage()
         else:
             return {"error": f"暂不支持 {self.language} 语言的覆盖率测量"}
 
@@ -149,9 +154,110 @@ class CoverageRunner:
 
         return {
             "statement_coverage": totals.get("percent_covered", 0.0),
-            "branch_coverage": totals.get("percent_covered_branches", 0.0) if "percent_covered_branches" in totals else 0.0,
+            "branch_coverage": totals.get("percent_branches_covered", 0.0),
             "uncovered_lines": uncovered_lines,
             "uncovered_branches": uncovered_branches,
+        }
+
+    def _run_js_coverage(self) -> Dict[str, Any]:
+        """
+        使用 Jest + --coverage 运行 JavaScript 测试并收集覆盖率
+        步骤：
+          1. npx jest test_file.js --coverage --coverageReporters=json-summary
+          2. 解析 coverage/coverage-summary.json
+          3. 从 Jest 输出中解析测试通过/失败数量
+        """
+        # Jest 的覆盖率输出目录
+        coverage_dir = os.path.join(self.project_root, "coverage")
+        summary_path = os.path.join(coverage_dir, "coverage-summary.json")
+
+        # 构建 Jest 命令
+        source_rel = os.path.relpath(self.source_path, self.project_root).replace(os.sep, '/')
+        # 用绝对路径直接指定测试文件，并用 --testPathPattern 匹配
+        test_file_pattern = self.test_path.replace("\\", "/")
+        run_cmd = [
+            "npx", "jest",
+            "--testPathPattern", test_file_pattern,
+            "--coverage",
+            "--coverageReporters=json-summary",
+            f"--collectCoverageFrom={source_rel}",
+            "--no-cache",
+        ]
+
+        print(f"  运行命令: {' '.join(run_cmd)}")
+        result = subprocess.run(
+            run_cmd,
+            capture_output=True,
+            text=True,
+            cwd=self.project_root,
+            shell=True,  # Windows 下 npx 需要 shell
+            encoding="utf-8",
+            errors="replace",  # 避免 GBK 编码错误
+        )
+
+        # 收集 Jest 测试结果
+        test_output = (result.stdout or "") + (result.stderr or "")
+        test_results = self._parse_jest_output(test_output)
+
+        # 解析覆盖率 JSON
+        report = self._parse_jest_coverage(summary_path)
+        report["test_results"] = test_results
+        report["test_output"] = test_output
+
+        # 清理覆盖率目录
+        if os.path.exists(coverage_dir):
+            import shutil
+            shutil.rmtree(coverage_dir, ignore_errors=True)
+
+        return report
+
+    def _parse_jest_output(self, output: str) -> Dict[str, int]:
+        """
+        从 Jest 输出中解析测试结果
+        Jest 输出格式如: "Tests:  2 failed, 18 passed, 20 total"
+        """
+        import re
+        results = {"total": 0, "passed": 0, "failed": 0, "error": 0}
+
+        match = re.search(r'Tests:\s+(?:(\d+)\s+failed,\s+)?(\d+)\s+passed', output)
+        if match:
+            if match.group(1):
+                results["failed"] = int(match.group(1))
+            results["passed"] = int(match.group(2))
+        else:
+            # 备用：只有 failed
+            match = re.search(r'Tests:\s+(\d+)\s+failed', output)
+            if match:
+                results["failed"] = int(match.group(1))
+
+        results["total"] = results["passed"] + results["failed"]
+        return results
+
+    def _parse_jest_coverage(self, summary_path: str) -> Dict[str, Any]:
+        """
+        解析 Jest 生成的 coverage-summary.json
+        结构: {"total": {"statements": {"total": N, "covered": N, "pct": 85}, "branches": {...}}, ...}
+        """
+        if not os.path.exists(summary_path):
+            return {
+                "statement_coverage": 0.0,
+                "branch_coverage": 0.0,
+                "uncovered_lines": [],
+                "uncovered_branches": [],
+            }
+
+        with open(summary_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        total = data.get("total", {})
+        stmts = total.get("statements", {})
+        branches = total.get("branches", {})
+
+        return {
+            "statement_coverage": stmts.get("pct", 0.0),
+            "branch_coverage": branches.get("pct", 0.0),
+            "uncovered_lines": [],       # json-summary 不包含行级别信息
+            "uncovered_branches": [],    # 如需要可改用 json reporter
         }
 
     def get_uncovered_lines(self) -> List[int]:

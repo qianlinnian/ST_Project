@@ -131,7 +131,6 @@ class TestGenerator:
                 start = max(0, pos - 80)
                 end = min(len(json_str), pos + 80)
                 print(f"[警告] 第一次解析失败: {e}")
-                print(f"[DEBUG] 出错位置附近内容: ...{json_str[start:end]}...")
             else:
                 print(f"[警告] 第一次解析失败: {e}")
             # 宽松匹配：找到第一个 [ 到最后一个 ] 之间的内容
@@ -185,6 +184,8 @@ class TestGenerator:
         """
         if self.language == "python":
             return self._generate_pytest(test_cases)
+        elif self.language == "javascript":
+            return self._generate_jest(test_cases)
         else:
             # 其他语言暂时返回测试用例的 JSON 描述
             return json.dumps(test_cases, indent=2, ensure_ascii=False)
@@ -198,24 +199,41 @@ class TestGenerator:
         # 获取源文件的模块名（不含扩展名）
         module_name = os.path.splitext(os.path.basename(self.source_path))[0]
 
-        # 提取所有函数名用于 import
+        # 从 AST 提取函数名和类信息
+        import ast
         analysis = self._analyze_code()
         func_names = [f["name"] for f in analysis["functions"]] if analysis else []
-        import_line = f"from {module_name} import {', '.join(func_names)}" if func_names else f"import {module_name}"
+
+        # 构建 class_info：函数名 → 所属类名（用于识别类方法）
+        class_info = {}
+        class_names = []
+        try:
+            tree = ast.parse(self.source_code)
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ClassDef):
+                    class_names.append(node.name)
+                    for item in node.body:
+                        if isinstance(item, ast.FunctionDef):
+                            class_info[item.name] = node.name
+        except SyntaxError:
+            pass
+
+        # 构建 import 行：导入独立函数和类
+        standalone_funcs = [f for f in func_names if f not in class_info]
+        import_parts = standalone_funcs + class_names
+        import_line = f"from {module_name} import {', '.join(import_parts)}" if import_parts else f"import {module_name}"
 
         # 构建测试方法
         test_methods = []
         for tc in test_cases:
             tc_id = tc.get("id", "TC000")
             desc = tc.get("description", "")
-            input_data = tc.get("input", {})
-            expected = tc.get("expected_output", "")
 
             # 生成方法名：取 id 转小写
             method_name = f"test_{tc_id.lower().replace('-', '_')}"
 
-            # 根据 input 和 expected_output 生成测试体
-            body = self._build_test_body(input_data, expected, func_names)
+            # 根据测试用例生成测试体
+            body = self._build_test_body(tc, func_names, class_info)
 
             test_methods.append(f"""    def {method_name}(self):
         \"\"\"{tc_id}: {desc}\"\"\"
@@ -240,15 +258,18 @@ class Test{module_name.title().replace('_', '')}:
 """
         return test_code
 
-    def _build_test_body(self, input_data: Any, expected: Any, func_names: List[str]) -> str:
+    def _build_test_body(self, tc: Dict, func_names: List[str], class_info: Dict) -> str:
         """
-        根据测试用例的 input 和 expected_output 生成测试方法体
-        自动识别被调用的函数、是否期望异常等。
-        :param input_data: 输入参数（字典或其他）
-        :param expected: 期望输出（字符串描述）
+        根据测试用例生成测试方法体
+        从 description 中提取函数名，自动识别是否为类方法。
+        :param tc: 完整的测试用例字典
         :param func_names: 被测模块中的函数名列表
+        :param class_info: 函数名 → 所属类名的映射，如 {"max_value": "NumberingSystem"}
         :return: 缩进好的测试方法体代码
         """
+        input_data = tc.get("input", {})
+        expected = tc.get("expected_output", "")
+        desc = tc.get("description", "")
         expected_str = str(expected)
         lines = []
 
@@ -261,45 +282,143 @@ class Test{module_name.title().replace('_', '')}:
                 exception_type = exc
                 break
 
-        # 从 input 推断调用的函数名
+        # 从 description 中提取函数名（LLM 通常会在描述里提到被测函数）
         target_func = None
-        if isinstance(input_data, dict):
-            # 根据参数名匹配函数（简单启发式）
-            param_keys = set(input_data.keys())
-            for fn in func_names:
-                if fn == "convert_small_number" and param_keys == {"num"}:
-                    target_func = fn
+        for fn in func_names:
+            if fn in desc:
+                target_func = fn
+                break
+        # 如果描述中没有，尝试从 covered_paths 提取
+        if not target_func:
+            for path in tc.get("covered_paths", []):
+                for fn in func_names:
+                    if fn in str(path):
+                        target_func = fn
+                        break
+                if target_func:
                     break
-                elif fn == "convert_number" and "system" in param_keys:
-                    target_func = fn
-                    break
-                elif fn == "max_value" and "system" in param_keys:
-                    target_func = fn
-                    break
-            if not target_func and func_names:
-                target_func = func_names[0]  # 默认用第一个函数
+        # 兜底：默认用第一个函数
+        if not target_func and func_names:
+            target_func = func_names[0]
 
         if not target_func:
-            # 无法推断函数，生成占位代码
             lines.append(f"        # 输入: {input_data}")
             lines.append(f"        # 期望输出: {expected}")
             lines.append(f"        pass  # TODO: 根据实际函数签名调整")
             return "\n".join(lines)
 
-        # 构建函数调用参数
+        # 构建函数调用表达式（处理类方法）
+        if target_func in class_info:
+            call_prefix = f"{class_info[target_func]}.{target_func}"
+        else:
+            call_prefix = target_func
+
+        # 构建参数（排除 cls/self 等特殊参数）
         if isinstance(input_data, dict):
-            args = ", ".join(f"{repr(v)}" for v in input_data.values())
+            filtered = {k: v for k, v in input_data.items() if k not in ("cls", "self")}
+            args = ", ".join(f"{repr(v)}" for v in filtered.values())
         else:
             args = repr(input_data)
 
         if is_exception:
-            # 期望异常的测试
             lines.append(f"        with pytest.raises({exception_type}):")
-            lines.append(f"            {target_func}({args})")
+            lines.append(f"            {call_prefix}({args})")
         else:
-            # 正常断言的测试
-            lines.append(f"        result = {target_func}({args})")
-            lines.append(f"        assert result == {repr(expected_str)}")
+            lines.append(f"        result = {call_prefix}({args})")
+            # 保持期望值的原始类型（int/float/bool/None 不加引号）
+            if isinstance(expected, (int, float, bool)) or expected is None:
+                lines.append(f"        assert result == {repr(expected)}")
+            else:
+                lines.append(f"        assert result == {repr(expected_str)}")
+
+        return "\n".join(lines)
+
+    def _generate_jest(self, test_cases: List[Dict]) -> str:
+        """
+        生成 Jest 格式的 JavaScript 测试文件
+        :param test_cases: 测试用例列表
+        :return: Jest 测试代码
+        """
+        # 被测文件相对路径（从 output/ 到 targets/）
+        source_basename = os.path.basename(self.source_path)
+        module_name = os.path.splitext(source_basename)[0]
+        relative_import = f"../targets/{source_basename}"
+
+        test_blocks = []
+        for tc in test_cases:
+            tc_id = tc.get("id", "TC000")
+            desc = tc.get("description", "")
+
+            test_body = self._build_jest_test_body(tc, module_name)
+            # 转义描述中的单引号，防止 JS 语法错误
+            safe_desc = desc.replace("'", "\\'")
+            test_blocks.append(f"  test('{tc_id}: {safe_desc}', () => {{\n{test_body}\n  }});")
+
+        tests_str = "\n\n".join(test_blocks)
+
+        test_code = f"""/**
+ * 自动生成的白盒测试用例 - {module_name}
+ */
+const _{module_name}Module = require('{relative_import}');
+const {module_name} = _{module_name}Module.default || _{module_name}Module;
+
+describe('{module_name} 白盒测试', () => {{
+{tests_str}
+}});
+"""
+        return test_code
+
+    def _build_jest_test_body(self, tc: Dict, module_name: str) -> str:
+        """
+        根据测试用例生成 Jest 测试方法体
+        :param tc: 测试用例字典
+        :param module_name: 模块名（如 index）
+        :return: 缩进好的测试体代码
+        """
+        input_data = tc.get("input", {})
+        expected = tc.get("expected_output", "")
+        expected_str = str(expected)
+        desc = tc.get("description", "")
+        lines = []
+
+        # 判断是否期望抛出异常
+        is_exception = any(kw in expected_str.lower() for kw in
+                          ["error", "throw", "exception", "invalid"])
+
+        # 构建输入参数
+        if isinstance(input_data, dict):
+            args_list = list(input_data.values())
+            args = ", ".join(json.dumps(v, ensure_ascii=False) if isinstance(v, str) else json.dumps(v) for v in args_list)
+        elif isinstance(input_data, list):
+            args = ", ".join(json.dumps(v) for v in input_data)
+        else:
+            args = json.dumps(input_data) if input_data != "" else ""
+
+        # 默认调用方式：module_name(args)
+        call_expr = f"{module_name}({args})"
+
+        # 尝试从 description 中检测链式调用（如 .format(), .isValid()）
+        import re
+        method_match = re.search(r'\.(\w+)\(\)', desc)
+        if method_match:
+            method = method_match.group(1)
+            call_expr = f"{module_name}({args}).{method}()"
+
+        if is_exception:
+            lines.append(f"    expect(() => {{ {call_expr}; }}).toThrow();")
+        else:
+            # 格式化期望值
+            if isinstance(expected, bool):
+                expected_js = "true" if expected else "false"
+            elif isinstance(expected, (int, float)):
+                expected_js = str(expected)
+            elif expected is None:
+                expected_js = "null"
+            else:
+                expected_js = json.dumps(expected_str, ensure_ascii=False)
+
+            lines.append(f"    const result = {call_expr};")
+            lines.append(f"    expect(result).toBe({expected_js});")
 
         return "\n".join(lines)
 
@@ -337,7 +456,8 @@ class Test{module_name.title().replace('_', '')}:
         saved_files["test_cases"] = cases_path
 
         # 2. 保存可运行的测试文件
-        test_path = os.path.join(self.output_dir, f"test_{module_name}_{timestamp}.py")
+        test_ext = ".js" if self.language == "javascript" else ".py"
+        test_path = os.path.join(self.output_dir, f"test_{module_name}_{timestamp}{test_ext}")
         with open(test_path, "w", encoding="utf-8") as f:
             f.write(test_code)
         saved_files["test_file"] = test_path
@@ -363,9 +483,6 @@ class Test{module_name.title().replace('_', '')}:
 
         print(f"[3] 调用 LLM ({self.llm_provider})...")
         response = self.llm_client.chat(prompt)
-        print(f"[DEBUG] LLM 响应长度: {len(response)} 字符")
-        print(f"[DEBUG] LLM 响应前500字符:\n{response[:500]}\n{'='*50}")
-        print(f"[DEBUG] LLM 响应后200字符:\n{response[-200:]}\n{'='*50}")
 
         print(f"[4] 解析 LLM 响应...")
         test_cases = self._parse_llm_response(response)
@@ -376,11 +493,12 @@ class Test{module_name.title().replace('_', '')}:
         coverage_report = None
 
         # ---- 步骤6-7：闭环反馈（覆盖率检测 + 补充生成） ----
-        if not no_coverage and self.language == "python":
+        if not no_coverage and self.language in ("python", "javascript"):
             # 先保存测试文件，才能运行覆盖率
             module_name = os.path.splitext(os.path.basename(self.source_path))[0]
             self._run_timestamp = time.strftime("%Y%m%d_%H%M%S")
-            temp_test_path = os.path.join(self.output_dir, f"test_{module_name}_{self._run_timestamp}.py")
+            test_ext = ".js" if self.language == "javascript" else ".py"
+            temp_test_path = os.path.join(self.output_dir, f"test_{module_name}_{self._run_timestamp}{test_ext}")
             os.makedirs(self.output_dir, exist_ok=True)
             with open(temp_test_path, "w", encoding="utf-8") as f:
                 f.write(test_code)
@@ -395,8 +513,8 @@ class Test{module_name.title().replace('_', '')}:
                 branch_cov = coverage_report.get("branch_coverage", 0)
                 print(f"    语句覆盖率: {stmt_cov:.1f}%  分支覆盖率: {branch_cov:.1f}%")
 
-                # 覆盖率达标（>=90%）或已达最大轮次，结束闭环
-                if stmt_cov >= 90 and branch_cov >= 80:
+                # 覆盖率达标（>=95%）或已达最大轮次，结束闭环
+                if stmt_cov >= 95 and branch_cov >= 90:
                     print(f"    覆盖率达标，闭环结束。")
                     break
 
@@ -432,6 +550,6 @@ class Test{module_name.title().replace('_', '')}:
             "test_code": test_code,
             "analysis": analysis,
             "coverage": coverage_report,
-            "rounds": current_round if not no_coverage and self.language == "python" else 0,
+            "rounds": current_round if not no_coverage and self.language in ("python", "javascript") else 0,
             "saved_files": saved_files,
         }
