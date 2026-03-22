@@ -36,12 +36,18 @@ venv/
 config.yaml
 
 # Output
-# 考虑到该作业需求，暂时选择提交输出文件，后续可以根据需要调整
+output/
+
+# Node.js
+node_modules/
+# Jest coverage output (根目录下的 coverage/)
+/coverage/
 
 # IDE
 .vscode/
 .idea/
 claude/
+
 # OS
 .DS_Store
 Thumbs.db

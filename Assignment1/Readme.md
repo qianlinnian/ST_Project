@@ -8,6 +8,7 @@
 - 支持 Python（AST 精确分析）和其他语言（LLM 通用分析）
 - 支持多个 LLM 后端（DeepSeek、OpenAI/ChatAnywhere、Google Gemini、GitHub Models）
 - 闭环流程：生成测试 → 运行覆盖率 → 不足则反馈 LLM 补充
+- Python 闭环使用 pytest + coverage.py，JavaScript 闭环使用 Jest + --coverage
 
 ---
 
@@ -20,14 +21,20 @@ conda create -n ST python=3.11
 conda activate ST
 ```
 
-#### 2. 安装依赖
+#### 2. 安装 Python 依赖
 
 ```bash
 cd Assignment1
 pip install openai pyyaml coverage pytest google-generativeai esprima
 ```
 
-#### 3. 配置 API Key
+#### 3. 安装 Node.js 依赖（JavaScript 闭环需要）
+
+```bash
+npm install
+```
+
+#### 4. 配置 API Key
 
 编辑 `Assignment1/config.yaml`，填入你的 API Key：
 
@@ -53,6 +60,14 @@ llm:
 cd Assignment1
 ```
 
+#### 交互模式（不带参数直接运行）
+
+```bash
+python main.py
+```
+
+会依次提示输入源文件路径、LLM 后端等参数，按回车使用默认值。
+
 #### 基本用法（只生成测试用例，不运行覆盖率）
 
 ```bash
@@ -75,6 +90,12 @@ python main.py --source targets/convert_number_to_words.py --llm deepseek --max-
 
 ```bash
 python main.py --source targets/convert_number_to_words.py --llm deepseek --requirement targets/requirements_convert_number_to_words.md
+```
+
+#### JavaScript 项目闭环
+
+```bash
+python main.py --source targets/index.js --llm deepseek
 ```
 
 #### 切换 LLM 后端
@@ -111,8 +132,9 @@ python main.py --source targets/convert_number_to_words.py --compare
 
 运行后在 `output/` 目录下生成：
 
-- `test_cases_xxx.json` — 结构化测试用例（含覆盖率信息）
-- `test_xxx.py` — 可运行的 pytest 测试文件
+- `test_cases_xxx_时间戳.json` — 结构化测试用例（含覆盖率信息）
+- `test_xxx_时间戳.py` — 可运行的 pytest 测试文件（Python）
+- `test_xxx_时间戳.js` — 可运行的 Jest 测试文件（JavaScript）
 - `experiment_data.json` — 实验记录数据
 - `comparison_report.md` — 多 LLM 对比报告（`--compare` 模式）
 
@@ -132,5 +154,5 @@ python main.py --source targets/convert_number_to_words.py --compare
 | 指标 | 评估方式 |
 |------|---------|
 | **准确性** | 生成的测试用例通过率（passed / total） |
-| **覆盖率** | 语句覆盖率 + 分支覆盖率（coverage.py） |
+| **覆盖率** | 语句覆盖率 + 分支覆盖率（Python: coverage.py, JS: Jest） |
 | **泛化性** | 在两个不同类型项目上的效果对比 |
