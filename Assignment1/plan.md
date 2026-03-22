@@ -487,11 +487,53 @@ python main.py --source targets/code.py --llm deepseek --compare-strategies
 
 ---
 
+### 创新点3：自适应输出模式（JSON 用例 vs 代码直生成）
+
+**动机**：实验发现，对于纯函数式代码（如 Python 的 `convert_number_to_words`），LLM 生成 JSON 格式的测试用例后，工具可以准确转换为可运行的测试代码，覆盖率高达 91%+。但对于链式调用风格的库（如 JavaScript 的 dayjs），JSON 用例格式无法表达 `dayjs('2023-01-01').format('YYYY')` 这样的链式调用，导致工具转换出的测试代码只调用了构造函数，覆盖率仅约 30%。
+
+**核心思路**：根据项目类型自适应选择输出模式：
+1. **JSON 用例模式**（现有方式）：LLM 返回结构化 JSON 用例 → 工具转成测试代码。适合纯函数式代码，输入输出为简单类型。
+2. **代码直生成模式**（新增）：LLM 直接返回可运行的测试代码（Jest/pytest），工具直接保存并运行。适合链式调用、复杂对象返回等场景，LLM 可以自由编写断言逻辑。
+
+**两种模式对比**：
+| 维度 | JSON 用例模式 | 代码直生成模式 |
+|------|--------------|---------------|
+| 适用场景 | 纯函数，简单输入输出 | 链式调用，复杂对象 |
+| 输出可读性 | 结构化，易于分析和统计 | 代码形式，直接可运行 |
+| 断言准确性 | 受限于 JSON 表达能力 | LLM 可自由编写 `toEqual`、`toBeInstanceOf` 等 |
+| 覆盖率潜力 | 受限于工具的代码转换能力 | 更高（LLM 可写链式调用） |
+
+**实现方式**：
+- 在 `prompts.py` 中新增 `build_code_gen_prompt()`，让 LLM 直接返回测试代码
+- 在 `test_generator.py` 中，根据模式选择：
+  - JSON 模式：解析 JSON → 生成代码（现有流程）
+  - 代码模式：直接使用 LLM 返回的代码作为测试文件
+- 在 `main.py` 中增加 `--mode json|code` 参数，默认根据语言自动选择
+
+**命令行使用**：
+```bash
+# 自动选择模式（Python→JSON，JS→代码直生成）
+python main.py --source targets/index.js --llm deepseek
+
+# 手动指定模式
+python main.py --source targets/index.js --llm deepseek --mode code
+python main.py --source targets/convert_number_to_words.py --llm deepseek --mode json
+```
+
+**预期效果**：
+| 项目 | JSON 模式覆盖率 | 代码模式覆盖率 |
+|------|----------------|---------------|
+| convert_number_to_words.py | 91%+ | 91%+（差异不大） |
+| index.js (dayjs) | ~30% | 预期 50%+（可写链式调用） |
+
+---
+
 ### 创新点实现优先级
 
 | 优先级 | 创新点 | 复杂度 | 预期效果 |
 |--------|--------|--------|----------|
-| 1 | Prompt 策略对比 | 中等 | 直接展示不同策略的效果差异 |
-| 2 | 多 LLM 集成投票 | 较高 | 展示多模型协作的优势 |
+| 1 | 自适应输出模式 | 中等 | 显著提升链式调用项目的覆盖率 |
+| 2 | Prompt 策略对比 | 中等 | 直接展示不同策略的效果差异 |
+| 3 | 多 LLM 集成投票 | 较高 | 展示多模型协作的优势 |
 
-两个创新点均不需要修改被测目标源代码，符合项目约束。
+三个创新点均不需要修改被测目标源代码，符合项目约束。
