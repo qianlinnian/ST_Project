@@ -2,7 +2,7 @@
 
 ## 概述
 
-一个 Python CLI 工具，使用 **AST 代码分析 + LLM 大语言模型** 自动生成白盒测试用例。
+一个 Python CLI 工具，使用 **LLM 大语言模型** 自动生成白盒测试用例。
 - 支持多种编程语言（Python 通过 AST 精确分析，其他语言通过 LLM 分析代码结构）
 - 支持多个 LLM 后端，方便对比实验
 - **闭环流程**：生成测试 → 运行测覆盖率 → 不足则反馈 LLM 补充
@@ -82,12 +82,12 @@ Assignment1/
 
 **职责**：提供统一接口，调用不同的 LLM API。
 
-**支持的后端**（均有免费额度）：
+**支持的后端**：
 | 后端 | API 风格 | 模型 |
 |------|----------|------|
-| DeepSeek | OpenAI 兼容 | deepseek-chat |
-| 通义千问 | OpenAI 兼容 | qwen-plus |
-| 硅基流动 SiliconFlow | OpenAI 兼容 | 各种开源模型 |
+| DeepSeek | OpenAI 兼容 | deepseek-chat / deepseek-reasoner |
+| Google Gemini | Google GenAI | gemini-2.5-flash |
+| GitHub Models | OpenAI 兼容 | gpt-4o-mini |
 
 **核心类**：`LLMClient`
 - `__init__(provider: str, api_key: str, model: str)` — 用配置初始化
@@ -98,18 +98,21 @@ Assignment1/
 **配置文件** (`config.yaml`)：
 ```yaml
 llm:
-  deepseek:
+  deepseek-chat:
     api_key: "sk-xxx"
     base_url: "https://api.deepseek.com"
     model: "deepseek-chat"
-  qwen:
+  deepseek-reasoner:
     api_key: "sk-xxx"
-    base_url: "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    model: "qwen-plus"
-  siliconflow:
-    api_key: "sk-xxx"
-    base_url: "https://api.siliconflow.cn/v1"
-    model: "Qwen/Qwen2.5-Coder-32B-Instruct"
+    base_url: "https://api.deepseek.com"
+    model: "deepseek-reasoner"
+  google:
+    api_key: "AIzaSy-xxx"
+    model: "gemini-2.5-flash"
+  github:
+    api_key: "ghp_xxx"
+    base_url: "https://models.inference.ai.azure.com"
+    model: "gpt-4o-mini"
 ```
 
 ---
@@ -282,30 +285,34 @@ llm:
 
 **使用方式**：
 ```bash
-# 基本用法：用 DeepSeek 分析 Python 文件（含闭环补充）
-python main.py --source targets/convert_number_to_words.py --llm deepseek
+# 基本用法：只生成 JSON 测试用例（不运行覆盖率）
+python main.py --source targets/convert_number_to_words.py --llm deepseek-chat
+
+# 生成测试脚本 + 覆盖率闭环
+python main.py --source targets/index.js --llm deepseek-chat --script
 
 # 附带需求文档（辅助 LLM 理解代码意图）
-python main.py --source targets/index.js --llm qwen --requirement docs/spec.txt
+python main.py --source targets/index.js --llm deepseek-chat --script --requirement docs/spec.txt
+
+# 使用 AST 分析辅助（仅 Python）
+python main.py --source targets/convert_number_to_words.py --llm deepseek-chat --ast
 
 # 对比多个 LLM 的生成效果
 python main.py --source targets/convert_number_to_words.py --compare
 
-# 只生成测试用例，不运行覆盖率闭环
-python main.py --source targets/code.py --llm deepseek --no-coverage
-
 # 设置最大闭环轮次
-python main.py --source targets/code.py --llm deepseek --max-rounds 5
+python main.py --source targets/index.js --llm deepseek-chat --script --max-rounds 5
 ```
 
 **参数说明**：
 - `--source`（必选）：被测源代码文件路径
-- `--llm`：使用的 LLM 后端（deepseek / qwen / siliconflow）
+- `--llm`：使用的 LLM 后端（deepseek-chat / deepseek-reasoner / google / github）
 - `--requirement`：可选的需求文档，为 LLM 提供上下文
 - `--compare`：用所有已配置的 LLM 运行并输出对比表格
 - `--output`：输出目录（默认 ./output）
-- `--no-coverage`：只生成测试用例，不运行覆盖率闭环
-- `--max-rounds`：最大闭环轮次（默认 3）
+- `--script`：使用 LLM 直接生成测试脚本 + 覆盖率闭环
+- `--ast`：使用 AST 分析辅助生成（仅 Python 有效）
+- `--max-rounds`：最大闭环轮次（默认 3，仅 `--script` 模式有效）
 
 ---
 
@@ -391,149 +398,67 @@ class TestNumToWords:
 
 ---
 
-## 创新点设计
+## 已实现的创新点
 
-### 创新点1：多 LLM 集成投票（Multi-LLM Ensemble Voting）
+### 创新点1：多 LLM 对比实验（`--compare`）
 
-**动机**：单个 LLM 生成的测试用例可能存在偏差或遗漏。通过多个 LLM 同时生成，再投票合并，可以提高测试用例的质量和覆盖率。
+**动机**：不同 LLM 对同一代码生成的测试用例质量差异显著，需要系统对比。
 
-**核心思路**：
-1. 对同一份源代码，同时调用多个 LLM 后端（如 DeepSeek、ChatGPT、Gemini）生成测试用例
-2. 对所有 LLM 生成的测试用例进行**去重与合并**：
-   - 基于测试用例的 `input` 字段去重（相同输入 → 同一用例）
-   - 对于相同输入但不同 `expected_output` 的情况 → **投票表决**，多数一致的结果作为最终期望输出
-3. 合并后的测试用例集具有更高的覆盖率和准确性
-
-**新增文件**：`src/generators/ensemble_generator.py`
-
-**核心类**：`EnsembleGenerator`
-- `__init__(source_path, providers: List[str], config_path)` — 初始化多个 LLM
-- `run() -> dict` — 并行调用多个 LLM → 合并投票 → 返回最终结果
-- `_merge_test_cases(all_results: List[List[Dict]]) -> List[Dict]` — 去重合并
-- `_vote_expected_output(candidates: List) -> Any` — 投票表决期望输出
+**实现**：通过 `--compare` 参数，自动使用 `config.yaml` 中配置的所有 LLM 后端依次运行，生成对比表格和 Markdown 报告。
 
 **命令行使用**：
 ```bash
-# 集成投票模式：用多个 LLM 生成并投票合并
-python main.py --source targets/code.py --ensemble
-
-# 指定参与投票的 LLM
-python main.py --source targets/code.py --ensemble --providers deepseek,openai,google
+python main.py --source targets/convert_number_to_words.py --compare
 ```
 
-**评估指标对比**：
-| 指标 | 单 LLM | 集成投票 |
-|------|--------|---------|
-| 测试用例数 | N | >= N（合并后可能更多） |
-| 覆盖率 | 依赖单个模型 | 多模型互补，覆盖更全 |
-| 准确率 | 依赖单个模型 | 投票机制减少错误 |
+**实验结果**：不同 LLM 在覆盖率、用例数、耗时、准确率上差异明显，详见 `docs/prompt记录.md` 中的实验对比报告。
 
 ---
 
-### 创新点2：Prompt 策略对比实验（Prompt Strategy Comparison）
+### 创新点2：AST 代码结构分析辅助（`--ast`）
 
-**动机**：不同的 Prompt 策略对 LLM 的输出质量有显著影响。通过系统对比不同策略，可以找到最适合白盒测试生成的 Prompt 设计方式。
+**动机**：仅依赖 LLM 分析代码结构可能遗漏分支和条件。通过 Python AST 精确提取代码结构信息，为 LLM 提供更准确的分析上下文。
 
-**对比的三种 Prompt 策略**：
-
-#### 策略1：Zero-Shot（零样本）
-直接给出任务描述，不提供任何示例。
-```
-你是一个白盒测试专家。请为以下代码生成测试用例...
-```
-
-#### 策略2：Few-Shot（少样本）
-在 Prompt 中提供 2-3 个示例测试用例，让 LLM 学习输出格式和风格。
-```
-你是一个白盒测试专家。以下是一些测试用例示例：
-[示例1: ...]
-[示例2: ...]
-请参照以上格式，为以下代码生成测试用例...
-```
-
-#### 策略3：Chain-of-Thought（思维链）
-引导 LLM 逐步分析代码结构，先推理再生成。
-```
-你是一个白盒测试专家。请按以下步骤进行：
-1. 首先，逐行分析代码，列出所有分支和条件
-2. 然后，为每个分支设计能触发该分支的输入
-3. 接着，推导每个输入对应的期望输出
-4. 最后，整理为标准 JSON 格式的测试用例
-```
-
-**实现方式**：
-- 在 `src/llm/prompts.py` 中新增三种策略的 prompt 构建函数：
-  - `build_zero_shot_prompt()` — 零样本 prompt
-  - `build_few_shot_prompt()` — 含示例的 prompt
-  - `build_cot_prompt()` — 思维链 prompt
-- 在 `main.py` 中增加 `--strategy` 和 `--compare-strategies` 参数
+**实现**：`--ast` 参数启用 AST 分析，提取函数列表、分支点、复合条件、执行路径，注入到 prompt 中辅助 LLM 生成测试用例。
 
 **命令行使用**：
 ```bash
-# 指定使用某种策略
-python main.py --source targets/code.py --llm deepseek --strategy cot
-
-# 对比三种策略的效果
-python main.py --source targets/code.py --llm deepseek --compare-strategies
+python main.py --source targets/convert_number_to_words.py --llm deepseek-chat --ast
 ```
 
-**评估维度**：
-| 维度 | Zero-Shot | Few-Shot | Chain-of-Thought |
-|------|-----------|----------|------------------|
-| 生成速度 | 快（prompt 短） | 中等 | 慢（推理步骤多） |
-| 输出格式准确性 | 可能不规范 | 格式一致（有示例参考） | 格式较好 |
-| 覆盖率 | 基线水平 | 可能更高 | 预期最高（逐步推理） |
-| Token 消耗 | 最少 | 中等 | 最多 |
+**实验结果**：AST 辅助后，闭环轮次从 3 轮降至 1 轮即达到目标覆盖率，用例准确率也有提升。
 
 ---
 
-### 创新点3：自适应输出模式（JSON 用例 vs 代码直生成）
+### 创新点3：自适应输出模式 — LLM 直接生成测试脚本（`--script`）
 
 **动机**：实验发现，对于纯函数式代码（如 Python 的 `convert_number_to_words`），LLM 生成 JSON 格式的测试用例后，工具可以准确转换为可运行的测试代码，覆盖率高达 91%+。但对于链式调用风格的库（如 JavaScript 的 dayjs），JSON 用例格式无法表达 `dayjs('2023-01-01').format('YYYY')` 这样的链式调用，导致工具转换出的测试代码只调用了构造函数，覆盖率仅约 30%。
 
-**核心思路**：根据项目类型自适应选择输出模式：
-1. **JSON 用例模式**（现有方式）：LLM 返回结构化 JSON 用例 → 工具转成测试代码。适合纯函数式代码，输入输出为简单类型。
-2. **代码直生成模式**（新增）：LLM 直接返回可运行的测试代码（Jest/pytest），工具直接保存并运行。适合链式调用、复杂对象返回等场景，LLM 可以自由编写断言逻辑。
+**实现**：
+- `--script` 模式下，LLM 先生成 JSON 用例，再用第二个 prompt 让 LLM 根据 JSON 用例 + 源代码直接生成可运行的测试脚本（pytest/Jest）
+- 闭环补充时，只让 LLM 生成补充的测试方法片段（不含 import/describe 外壳），自动拼接到已有脚本中
+- 拼接后使用 `node --check`（JS）或 `ast.parse`（Python）进行语法校验
+- 回退机制：记录最佳覆盖率版本，覆盖率下降时自动回退
 
 **两种模式对比**：
-| 维度 | JSON 用例模式 | 代码直生成模式 |
-|------|--------------|---------------|
+| 维度 | 默认模式（JSON 用例） | `--script` 模式（代码直生成） |
+|------|----------------------|------------------------------|
 | 适用场景 | 纯函数，简单输入输出 | 链式调用，复杂对象 |
-| 输出可读性 | 结构化，易于分析和统计 | 代码形式，直接可运行 |
-| 断言准确性 | 受限于 JSON 表达能力 | LLM 可自由编写 `toEqual`、`toBeInstanceOf` 等 |
-| 覆盖率潜力 | 受限于工具的代码转换能力 | 更高（LLM 可写链式调用） |
-
-**实现方式**：
-- 在 `prompts.py` 中新增 `build_code_gen_prompt()`，让 LLM 直接返回测试代码
-- 在 `test_generator.py` 中，根据模式选择：
-  - JSON 模式：解析 JSON → 生成代码（现有流程）
-  - 代码模式：直接使用 LLM 返回的代码作为测试文件
-- 在 `main.py` 中增加 `--mode json|code` 参数，默认根据语言自动选择
+| 输出 | JSON 用例 + 模板拼接脚本 | JSON 用例 + LLM 生成脚本 |
+| 覆盖率闭环 | 无（只生成用例） | 有（运行覆盖率 + 闭环补充） |
+| 覆盖率潜力 | 受限于模板转换能力 | 更高（LLM 可写链式调用） |
 
 **命令行使用**：
 ```bash
-# 自动选择模式（Python→JSON，JS→代码直生成）
-python main.py --source targets/index.js --llm deepseek
+# 默认模式：只生成 JSON 测试用例（不运行覆盖率）
+python main.py --source targets/convert_number_to_words.py --llm deepseek-chat
 
-# 手动指定模式
-python main.py --source targets/index.js --llm deepseek --mode code
-python main.py --source targets/convert_number_to_words.py --llm deepseek --mode json
+# --script 模式：生成测试脚本 + 覆盖率闭环
+python main.py --source targets/index.js --llm deepseek-chat --script
 ```
 
-**预期效果**：
-| 项目 | JSON 模式覆盖率 | 代码模式覆盖率 |
-|------|----------------|---------------|
-| convert_number_to_words.py | 91%+ | 91%+（差异不大） |
-| index.js (dayjs) | ~30% | 预期 50%+（可写链式调用） |
-
----
-
-### 创新点实现优先级
-
-| 优先级 | 创新点 | 复杂度 | 预期效果 |
-|--------|--------|--------|----------|
-| 1 | 自适应输出模式 | 中等 | 显著提升链式调用项目的覆盖率 |
-| 2 | Prompt 策略对比 | 中等 | 直接展示不同策略的效果差异 |
-| 3 | 多 LLM 集成投票 | 较高 | 展示多模型协作的优势 |
-
-三个创新点均不需要修改被测目标源代码，符合项目约束。
+**实验结果**：
+| 项目 | 默认模式覆盖率 | `--script` 模式覆盖率 |
+|------|---------------|----------------------|
+| convert_number_to_words.py | 91%+ | 91%+ |
+| index.js (dayjs) | ~30% | 64%~97%（显著提升） |

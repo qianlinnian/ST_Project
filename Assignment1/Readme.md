@@ -6,8 +6,9 @@
 
 使用 **AST 代码分析 + LLM 大语言模型** 自动生成白盒测试用例。
 - 支持 Python（AST 精确分析）和其他语言（LLM 通用分析）
-- 支持多个 LLM 后端（DeepSeek、OpenAI/ChatAnywhere、Google Gemini、GitHub Models）
-- 闭环流程：生成测试 → 运行覆盖率 → 不足则反馈 LLM 补充
+- 支持多个 LLM 后端（DeepSeek Chat、DeepSeek Reasoner、Google Gemini、GitHub Models）
+- `--script` 模式：LLM 直接生成可运行的测试脚本（pytest/Jest），支持链式调用等复杂场景
+- 闭环流程：生成测试 → 运行覆盖率 → 不足则补充测试方法片段 → 语法校验 → 回退保护
 - Python 闭环使用 pytest + coverage.py，JavaScript 闭环使用 Jest + --coverage
 
 ---
@@ -40,14 +41,21 @@ npm install
 
 ```yaml
 llm:
-  deepseek:
+  deepseek-chat:
     api_key: "你的DeepSeek API Key"
     base_url: "https://api.deepseek.com"
     model: "deepseek-chat"
-  openai:
-    api_key: "你的ChatAnywhere API Key"
-    base_url: "https://api.chatanywhere.tech/v1"
-    model: "gpt-3.5-turbo"
+  deepseek-reasoner:
+    api_key: "你的DeepSeek API Key"
+    base_url: "https://api.deepseek.com"
+    model: "deepseek-reasoner"
+  google:
+    api_key: "你的Google Gemini API Key"
+    model: "gemini-2.5-flash"
+  github:
+    api_key: "你的GitHub Token"
+    base_url: "https://models.inference.ai.azure.com"
+    model: "gpt-4o-mini"
 ```
 
 ---
@@ -68,41 +76,48 @@ python main.py
 
 会依次提示输入源文件路径、LLM 后端等参数，按回车使用默认值。
 
-#### 基本用法（只生成测试用例，不运行覆盖率）
+#### 基本用法（只生成 JSON 测试用例，不运行覆盖率）
 
 ```bash
-python main.py --source targets/convert_number_to_words.py --llm deepseek --no-coverage
+python main.py --source targets/convert_number_to_words.py --llm deepseek-chat
 ```
 
-#### 完整闭环（生成 + 覆盖率反馈补充）
+#### 生成测试脚本 + 覆盖率闭环（`--script` 模式）
 
 ```bash
-python main.py --source targets/convert_number_to_words.py --llm deepseek
+python main.py --source targets/convert_number_to_words.py --llm deepseek-chat --script
 ```
 
-#### 指定最大闭环轮次
+#### JavaScript 项目（推荐使用 `--script` 模式）
 
 ```bash
-python main.py --source targets/convert_number_to_words.py --llm deepseek --max-rounds 5
+python main.py --source targets/index.js --llm deepseek-chat --script
+```
+
+#### 使用 AST 分析辅助（仅 Python）
+
+```bash
+python main.py --source targets/convert_number_to_words.py --llm deepseek-chat --ast
 ```
 
 #### 附带需求文档（提高生成质量）
 
 ```bash
-python main.py --source targets/convert_number_to_words.py --llm deepseek --requirement targets/requirements_convert_number_to_words.md
+python main.py --source targets/convert_number_to_words.py --llm deepseek-chat --requirement targets/requirements_convert_number_to_words.md
 ```
 
-#### JavaScript 项目闭环
+#### 指定最大闭环轮次
 
 ```bash
-python main.py --source targets/index.js --llm deepseek
+python main.py --source targets/convert_number_to_words.py --llm deepseek-chat --script --max-rounds 5
 ```
 
 #### 切换 LLM 后端
 
 ```bash
-python main.py --source targets/convert_number_to_words.py --llm openai
 python main.py --source targets/convert_number_to_words.py --llm google
+python main.py --source targets/convert_number_to_words.py --llm github
+python main.py --source targets/convert_number_to_words.py --llm deepseek-reasoner
 ```
 
 #### 对比所有 LLM 的效果
@@ -118,14 +133,14 @@ python main.py --source targets/convert_number_to_words.py --compare
 | 参数 | 必选 | 说明 |
 |------|------|------|
 | `--source` | 是 | 被测源代码文件路径 |
-| `--llm` | 否 | LLM 后端名称，默认 `deepseek` |
-| `--requirement` | 否 | 需求文档路径 |
-| `--compare` | 否 | 用所有 LLM 运行并输出对比表格 |
+| `--llm` | 否 | LLM 后端名称（deepseek-chat / deepseek-reasoner / google / github），默认 `deepseek` |
+| `--script` | 否 | LLM 直接生成测试脚本 + 覆盖率闭环（推荐 JS 项目使用） |
+| `--ast` | 否 | 使用 AST 分析辅助生成（仅 Python 有效） |
+| `--requirement` | 否 | 需求文档路径，为 LLM 提供额外上下文 |
+| `--compare` | 否 | 用所有已配置的 LLM 运行并输出对比表格 |
 | `--output` | 否 | 输出目录，默认 `./output` |
-| `--max-rounds` | 否 | 最大闭环轮次，默认 3 |
+| `--max-rounds` | 否 | 最大闭环轮次，默认 3（仅 `--script` 模式有效） |
 | `--config` | 否 | 配置文件路径，默认 `config.yaml` |
-| `--ast` | 否 | 是否使用 AST 分析（仅 Python） |
-| `--script` | 否 | 是否生成测试脚本（默认 False） |
 
 ---
 
@@ -157,3 +172,15 @@ python main.py --source targets/convert_number_to_words.py --compare
 | **准确性** | 生成的测试用例通过率（passed / total） |
 | **覆盖率** | 语句覆盖率 + 分支覆盖率（Python: coverage.py, JS: Jest） |
 | **泛化性** | 在两个不同类型项目上的效果对比 |
+
+---
+
+### 项目文档（docs/）
+
+| 文件 | 说明 |
+|------|------|
+| `docs/工作总结.md` | 完整的工作总结：开发时间线、遇到的问题与解决方案、实验结果汇总、关键结论 |
+| `docs/prompt记录.md` | 所有 Prompt 模板的完整内容和设计说明，以及不同配置下的实验对比数据 |
+| `docs/log-days.md` | 开发过程中遇到的关键问题分析（脚本截断、覆盖率回退、准确率下降等）及解决策略 |
+| `docs/log-all.md` | 大部分实验运行的原始终端输出日志，可用于复现和分析闭环过程 |
+| `docs/llm_problem.md` | LLM 生成相关的已知问题记录 |

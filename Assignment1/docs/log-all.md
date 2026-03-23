@@ -1,4 +1,5 @@
 > 这个是普通的 日志输出，里面有一部分内容是可以体现 不同 轮次之间的对比的，一部分输出可以体现出 闭环输出的 作用可以提高 覆盖率。
+> 不是全部的！all指的是包含大多数的测试指令的输出（因为后面有更新参数，所有一些没有留存下来，所以是大多数不是全部）
 
 ============================================================
 
@@ -901,5 +902,190 @@ index.js                            github          gpt-4o-mini                 
 index.js                            deepseek-chat   deepseek-chat                      84   320.1s    38.2%    28.6%    3    0/84
 index.js                            deepseek-reasoner deepseek-reasoner                 105   543.5s    28.1%    20.3%    3    0/105
 index.js                            github          gpt-4o-mini                        30    53.8s    26.9%    19.2%    3    0/30
+
+对比报告已保存: output\comparison_report.md
+
+
+(st) d:\course_content\ST\ST_Project\Assignment1>python main.py --source targets/convert_number_to_words.py --compare --script  
+D:\anaconda3\envs\st\lib\site-packages\google\api_core\_python_version_support.py:275: FutureWarning: You are using a Python version (3.10.20) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+d:\course_content\ST\ST_Project\Assignment1\src\llm\client.py:17: FutureWarning: 
+
+All support for the `google.generativeai` package has ended. It will no longer be receiving
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+See README for more details:
+
+https://github.com/google-gemini/deprecated-generative-ai-python/blob/main/README.md
+
+  import google.generativeai as genai
+对比模式：将使用以下 LLM 后端运行: deepseek-chat, deepseek-reasoner, google, github
+============================================================
+
+============================================================
+▶ 使用 deepseek-chat 运行...
+============================================================
+============================================================
+白盒测试用例生成工具
+源文件: targets/convert_number_to_words.py
+LLM: deepseek-chat
+需求文档: 无
+输出目录: output
+对比模式: 是
+脚本模式: 是
+闭环: 开启（最多 3 轮）
+============================================================
+[1] 分析源代码: targets/convert_number_to_words.py (语言: python)
+[2] 构建 Prompt...
+[3] 调用 LLM (deepseek-chat)...
+[4] 解析 LLM 响应...
+    生成了 24 个测试用例
+[Script] 调用 LLM 生成测试脚本...
+[Script] 成功生成测试脚本（140 行）
+
+[闭环] 第 1/3 轮 - 运行覆盖率测量...
+  运行命令: python -m coverage run --source d:\course_content\ST\ST_Project\Assignment1\targets --branch -m pytest d:\course_content\ST\ST_Project\Assignment1\output\test_convert_number_to_words_20260323_154213.py -v
+    语句覆盖率: 91.0%  分支覆盖率: 92.3%
+    覆盖率达标，闭环结束。
+
+[保存] 输出文件...
+    test_cases: output\test_cases_convert_number_to_words_20260323_154213.json
+    test_file: output\test_convert_number_to_words_20260323_154213.py
+
+[完成] 总耗时: 138.0s
+
+============================================================
+▶ 使用 deepseek-reasoner 运行...
+============================================================
+============================================================
+白盒测试用例生成工具
+源文件: targets/convert_number_to_words.py
+LLM: deepseek-reasoner
+需求文档: 无
+输出目录: output
+对比模式: 是
+脚本模式: 是
+闭环: 开启（最多 3 轮）
+============================================================
+[1] 分析源代码: targets/convert_number_to_words.py (语言: python)
+[2] 构建 Prompt...
+[3] 调用 LLM (deepseek-reasoner)...
+[4] 解析 LLM 响应...
+    生成了 27 个测试用例
+[Script] 调用 LLM 生成测试脚本...
+[Script] 成功生成测试脚本（196 行）
+
+[闭环] 第 1/3 轮 - 运行覆盖率测量...
+  运行命令: python -m coverage run --source d:\course_content\ST\ST_Project\Assignment1\targets --branch -m pytest d:\course_content\ST\ST_Project\Assignment1\output\test_convert_number_to_words_20260323_154928.py -v
+    语句覆盖率: 91.0%  分支覆盖率: 92.3%
+    覆盖率达标，闭环结束。
+
+[保存] 输出文件...
+    test_cases: output\test_cases_convert_number_to_words_20260323_154928.json
+    test_file: output\test_convert_number_to_words_20260323_154928.py
+
+[完成] 总耗时: 434.8s
+
+============================================================
+▶ 使用 google 运行...
+============================================================
+============================================================
+白盒测试用例生成工具
+源文件: targets/convert_number_to_words.py
+LLM: google
+需求文档: 无
+输出目录: output
+对比模式: 是
+脚本模式: 是
+闭环: 开启（最多 3 轮）
+============================================================
+[1] 分析源代码: targets/convert_number_to_words.py (语言: python)
+[2] 构建 Prompt...
+[3] 调用 LLM (google)...
+[4] 解析 LLM 响应...
+    生成了 28 个测试用例
+[Script] 调用 LLM 生成测试脚本...
+[Script] 成功生成测试脚本（172 行）
+
+[闭环] 第 1/3 轮 - 运行覆盖率测量...
+  运行命令: python -m coverage run --source d:\course_content\ST\ST_Project\Assignment1\targets --branch -m pytest d:\course_content\ST\ST_Project\Assignment1\output\test_convert_number_to_words_20260323_155106.py -v
+    语句覆盖率: 91.0%  分支覆盖率: 92.3%
+    覆盖率达标，闭环结束。
+
+[保存] 输出文件...
+    test_cases: output\test_cases_convert_number_to_words_20260323_155106.json
+    test_file: output\test_convert_number_to_words_20260323_155106.py
+
+[完成] 总耗时: 97.5s
+
+============================================================
+▶ 使用 github 运行...
+============================================================
+============================================================
+白盒测试用例生成工具
+源文件: targets/convert_number_to_words.py
+LLM: github
+需求文档: 无
+输出目录: output
+对比模式: 是
+脚本模式: 是
+闭环: 开启（最多 3 轮）
+============================================================
+[1] 分析源代码: targets/convert_number_to_words.py (语言: python)
+[2] 构建 Prompt...
+[3] 调用 LLM (github)...
+[4] 解析 LLM 响应...
+    生成了 15 个测试用例
+[Script] 调用 LLM 生成测试脚本...
+[Script] 成功生成测试脚本（68 行）
+
+[闭环] 第 1/3 轮 - 运行覆盖率测量...
+  运行命令: python -m coverage run --source d:\course_content\ST\ST_Project\Assignment1\targets --branch -m pytest d:\course_content\ST\ST_Project\Assignment1\output\test_convert_number_to_words_20260323_155131.py -v
+    语句覆盖率: 85.9%  分支覆盖率: 84.6%
+    覆盖率不足，LLM 生成补充测试方法...
+    [语法检查] Python 语法错误: unindent does not match any outer indentation level (<unknown>, line 74)
+    保持当前版本继续下一轮
+
+[闭环] 第 2/3 轮 - 运行覆盖率测量...
+  运行命令: python -m coverage run --source d:\course_content\ST\ST_Project\Assignment1\targets --branch -m pytest d:\course_content\ST\ST_Project\Assignment1\output\test_convert_number_to_words_20260323_155131.py -v
+    语句覆盖率: 85.9%  分支覆盖率: 84.6%
+    覆盖率不足，LLM 生成补充测试方法...
+    [语法检查] Python 语法错误: unindent does not match any outer indentation level (<unknown>, line 74)
+    保持当前版本继续下一轮
+
+[闭环] 第 3/3 轮 - 运行覆盖率测量...
+  运行命令: python -m coverage run --source d:\course_content\ST\ST_Project\Assignment1\targets --branch -m pytest d:\course_content\ST\ST_Project\Assignment1\output\test_convert_number_to_words_20260323_155131.py -v
+    语句覆盖率: 85.9%  分支覆盖率: 84.6%
+    已达最大轮次 3，闭环结束。
+
+[保存] 输出文件...
+    test_cases: output\test_cases_convert_number_to_words_20260323_155131.json
+    test_file: output\test_convert_number_to_words_20260323_155131.py
+
+[完成] 总耗时: 38.8s
+
+============================================================
+实验对比结果
+============================================================
+测试项目                                LLM             模型                                用例数       耗时     语句覆盖     分支覆盖   轮次      通过/失败
+------------------------------------------------------------------------------------------------------------------------------------
+convert_number_to_words.py          deepseek-chat   deepseek-chat                      28   113.9s    91.0%    92.3%    3   18/8
+convert_number_to_words.py          deepseek-reasoner deepseek-reasoner                  28   483.8s    91.0%    92.3%    3   16/11
+convert_number_to_words.py          google          gemini-2.5-flash                   44   151.4s    91.0%    92.3%    3   39/4
+convert_number_to_words.py          github          gpt-4o-mini                        27    29.7s    91.0%    92.3%    3   17/7
+convert_number_to_words.py          deepseek-chat   deepseek-chat                      29   105.0s    91.0%    92.3%    3   22/5
+convert_number_to_words.py          deepseek-reasoner deepseek-reasoner                  33   740.0s    91.0%    92.3%    3   27/4
+convert_number_to_words.py          google          gemini-2.5-flash                   38   189.7s    91.0%    92.3%    3   33/4
+convert_number_to_words.py          github          gpt-4o-mini                        18    24.2s    85.9%    84.6%    3    8/7
+convert_number_to_words.py          deepseek-chat   deepseek-chat                      22    90.5s    91.0%    92.3%    1   21/1
+convert_number_to_words.py          deepseek-reasoner deepseek-reasoner                  20   259.7s    91.0%    92.3%    1   19/1
+convert_number_to_words.py          github          gpt-4o-mini                        15    21.4s    91.0%    92.3%    1   13/2
+convert_number_to_words.py          deepseek-chat   deepseek-chat                      18    94.0s    91.0%    92.3%    1   17/1
+convert_number_to_words.py          deepseek-reasoner deepseek-reasoner                  23   271.5s    91.0%    92.3%    1   20/3
+convert_number_to_words.py          google          gemini-2.5-flash                   26    97.6s    91.0%    92.3%    1   23/3
+convert_number_to_words.py          github          gpt-4o-mini                        22    32.7s    91.0%    92.3%    1   20/2
+convert_number_to_words.py          deepseek-chat   deepseek-chat                      24   138.0s    91.0%    92.3%    1   23/1
+convert_number_to_words.py          deepseek-reasoner deepseek-reasoner                  27   434.8s    91.0%    92.3%    1   25/2
+convert_number_to_words.py          google          gemini-2.5-flash                   28    97.5s    91.0%    92.3%    1   25/3
+convert_number_to_words.py          github          gpt-4o-mini                        15    38.8s    85.9%    84.6%    3   11/4
 
 对比报告已保存: output\comparison_report.md
