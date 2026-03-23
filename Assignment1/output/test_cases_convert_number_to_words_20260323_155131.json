@@ -1,0 +1,400 @@
+{
+  "source_file": "convert_number_to_words.py",
+  "language": "python",
+  "llm_provider": "github",
+  "llm_model": "gpt-4o-mini",
+  "analysis": {
+    "functions": [
+      {
+        "name": "convert_small_number",
+        "params": [
+          "num"
+        ],
+        "start_line": 95,
+        "end_line": 134,
+        "decorators": []
+      },
+      {
+        "name": "convert_number",
+        "params": [
+          "num",
+          "system"
+        ],
+        "start_line": 137,
+        "end_line": 197,
+        "decorators": []
+      },
+      {
+        "name": "max_value",
+        "params": [
+          "cls",
+          "system"
+        ],
+        "start_line": 33,
+        "end_line": 53,
+        "decorators": [
+          "Name(id='classmethod', ctx=Load())"
+        ]
+      }
+    ],
+    "branches": [
+      {
+        "type": "if",
+        "line": 200,
+        "condition": "__name__ == '__main__'",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 121,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 123,
+        "condition": "num >= 100",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 126,
+        "condition": "tens == 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 128,
+        "condition": "tens == 1",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 179,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 183,
+        "condition": "num > NumberingSystem.max_value(system)",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "for",
+        "line": 186,
+        "iter": "NumberingSystem[system.upper()].value",
+        "target": "(power, unit)",
+        "has_else": false
+      },
+      {
+        "type": "if",
+        "line": 195,
+        "condition": "num > 0 or not word_groups",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 188,
+        "condition": "digit_group > 0",
+        "has_else": false,
+        "has_elif": false
+      }
+    ],
+    "conditions": [
+      {
+        "line": 195,
+        "operator": "or",
+        "expression": "num > 0 or not word_groups",
+        "sub_conditions": [
+          "num > 0",
+          "not word_groups"
+        ]
+      },
+      {
+        "line": 127,
+        "operator": "or",
+        "expression": "NumberWords.ONES.value[ones] or 'zero'",
+        "sub_conditions": [
+          "NumberWords.ONES.value[ones]",
+          "'zero'"
+        ]
+      }
+    ],
+    "paths": {
+      "convert_small_number": [
+        "L95→L96→L121(T)→L122",
+        "L95→L96→L121(F)"
+      ],
+      "convert_number": [
+        "L137→L140→L177→L179(T)→L180→L181",
+        "L137→L140→L177→L179(F)"
+      ],
+      "max_value": [
+        "L33→L34→L44→L53"
+      ]
+    },
+    "total_lines": 205
+  },
+  "test_cases": [
+    {
+      "id": "TC001",
+      "description": "测试零的转换",
+      "input": {
+        "num": 0
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "if num < 0: False",
+        "if num >= 100: False"
+      ],
+      "covered_paths": [
+        "convert_number -> convert_small_number"
+      ]
+    },
+    {
+      "id": "TC002",
+      "description": "测试正数的转换",
+      "input": {
+        "num": 5
+      },
+      "expected_output": "five",
+      "covered_branches": [
+        "if num < 0: False",
+        "if num >= 100: False"
+      ],
+      "covered_paths": [
+        "convert_number -> convert_small_number"
+      ]
+    },
+    {
+      "id": "TC003",
+      "description": "测试十的转换",
+      "input": {
+        "num": 10
+      },
+      "expected_output": "ten",
+      "covered_branches": [
+        "if num < 0: False",
+        "if num >= 100: False"
+      ],
+      "covered_paths": [
+        "convert_number -> convert_small_number"
+      ]
+    },
+    {
+      "id": "TC004",
+      "description": "测试负数的转换",
+      "input": {
+        "num": -5
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "if num < 0: True"
+      ],
+      "covered_paths": [
+        "convert_number"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "测试超过100的数字",
+      "input": {
+        "num": 100
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "if num < 0: False",
+        "if num >= 100: True"
+      ],
+      "covered_paths": [
+        "convert_number"
+      ]
+    },
+    {
+      "id": "TC006",
+      "description": "测试短数制转换",
+      "input": {
+        "num": 123456789012345,
+        "system": "short"
+      },
+      "expected_output": "one hundred twenty-three trillion four hundred fifty-six billion seven hundred eighty-nine million twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "if num < 0: False",
+        "if num > NumberingSystem.max_value(system): False"
+      ],
+      "covered_paths": [
+        "convert_number"
+      ]
+    },
+    {
+      "id": "TC007",
+      "description": "测试长数制转换",
+      "input": {
+        "num": 123456789012345,
+        "system": "long"
+      },
+      "expected_output": "one hundred twenty-three thousand four hundred fifty-six milliard seven hundred eighty-nine million twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "if num < 0: False",
+        "if num > NumberingSystem.max_value(system): False"
+      ],
+      "covered_paths": [
+        "convert_number"
+      ]
+    },
+    {
+      "id": "TC008",
+      "description": "测试印度数制转换",
+      "input": {
+        "num": 123456789012345,
+        "system": "indian"
+      },
+      "expected_output": "one crore crore twenty-three lakh crore forty-five thousand six hundred seventy-eight crore ninety lakh twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "if num < 0: False",
+        "if num > NumberingSystem.max_value(system): False"
+      ],
+      "covered_paths": [
+        "convert_number"
+      ]
+    },
+    {
+      "id": "TC009",
+      "description": "测试超出短数制最大值",
+      "input": {
+        "num": 1000000000000000000,
+        "system": "short"
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "if num < 0: False",
+        "if num > NumberingSystem.max_value(system): True"
+      ],
+      "covered_paths": [
+        "convert_number"
+      ]
+    },
+    {
+      "id": "TC010",
+      "description": "测试超出长数制最大值",
+      "input": {
+        "num": 1000000000000000000000,
+        "system": "long"
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "if num < 0: False",
+        "if num > NumberingSystem.max_value(system): True"
+      ],
+      "covered_paths": [
+        "convert_number"
+      ]
+    },
+    {
+      "id": "TC011",
+      "description": "测试超出印度数制最大值",
+      "input": {
+        "num": 100000000000000000000,
+        "system": "indian"
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "if num < 0: False",
+        "if num > NumberingSystem.max_value(system): True"
+      ],
+      "covered_paths": [
+        "convert_number"
+      ]
+    },
+    {
+      "id": "TC012",
+      "description": "测试短数制的最大值",
+      "input": {
+        "system": "short"
+      },
+      "expected_output": 999999999999999999,
+      "covered_branches": [
+        "match system_enum := cls[system.upper()]:"
+      ],
+      "covered_paths": [
+        "max_value"
+      ]
+    },
+    {
+      "id": "TC013",
+      "description": "测试长数制的最大值",
+      "input": {
+        "system": "long"
+      },
+      "expected_output": 999999999999999999999,
+      "covered_branches": [
+        "match system_enum := cls[system.upper()]:"
+      ],
+      "covered_paths": [
+        "max_value"
+      ]
+    },
+    {
+      "id": "TC014",
+      "description": "测试印度数制的最大值",
+      "input": {
+        "system": "indian"
+      },
+      "expected_output": 99999999999999999999,
+      "covered_branches": [
+        "match system_enum := cls[system.upper()]:"
+      ],
+      "covered_paths": [
+        "max_value"
+      ]
+    },
+    {
+      "id": "TC015",
+      "description": "测试无效的数制",
+      "input": {
+        "system": "invalid"
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "match system_enum := cls[system.upper()]:"
+      ],
+      "covered_paths": [
+        "max_value"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 85.8974358974359,
+    "branch_coverage": 84.61538461538461,
+    "uncovered_lines": [
+      51,
+      52,
+      122,
+      124,
+      201,
+      203,
+      205
+    ],
+    "uncovered_branches": [
+      "L49 → L51",
+      "L121 → L122",
+      "L123 → L124",
+      "L200 → L201"
+    ],
+    "test_results": {
+      "total": 15,
+      "passed": 11,
+      "failed": 4,
+      "error": 0
+    }
+  }
+}

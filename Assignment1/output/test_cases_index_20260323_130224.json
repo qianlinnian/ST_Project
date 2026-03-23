@@ -1,0 +1,490 @@
+{
+  "source_file": "index.js",
+  "language": "javascript",
+  "llm_provider": "deepseek-chat",
+  "llm_model": "deepseek-chat",
+  "analysis": null,
+  "test_cases": [
+    {
+      "id": "TC002",
+      "description": "测试 dayjs 函数传入 null 日期",
+      "input": {
+        "date": null
+      },
+      "expected_output": "一个无效的 Dayjs 对象（isValid() 返回 false）",
+      "covered_branches": [
+        "parseDate 中 date === null 为 true"
+      ],
+      "covered_paths": [
+        "dayjs -> parseDate -> date === null -> 返回 new Date(NaN)"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "测试 dayjs 函数传入可解析的日期字符串（非UTC）",
+      "input": {
+        "date": "2023-05-15 14:30:25.123"
+      },
+      "expected_output": "一个日期为 2023-05-15 14:30:25.123 的 Dayjs 对象",
+      "covered_branches": [
+        "parseDate 中 typeof date === 'string' 且 REGEX_PARSE 匹配成功，utc 为 false"
+      ],
+      "covered_paths": [
+        "dayjs -> parseDate -> 字符串匹配成功 -> 返回 new Date(...)"
+      ]
+    },
+    {
+      "date": "2023-05-15 14:30:25.123",
+      "c": {
+        "utc": true
+      }
+    },
+    {
+      "id": "TC007",
+      "description": "测试 dayjs 函数传入不可解析的字符串，回退到 new Date(date)",
+      "input": {
+        "date": "invalid date string"
+      },
+      "expected_output": "一个无效的 Dayjs 对象（isValid() 返回 false）",
+      "covered_branches": [
+        "parseDate 中 typeof date === 'string' 但 REGEX_PARSE 匹配失败"
+      ],
+      "covered_paths": [
+        "dayjs -> parseDate -> 字符串匹配失败 -> 返回 new Date(date)"
+      ]
+    },
+    {
+      "id": "TC008",
+      "description": "测试 dayjs 函数传入数字时间戳",
+      "input": {
+        "date": 1672531200000
+      },
+      "expected_output": "一个日期为 2023-01-01 的 Dayjs 对象",
+      "covered_branches": [
+        "parseDate 中所有条件都不满足，执行最后的 return new Date(date)"
+      ],
+      "covered_paths": [
+        "dayjs -> parseDate -> 默认路径 -> 返回 new Date(date)"
+      ]
+    },
+    {
+      "id": "TC009",
+      "description": "测试 parseLocale 函数传入空 preset，返回全局 locale",
+      "input": {
+        "preset": null,
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "parseLocale 中 !preset 为 true"
+      ],
+      "covered_paths": [
+        "parseLocale -> !preset -> 返回 L"
+      ]
+    },
+    {
+      "id": "TC010",
+      "description": "测试 parseLocale 函数传入已加载的 locale 字符串（小写）",
+      "input": {
+        "preset": "en",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "parseLocale 中 typeof preset === 'string' 且 Ls[presetLower] 存在"
+      ],
+      "covered_paths": [
+        "parseLocale -> 字符串路径 -> Ls[presetLower] 存在 -> 设置 l -> !isLocal && l 为真 -> 设置 L -> 返回 l"
+      ]
+    },
+    {
+      "preset": "fr",
+      "object": {
+        "name": "fr"
+      },
+      "isLocal": false
+    },
+    {
+      "id": "TC012",
+      "description": "测试 parseLocale 函数传入带连字符的 locale 字符串，且第一部分未加载",
+      "input": {
+        "preset": "zh-CN",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "zh",
+      "covered_branches": [
+        "parseLocale 中 typeof preset === 'string' 且 presetSplit.length > 1"
+      ],
+      "covered_paths": [
+        "parseLocale -> 字符串路径 -> !l 且 presetSplit.length > 1 -> 递归调用 parseLocale(presetSplit[0])"
+      ]
+    },
+    {
+      "preset": {
+        "name": "ja"
+      },
+      "object": null,
+      "isLocal": false
+    },
+    {
+      "preset": "de",
+      "object": {
+        "name": "de"
+      },
+      "isLocal": true
+    },
+    {
+      "id": "TC022",
+      "description": "测试 $g 方法，input 有值时调用 set 方法",
+      "input": {
+        "date": "2023-06-15",
+        "input": 20,
+        "get": "$D",
+        "set": "D"
+      },
+      "expected_output": "一个新的 Dayjs 对象，日期为 2023-06-20",
+      "covered_branches": [
+        "$g 中 Utils.u(input) 为 false"
+      ],
+      "covered_paths": [
+        "Dayjs.$g -> input 有值 -> 返回 this.set(set, input)"
+      ]
+    },
+    {
+      "id": "TC023",
+      "description": "测试 startOf 方法，units 为 'year'，isStartOf 为 true",
+      "input": {
+        "date": "2023-06-15 14:30:25",
+        "units": "year",
+        "startOf": true
+      },
+      "expected_output": "一个日期为 2023-01-01 00:00:00 的 Dayjs 对象",
+      "covered_branches": [
+        "startOf 中 unit === C.Y 且 isStartOf 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf -> switch C.Y -> isStartOf 为真 -> instanceFactory(1, 0)"
+      ]
+    },
+    {
+      "id": "TC024",
+      "description": "测试 startOf 方法，units 为 'month'，isStartOf 为 false（即 endOf month）",
+      "input": {
+        "date": "2023-06-15 14:30:25",
+        "units": "month",
+        "startOf": false
+      },
+      "expected_output": "一个日期为 2023-06-30 23:59:59.999 的 Dayjs 对象",
+      "covered_branches": [
+        "startOf 中 unit === C.M 且 isStartOf 为 false"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf -> switch C.M -> isStartOf 为假 -> instanceFactory(0, $M + 1)"
+      ]
+    },
+    {
+      "id": "TC025",
+      "description": "测试 startOf 方法，units 为 'week'，且 $W 小于 weekStart",
+      "input": {
+        "date": "2023-01-01",
+        "units": "week",
+        "startOf": true
+      },
+      "expected_output": "一周开始的 Dayjs 对象（取决于 locale 的 weekStart）",
+      "covered_branches": [
+        "startOf 中 unit === C.W 且 $W < weekStart 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf -> switch C.W -> $W < weekStart -> gap 计算 -> instanceFactory"
+      ]
+    },
+    {
+      "id": "TC026",
+      "description": "测试 startOf 方法，units 为 'day'，使用 instanceFactorySet",
+      "input": {
+        "date": "2023-06-15 14:30:25",
+        "units": "day",
+        "startOf": true
+      },
+      "expected_output": "一个日期为 2023-06-15 00:00:00 的 Dayjs 对象",
+      "covered_branches": [
+        "startOf 中 unit === C.D 或 C.DATE"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf -> switch C.D/C.DATE -> instanceFactorySet"
+      ]
+    },
+    {
+      "id": "TC027",
+      "description": "测试 startOf 方法，units 为无效值，返回克隆对象",
+      "input": {
+        "date": "2023-06-15",
+        "units": "invalid",
+        "startOf": true
+      },
+      "expected_output": "一个与输入相同的 Dayjs 对象",
+      "covered_branches": [
+        "startOf 中 switch 的 default 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf -> switch default -> 返回 this.clone()"
+      ]
+    },
+    {
+      "id": "TC028",
+      "description": "测试 $set 方法，设置日期 (C.D)",
+      "input": {
+        "date": "2023-06-15",
+        "units": "D",
+        "int": 20
+      },
+      "expected_output": "一个日期为 2023-06-20 的 Dayjs 对象",
+      "covered_branches": [
+        "$set 中 unit === C.D 或 C.DATE 且 name 存在"
+      ],
+      "covered_paths": [
+        "Dayjs.$set -> unit === C.D -> arg 计算 -> name 存在 -> this.$d[name](arg)"
+      ]
+    },
+    {
+      "id": "TC029",
+      "description": "测试 $set 方法，设置月份 (C.M)",
+      "input": {
+        "date": "2023-01-31",
+        "units": "M",
+        "int": 1
+      },
+      "expected_output": "一个日期为 2023-02-28 的 Dayjs 对象（自动调整日期）",
+      "covered_branches": [
+        "$set 中 unit === C.M"
+      ],
+      "covered_paths": [
+        "Dayjs.$set -> unit === C.M -> 克隆并设置日期为1 -> date.$d[name](arg) -> 调整日期 -> this.$d = date.set(...).$d"
+      ]
+    },
+    {
+      "id": "TC030",
+      "description": "测试 add 方法，添加月份",
+      "input": {
+        "date": "2023-01-31",
+        "number": 1,
+        "units": "M"
+      },
+      "expected_output": "一个日期为 2023-02-28 的 Dayjs 对象",
+      "covered_branches": [
+        "add 中 unit === C.M"
+      ],
+      "covered_paths": [
+        "Dayjs.add -> unit === C.M -> this.set(C.M, this.$M + number)"
+      ]
+    },
+    {
+      "id": "TC031",
+      "description": "测试 add 方法，添加天数",
+      "input": {
+        "date": "2023-01-31",
+        "number": 1,
+        "units": "D"
+      },
+      "expected_output": "一个日期为 2023-02-01 的 Dayjs 对象",
+      "covered_branches": [
+        "add 中 unit === C.D"
+      ],
+      "covered_paths": [
+        "Dayjs.add -> unit === C.D -> instanceFactorySet(1)"
+      ]
+    },
+    {
+      "id": "TC032",
+      "description": "测试 add 方法，添加分钟",
+      "input": {
+        "date": "2023-01-01 00:00:00",
+        "number": 30,
+        "units": "minute"
+      },
+      "expected_output": "一个日期为 2023-01-01 00:30:00 的 Dayjs 对象",
+      "covered_branches": [
+        "add 中 unit === C.MIN"
+      ],
+      "covered_paths": [
+        "Dayjs.add -> unit === C.MIN -> step = MILLISECONDS_A_MINUTE -> nextTimeStamp 计算 -> Utils.w(nextTimeStamp, this)"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 64.71,
+    "branch_coverage": 57.14,
+    "uncovered_lines": [
+      41,
+      66,
+      112,
+      120,
+      121,
+      125,
+      129,
+      133,
+      138,
+      180,
+      182,
+      184,
+      226,
+      233,
+      234,
+      240,
+      243,
+      246,
+      259,
+      265,
+      274,
+      277,
+      281,
+      282,
+      288,
+      292,
+      296,
+      298,
+      300,
+      304,
+      306,
+      308,
+      310,
+      312,
+      316,
+      318,
+      320,
+      322,
+      324,
+      328,
+      334,
+      336,
+      338,
+      351,
+      352,
+      353,
+      354,
+      355,
+      358,
+      360,
+      361,
+      363,
+      364,
+      366,
+      367,
+      369,
+      370,
+      372,
+      373,
+      375,
+      376,
+      378,
+      379,
+      381,
+      382,
+      384,
+      385,
+      388,
+      400,
+      401,
+      402,
+      403,
+      404,
+      416,
+      427,
+      444,
+      449,
+      450,
+      451,
+      453,
+      461
+    ],
+    "uncovered_branches": [
+      "L40: if branch-0",
+      "L66: if branch-0",
+      "L74: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L77: binary-expr branch-1",
+      "L121: binary-expr branch-0",
+      "L121: binary-expr branch-1",
+      "L133: if branch-0",
+      "L147: cond-expr branch-1",
+      "L150: cond-expr branch-0",
+      "L163: cond-expr branch-0",
+      "L164: switch branch-5",
+      "L164: switch branch-6",
+      "L164: switch branch-7",
+      "L166: cond-expr branch-1",
+      "L169: cond-expr branch-0",
+      "L173: cond-expr branch-0",
+      "L174: cond-expr branch-1",
+      "L196: cond-expr branch-0",
+      "L207: cond-expr branch-0",
+      "L215: if branch-1",
+      "L239: if branch-0",
+      "L242: if branch-0",
+      "L245: if branch-0",
+      "L265: if branch-0",
+      "L265: binary-expr branch-0",
+      "L265: binary-expr branch-1",
+      "L267: binary-expr branch-1",
+      "L274: binary-expr branch-0",
+      "L274: binary-expr branch-1",
+      "L274: binary-expr branch-2",
+      "L274: binary-expr branch-3",
+      "L277: binary-expr branch-0",
+      "L277: binary-expr branch-1",
+      "L281: cond-expr branch-0",
+      "L281: cond-expr branch-1",
+      "L282: cond-expr branch-0",
+      "L282: cond-expr branch-1",
+      "L286: switch branch-0",
+      "L286: switch branch-2",
+      "L286: switch branch-4",
+      "L286: switch branch-5",
+      "L286: switch branch-6",
+      "L286: switch branch-8",
+      "L286: switch branch-9",
+      "L286: switch branch-10",
+      "L286: switch branch-11",
+      "L286: switch branch-12",
+      "L286: switch branch-14",
+      "L286: switch branch-15",
+      "L286: switch branch-16",
+      "L286: switch branch-17",
+      "L286: switch branch-18",
+      "L286: switch branch-20",
+      "L286: switch branch-23",
+      "L286: switch branch-24",
+      "L341: binary-expr branch-2",
+      "L358: switch branch-0",
+      "L358: switch branch-1",
+      "L358: switch branch-2",
+      "L358: switch branch-3",
+      "L358: switch branch-4",
+      "L358: switch branch-5",
+      "L358: switch branch-6",
+      "L358: switch branch-7",
+      "L358: switch branch-8",
+      "L388: cond-expr branch-0",
+      "L388: cond-expr branch-1",
+      "L400: if branch-0",
+      "L400: if branch-1",
+      "L403: if branch-0",
+      "L403: if branch-1",
+      "L416: cond-expr branch-0",
+      "L416: cond-expr branch-1",
+      "L449: if branch-0",
+      "L449: if branch-1"
+    ],
+    "test_results": {
+      "total": 22,
+      "passed": 19,
+      "failed": 3,
+      "error": 0
+    }
+  }
+}

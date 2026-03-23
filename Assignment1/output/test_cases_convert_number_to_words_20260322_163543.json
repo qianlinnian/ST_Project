@@ -1,0 +1,565 @@
+{
+  "source_file": "convert_number_to_words.py",
+  "language": "python",
+  "llm_provider": "github",
+  "llm_model": "gpt-4o-mini",
+  "analysis": {
+    "functions": [
+      {
+        "name": "convert_small_number",
+        "params": [
+          "num"
+        ],
+        "start_line": 95,
+        "end_line": 134,
+        "decorators": []
+      },
+      {
+        "name": "convert_number",
+        "params": [
+          "num",
+          "system"
+        ],
+        "start_line": 137,
+        "end_line": 197,
+        "decorators": []
+      },
+      {
+        "name": "max_value",
+        "params": [
+          "cls",
+          "system"
+        ],
+        "start_line": 33,
+        "end_line": 53,
+        "decorators": [
+          "Name(id='classmethod', ctx=Load())"
+        ]
+      }
+    ],
+    "branches": [
+      {
+        "type": "if",
+        "line": 200,
+        "condition": "__name__ == '__main__'",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 121,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 123,
+        "condition": "num >= 100",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 126,
+        "condition": "tens == 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 128,
+        "condition": "tens == 1",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 179,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 183,
+        "condition": "num > NumberingSystem.max_value(system)",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "for",
+        "line": 186,
+        "iter": "NumberingSystem[system.upper()].value",
+        "target": "(power, unit)",
+        "has_else": false
+      },
+      {
+        "type": "if",
+        "line": 195,
+        "condition": "num > 0 or not word_groups",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 188,
+        "condition": "digit_group > 0",
+        "has_else": false,
+        "has_elif": false
+      }
+    ],
+    "conditions": [
+      {
+        "line": 195,
+        "operator": "or",
+        "expression": "num > 0 or not word_groups",
+        "sub_conditions": [
+          "num > 0",
+          "not word_groups"
+        ]
+      },
+      {
+        "line": 127,
+        "operator": "or",
+        "expression": "NumberWords.ONES.value[ones] or 'zero'",
+        "sub_conditions": [
+          "NumberWords.ONES.value[ones]",
+          "'zero'"
+        ]
+      }
+    ],
+    "paths": {
+      "convert_small_number": [
+        "L95→L96→L121(T)→L122",
+        "L95→L96→L121(F)"
+      ],
+      "convert_number": [
+        "L137→L140→L177→L179(T)→L180→L181",
+        "L137→L140→L177→L179(F)"
+      ],
+      "max_value": [
+        "L33→L34→L44→L53"
+      ]
+    },
+    "total_lines": 205
+  },
+  "test_cases": [
+    {
+      "id": "TC001",
+      "description": "测试 convert_small_number 函数，输入 0",
+      "input": {
+        "num": 0
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "num < 0 is False",
+        "num >= 100 is False",
+        "tens == 0 is True"
+      ],
+      "covered_paths": [
+        "convert_small_number(0)"
+      ]
+    },
+    {
+      "id": "TC002",
+      "description": "测试 convert_small_number 函数，输入 5",
+      "input": {
+        "num": 5
+      },
+      "expected_output": "five",
+      "covered_branches": [
+        "num < 0 is False",
+        "num >= 100 is False",
+        "tens == 0 is False"
+      ],
+      "covered_paths": [
+        "convert_small_number(5)"
+      ]
+    },
+    {
+      "id": "TC003",
+      "description": "测试 convert_small_number 函数，输入 10",
+      "input": {
+        "num": 10
+      },
+      "expected_output": "ten",
+      "covered_branches": [
+        "num < 0 is False",
+        "num >= 100 is False",
+        "tens == 1 is True"
+      ],
+      "covered_paths": [
+        "convert_small_number(10)"
+      ]
+    },
+    {
+      "id": "TC004",
+      "description": "测试 convert_small_number 函数，输入 15",
+      "input": {
+        "num": 15
+      },
+      "expected_output": "fifteen",
+      "covered_branches": [
+        "num < 0 is False",
+        "num >= 100 is False",
+        "tens == 1 is True"
+      ],
+      "covered_paths": [
+        "convert_small_number(15)"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "测试 convert_small_number 函数，输入 20",
+      "input": {
+        "num": 20
+      },
+      "expected_output": "twenty",
+      "covered_branches": [
+        "num < 0 is False",
+        "num >= 100 is False",
+        "tens == 2 is True"
+      ],
+      "covered_paths": [
+        "convert_small_number(20)"
+      ]
+    },
+    {
+      "id": "TC006",
+      "description": "测试 convert_small_number 函数，输入 25",
+      "input": {
+        "num": 25
+      },
+      "expected_output": "twenty-five",
+      "covered_branches": [
+        "num < 0 is False",
+        "num >= 100 is False",
+        "tens == 2 is True"
+      ],
+      "covered_paths": [
+        "convert_small_number(25)"
+      ]
+    },
+    {
+      "id": "TC007",
+      "description": "测试 convert_small_number 函数，输入 -1",
+      "input": {
+        "num": -1
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "num < 0 is True"
+      ],
+      "covered_paths": [
+        "convert_small_number(-1)"
+      ]
+    },
+    {
+      "id": "TC008",
+      "description": "测试 convert_small_number 函数，输入 123",
+      "input": {
+        "num": 123
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "num < 0 is False",
+        "num >= 100 is True"
+      ],
+      "covered_paths": [
+        "convert_small_number(123)"
+      ]
+    },
+    {
+      "id": "TC009",
+      "description": "测试 convert_number 函数，输入 0",
+      "input": {
+        "num": 0
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "num < 0 is False",
+        "num > max_value(system) is False"
+      ],
+      "covered_paths": [
+        "convert_number(0)"
+      ]
+    },
+    {
+      "id": "TC010",
+      "description": "测试 convert_number 函数，输入 1",
+      "input": {
+        "num": 1
+      },
+      "expected_output": "one",
+      "covered_branches": [
+        "num < 0 is False",
+        "num > max_value(system) is False"
+      ],
+      "covered_paths": [
+        "convert_number(1)"
+      ]
+    },
+    {
+      "id": "TC011",
+      "description": "测试 convert_number 函数，输入 100",
+      "input": {
+        "num": 100
+      },
+      "expected_output": "one hundred",
+      "covered_branches": [
+        "num < 0 is False",
+        "num > max_value(system) is False"
+      ],
+      "covered_paths": [
+        "convert_number(100)"
+      ]
+    },
+    {
+      "id": "TC012",
+      "description": "测试 convert_number 函数，输入 -100",
+      "input": {
+        "num": -100
+      },
+      "expected_output": "negative one hundred",
+      "covered_branches": [
+        "num < 0 is True",
+        "num > max_value(system) is False"
+      ],
+      "covered_paths": [
+        "convert_number(-100)"
+      ]
+    },
+    {
+      "id": "TC013",
+      "description": "测试 convert_number 函数，输入 123456789012345",
+      "input": {
+        "num": 123456789012345
+      },
+      "expected_output": "one hundred twenty-three trillion four hundred fifty-six billion seven hundred eighty-nine million twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "num < 0 is False",
+        "num > max_value(system) is False"
+      ],
+      "covered_paths": [
+        "convert_number(123456789012345)"
+      ]
+    },
+    {
+      "id": "TC014",
+      "description": "测试 convert_number 函数，输入 10**18",
+      "input": {
+        "num": 1000000000000000000
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "num < 0 is False",
+        "num > max_value(system) is True"
+      ],
+      "covered_paths": [
+        "convert_number(1000000000000000000)"
+      ]
+    },
+    {
+      "id": "TC015",
+      "description": "测试 convert_number 函数，输入 10**21, system = 'long'",
+      "input": {
+        "num": 100000000000000000000,
+        "system": "long"
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "num < 0 is False",
+        "num > max_value(system) is True"
+      ],
+      "covered_paths": [
+        "convert_number(100000000000000000000, 'long')"
+      ]
+    },
+    {
+      "id": "TC016",
+      "description": "测试 convert_number 函数，输入 10**19, system = 'indian'",
+      "input": {
+        "num": 10000000000000000000,
+        "system": "indian"
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "num < 0 is False",
+        "num > max_value(system) is True"
+      ],
+      "covered_paths": [
+        "convert_number(10000000000000000000, 'indian')"
+      ]
+    },
+    {
+      "id": "TC017",
+      "description": "测试 NumberingSystem.max_value 函数，输入 'short'",
+      "input": {
+        "system": "short"
+      },
+      "expected_output": 999999999999999999,
+      "covered_branches": [
+        "system_enum is cls.SHORT"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value('short')"
+      ]
+    },
+    {
+      "id": "TC018",
+      "description": "测试 NumberingSystem.max_value 函数，输入 'long'",
+      "input": {
+        "system": "long"
+      },
+      "expected_output": 999999999999999999999,
+      "covered_branches": [
+        "system_enum is cls.LONG"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value('long')"
+      ]
+    },
+    {
+      "id": "TC019",
+      "description": "测试 NumberingSystem.max_value 函数，输入 'indian'",
+      "input": {
+        "system": "indian"
+      },
+      "expected_output": 99999999999999999999,
+      "covered_branches": [
+        "system_enum is cls.INDIAN"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value('indian')"
+      ]
+    },
+    {
+      "id": "TC020",
+      "description": "测试 NumberingSystem.max_value 函数，输入无效的系统",
+      "input": {
+        "system": "invalid"
+      },
+      "expected_output": "ValueError",
+      "covered_branches": [
+        "system_enum is not valid"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value('invalid')"
+      ]
+    },
+    {
+      "id": "TC_SUP_001",
+      "description": "测试 max_value 方法传入无效的 numbering system",
+      "input": {
+        "system": "invalid"
+      },
+      "expected_output": "ValueError: Invalid numbering system",
+      "covered_branches": [
+        "L49 → L51"
+      ],
+      "covered_paths": [
+        "L32 → L44 → L51 → L52"
+      ]
+    },
+    {
+      "id": "TC_SUP_002",
+      "description": "测试主程序导入 doctest",
+      "input": {},
+      "expected_output": "无错误",
+      "covered_branches": [
+        "L200 → L201"
+      ],
+      "covered_paths": [
+        "L200"
+      ]
+    },
+    {
+      "id": "TC_SUP_003",
+      "description": "测试主程序打印 convert_number 的结果",
+      "input": {},
+      "expected_output": "convert_number(123456789) = 'one hundred twenty-three million four hundred fifty-six thousand seven hundred eighty-nine'",
+      "covered_branches": [
+        "L203 → L205"
+      ],
+      "covered_paths": [
+        "L205"
+      ]
+    },
+    {
+      "id": "TC_SUP_001",
+      "description": "测试 max_value 方法，传入无效的 numbering system",
+      "input": {
+        "system": "invalid"
+      },
+      "expected_output": "ValueError: Invalid numbering system",
+      "covered_branches": [
+        "L49 → L51"
+      ],
+      "covered_paths": [
+        "L32 → L44 → L51 → L52"
+      ]
+    },
+    {
+      "id": "TC_SUP_002",
+      "description": "测试 convert_number 方法，调用时使用无效的 numbering system",
+      "input": {
+        "num": 123,
+        "system": "invalid"
+      },
+      "expected_output": "ValueError: Invalid numbering system",
+      "covered_branches": [
+        "L183"
+      ],
+      "covered_paths": [
+        "L137 → L183"
+      ]
+    },
+    {
+      "id": "TC_SUP_003",
+      "description": "测试主模块，确保 doctest 被执行",
+      "input": {},
+      "expected_output": "无错误",
+      "covered_branches": [
+        "L200 → L201"
+      ],
+      "covered_paths": [
+        "L200 → L201"
+      ]
+    },
+    {
+      "id": "TC_SUP_004",
+      "description": "测试主模块，确保 convert_number 调用正常",
+      "input": {},
+      "expected_output": "无错误",
+      "covered_branches": [
+        "L203"
+      ],
+      "covered_paths": [
+        "L203"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 91.02564102564102,
+    "branch_coverage": 92.3076923076923,
+    "uncovered_lines": [
+      51,
+      52,
+      201,
+      203,
+      205
+    ],
+    "uncovered_branches": [
+      "L49 → L51",
+      "L200 → L201"
+    ],
+    "test_results": {
+      "total": 24,
+      "passed": 17,
+      "failed": 7,
+      "error": 0
+    },
+    "test_output": "============================= test session starts =============================\nplatform win32 -- Python 3.10.20, pytest-9.0.2, pluggy-1.6.0 -- D:\\anaconda3\\envs\\st\\python.exe\ncachedir: .pytest_cache\nrootdir: d:\\course_content\\ST\\ST_Project\\Assignment1\\output\nplugins: anyio-4.12.1\ncollecting ... collected 24 items\n\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc001 PASSED [  4%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc002 PASSED [  8%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc003 PASSED [ 12%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc004 PASSED [ 16%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc005 PASSED [ 20%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc006 PASSED [ 25%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc007 PASSED [ 29%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc008 PASSED [ 33%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc009 PASSED [ 37%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc010 PASSED [ 41%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc011 PASSED [ 45%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc012 PASSED [ 50%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc013 PASSED [ 54%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc014 PASSED [ 58%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc015 FAILED [ 62%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc016 PASSED [ 66%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc017 PASSED [ 70%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc018 PASSED [ 75%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc019 FAILED [ 79%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc020 FAILED [ 83%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc_sup_001 FAILED [ 87%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc_sup_002 FAILED [ 91%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc_sup_003 FAILED [ 95%]\ntest_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc_sup_004 FAILED [100%]\n\n================================== FAILURES ===================================\n_____________________ TestConvertNumberToWords.test_tc015 _____________________\n\nself = <test_convert_number_to_words_20260322_163543.TestConvertNumberToWords object at 0x000001406595E350>\n\n    def test_tc015(self):\n        \"\"\"TC015: 测试 convert_number 函数，输入 10**21, system = 'long'\"\"\"\n>       with pytest.raises(ValueError):\nE       Failed: DID NOT RAISE <class 'ValueError'>\n\ntest_convert_number_to_words_20260322_163543.py:86: Failed\n_____________________ TestConvertNumberToWords.test_tc019 _____________________\n\nself = <test_convert_number_to_words_20260322_163543.TestConvertNumberToWords object at 0x000001406595D7E0>\n\n    def test_tc019(self):\n        \"\"\"TC019: 测试 NumberingSystem.max_value 函数，输入 'indian'\"\"\"\n        result = NumberingSystem.max_value('indian')\n>       assert result == 99999999999999999999\nE       assert 9999999999999999999 == 99999999999999999999\n\ntest_convert_number_to_words_20260322_163543.py:107: AssertionError\n_____________________ TestConvertNumberToWords.test_tc020 _____________________\n\nself = <test_convert_number_to_words_20260322_163543.TestConvertNumberToWords object at 0x000001406595DB70>\n\n    def test_tc020(self):\n        \"\"\"TC020: 测试 NumberingSystem.max_value 函数，输入无效的系统\"\"\"\n        with pytest.raises(ValueError):\n>           NumberingSystem.max_value('invalid')\n\ntest_convert_number_to_words_20260322_163543.py:112: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n..\\targets\\convert_number_to_words.py:44: in max_value\n    match system_enum := cls[system.upper()]:\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n\ncls = <enum 'NumberingSystem'>, name = 'INVALID'\n\n    def __getitem__(cls, name):\n>       return cls._member_map_[name]\nE       KeyError: 'INVALID'\n\nD:\\anaconda3\\envs\\st\\lib\\enum.py:440: KeyError\n__________________ TestConvertNumberToWords.test_tc_sup_001 ___________________\n\nself = <test_convert_number_to_words_20260322_163543.TestConvertNumberToWords object at 0x000001406595DE70>\n\n    def test_tc_sup_001(self):\n        \"\"\"TC_SUP_001: 测试 max_value 方法，传入无效的 numbering system\"\"\"\n        with pytest.raises(ValueError):\n>           NumberingSystem.max_value('invalid')\n\ntest_convert_number_to_words_20260322_163543.py:132: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n..\\targets\\convert_number_to_words.py:44: in max_value\n    match system_enum := cls[system.upper()]:\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n\ncls = <enum 'NumberingSystem'>, name = 'INVALID'\n\n    def __getitem__(cls, name):\n>       return cls._member_map_[name]\nE       KeyError: 'INVALID'\n\nD:\\anaconda3\\envs\\st\\lib\\enum.py:440: KeyError\n__________________ TestConvertNumberToWords.test_tc_sup_002 ___________________\n\nself = <test_convert_number_to_words_20260322_163543.TestConvertNumberToWords object at 0x000001406595C340>\n\n    def test_tc_sup_002(self):\n        \"\"\"TC_SUP_002: 测试 convert_number 方法，调用时使用无效的 numbering system\"\"\"\n        with pytest.raises(ValueError):\n>           convert_number(123, 'invalid')\n\ntest_convert_number_to_words_20260322_163543.py:137: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n..\\targets\\convert_number_to_words.py:183: in convert_number\n    if num > NumberingSystem.max_value(system):\n..\\targets\\convert_number_to_words.py:44: in max_value\n    match system_enum := cls[system.upper()]:\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n\ncls = <enum 'NumberingSystem'>, name = 'INVALID'\n\n    def __getitem__(cls, name):\n>       return cls._member_map_[name]\nE       KeyError: 'INVALID'\n\nD:\\anaconda3\\envs\\st\\lib\\enum.py:440: KeyError\n__________________ TestConvertNumberToWords.test_tc_sup_003 ___________________\n\nself = <test_convert_number_to_words_20260322_163543.TestConvertNumberToWords object at 0x000001406595C430>\n\n    def test_tc_sup_003(self):\n        \"\"\"TC_SUP_003: 测试主模块，确保 doctest 被执行\"\"\"\n>       result = convert_small_number()\nE       TypeError: convert_small_number() missing 1 required positional argument: 'num'\n\ntest_convert_number_to_words_20260322_163543.py:141: TypeError\n__________________ TestConvertNumberToWords.test_tc_sup_004 ___________________\n\nself = <test_convert_number_to_words_20260322_163543.TestConvertNumberToWords object at 0x000001406595C640>\n\n    def test_tc_sup_004(self):\n        \"\"\"TC_SUP_004: 测试主模块，确保 convert_number 调用正常\"\"\"\n>       result = convert_number()\nE       TypeError: convert_number() missing 1 required positional argument: 'num'\n\ntest_convert_number_to_words_20260322_163543.py:146: TypeError\n=========================== short test summary info ===========================\nFAILED test_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc015\nFAILED test_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc019\nFAILED test_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc020\nFAILED test_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc_sup_001\nFAILED test_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc_sup_002\nFAILED test_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc_sup_003\nFAILED test_convert_number_to_words_20260322_163543.py::TestConvertNumberToWords::test_tc_sup_004\n======================== 7 failed, 17 passed in 0.45s =========================\n"
+  }
+}

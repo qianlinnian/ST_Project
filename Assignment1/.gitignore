@@ -36,7 +36,7 @@ venv/
 config.yaml
 
 # Output
-output/
+#output/
 # 生成的测试用例和数据等需要用来分析，暂时上传。
 
 # Node.js

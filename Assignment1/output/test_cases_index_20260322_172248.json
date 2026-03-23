@@ -1,0 +1,5217 @@
+{
+  "source_file": "index.js",
+  "language": "javascript",
+  "llm_provider": "google",
+  "llm_model": "gemini-2.5-flash",
+  "analysis": null,
+  "test_cases": [
+    {
+      "id": "TC001",
+      "description": "isDayjs: Input is a Dayjs instance (mocked)",
+      "input": {
+        "d": {
+          "$isDayjsObject": true,
+          "clone": "mock_clone_function"
+        }
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "isDayjs: d instanceof Dayjs (False)",
+        "isDayjs: d && d[IS_DAYJS] (True)",
+        "isDayjs: d (True)",
+        "isDayjs: d[IS_DAYJS] (True)"
+      ],
+      "covered_paths": [
+        "isDayjs: d is object with $isDayjsObject"
+      ]
+    },
+    {
+      "id": "TC002",
+      "description": "isDayjs: Input is an object without $isDayjsObject property",
+      "input": {
+        "d": {
+          "someProp": "value"
+        }
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "isDayjs: d instanceof Dayjs (False)",
+        "isDayjs: d && d[IS_DAYJS] (False)",
+        "isDayjs: d (True)",
+        "isDayjs: d[IS_DAYJS] (False)"
+      ],
+      "covered_paths": [
+        "isDayjs: d is object without $isDayjsObject"
+      ]
+    },
+    {
+      "id": "TC003",
+      "description": "isDayjs: Input is null",
+      "input": {
+        "d": null
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "isDayjs: d instanceof Dayjs (False)",
+        "isDayjs: d && d[IS_DAYJS] (False)",
+        "isDayjs: d (False)"
+      ],
+      "covered_paths": [
+        "isDayjs: d is null"
+      ]
+    },
+    {
+      "id": "TC004",
+      "description": "isDayjs: Input is undefined",
+      "input": {
+        "d": null
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "isDayjs: d instanceof Dayjs (False)",
+        "isDayjs: d && d[IS_DAYJS] (False)",
+        "isDayjs: d (False)"
+      ],
+      "covered_paths": [
+        "isDayjs: d is undefined"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "parseLocale: preset is null, returns global L",
+      "input": {
+        "preset": null,
+        "object": null,
+        "isLocal": false,
+        "initial_L": "en",
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          }
+        }
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "parseLocale: !preset (True)",
+        "parseLocale: l || (!isLocal && L) (True, True)"
+      ],
+      "covered_paths": [
+        "parseLocale: preset is null"
+      ]
+    },
+    {
+      "id": "TC006",
+      "description": "parseLocale: preset is string, locale exists in Ls, not local, updates global L",
+      "input": {
+        "preset": "es",
+        "object": null,
+        "isLocal": false,
+        "initial_L": "en",
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          },
+          "es": {
+            "name": "es"
+          }
+        }
+      },
+      "expected_output": "es",
+      "covered_branches": [
+        "parseLocale: !preset (False)",
+        "parseLocale: typeof preset === 'string' (True)",
+        "parseLocale: Ls[presetLower] (True)",
+        "parseLocale: object (False)",
+        "parseLocale: !l && presetSplit.length > 1 (False)",
+        "parseLocale: !isLocal && l (True, True)",
+        "parseLocale: l || (!isLocal && L) (True)"
+      ],
+      "covered_paths": [
+        "parseLocale: preset string, exists, not local, L updated"
+      ]
+    },
+    {
+      "id": "TC007",
+      "description": "parseLocale: preset is string, object provided, adds new locale, updates global L",
+      "input": {
+        "preset": "fr",
+        "object": {
+          "name": "fr"
+        },
+        "isLocal": false,
+        "initial_L": "en",
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          }
+        }
+      },
+      "expected_output": "fr",
+      "covered_branches": [
+        "parseLocale: !preset (False)",
+        "parseLocale: typeof preset === 'string' (True)",
+        "parseLocale: Ls[presetLower] (False)",
+        "parseLocale: object (True)",
+        "parseLocale: !l && presetSplit.length > 1 (False)",
+        "parseLocale: !isLocal && l (True, True)",
+        "parseLocale: l || (!isLocal && L) (True)"
+      ],
+      "covered_paths": [
+        "parseLocale: preset string, new object, not local, L updated"
+      ]
+    },
+    {
+      "id": "TC008",
+      "description": "parseLocale: preset is string 'zh-cn', recursive call finds 'zh', updates global L",
+      "input": {
+        "preset": "zh-cn",
+        "object": null,
+        "isLocal": false,
+        "initial_L": "en",
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          },
+          "zh": {
+            "name": "zh"
+          }
+        }
+      },
+      "expected_output": "zh",
+      "covered_branches": [
+        "parseLocale: !preset (False)",
+        "parseLocale: typeof preset === 'string' (True)",
+        "parseLocale: Ls[presetLower] (False) (for 'zh-cn')",
+        "parseLocale: object (False)",
+        "parseLocale: !l && presetSplit.length > 1 (True, True) (for 'zh-cn')",
+        "parseLocale: !preset (False) (recursive for 'zh')",
+        "parseLocale: typeof preset === 'string' (True) (recursive for 'zh')",
+        "parseLocale: Ls[presetLower] (True) (recursive for 'zh')",
+        "parseLocale: object (False) (recursive for 'zh')",
+        "parseLocale: !l && presetSplit.length > 1 (False) (recursive for 'zh')",
+        "parseLocale: !isLocal && l (True, True) (recursive for 'zh')",
+        "parseLocale: l || (!isLocal && L) (True) (recursive for 'zh')"
+      ],
+      "covered_paths": [
+        "parseLocale: preset string with hyphen, recursive call finds locale"
+      ]
+    },
+    {
+      "id": "TC009",
+      "description": "parseLocale: preset is string 'zh-cn', recursive call to 'zh' fails, returns global L",
+      "input": {
+        "preset": "zh-cn",
+        "object": null,
+        "isLocal": false,
+        "initial_L": "en",
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          }
+        }
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "parseLocale: !preset (False)",
+        "parseLocale: typeof preset === 'string' (True)",
+        "parseLocale: Ls[presetLower] (False) (for 'zh-cn')",
+        "parseLocale: object (False)",
+        "parseLocale: !l && presetSplit.length > 1 (True, True) (for 'zh-cn')",
+        "parseLocale: !preset (False) (recursive for 'zh')",
+        "parseLocale: typeof preset === 'string' (True) (recursive for 'zh')",
+        "parseLocale: Ls[presetLower] (False) (recursive for 'zh')",
+        "parseLocale: object (False) (recursive for 'zh')",
+        "parseLocale: !l && presetSplit.length > 1 (False) (recursive for 'zh')",
+        "parseLocale: !isLocal && l (False)",
+        "parseLocale: l || (!isLocal && L) (False, True)"
+      ],
+      "covered_paths": [
+        "parseLocale: preset string with hyphen, recursive call fails, returns global L"
+      ]
+    },
+    {
+      "id": "TC010",
+      "description": "parseLocale: preset is an object, adds new locale, updates global L",
+      "input": {
+        "preset": {
+          "name": "de"
+        },
+        "object": null,
+        "isLocal": false,
+        "initial_L": "en",
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          }
+        }
+      },
+      "expected_output": "de",
+      "covered_branches": [
+        "parseLocale: !preset (False)",
+        "parseLocale: typeof preset === 'string' (False)",
+        "parseLocale: else (preset is object) (True)",
+        "parseLocale: !isLocal && l (True, True)",
+        "parseLocale: l || (!isLocal && L) (True)"
+      ],
+      "covered_paths": [
+        "parseLocale: preset is object, not local, L updated"
+      ]
+    },
+    {
+      "id": "TC011",
+      "description": "parseLocale: preset is string, locale exists, isLocal is true (global L should not change)",
+      "input": {
+        "preset": "es",
+        "object": null,
+        "isLocal": true,
+        "initial_L": "en",
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          },
+          "es": {
+            "name": "es"
+          }
+        }
+      },
+      "expected_output": "es",
+      "covered_branches": [
+        "parseLocale: !preset (False)",
+        "parseLocale: typeof preset === 'string' (True)",
+        "parseLocale: Ls[presetLower] (True)",
+        "parseLocale: object (False)",
+        "parseLocale: !l && presetSplit.length > 1 (False)",
+        "parseLocale: !isLocal && l (False, True)",
+        "parseLocale: l || (!isLocal && L) (True)"
+      ],
+      "covered_paths": [
+        "parseLocale: preset string, exists, isLocal true, L not updated"
+      ]
+    },
+    {
+      "id": "TC012",
+      "description": "parseLocale: preset is string, locale does not exist, no object, no hyphen, returns global L",
+      "input": {
+        "preset": "xx",
+        "object": null,
+        "isLocal": false,
+        "initial_L": "en",
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          }
+        }
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "parseLocale: !preset (False)",
+        "parseLocale: typeof preset === 'string' (True)",
+        "parseLocale: Ls[presetLower] (False)",
+        "parseLocale: object (False)",
+        "parseLocale: !l && presetSplit.length > 1 (False, False)",
+        "parseLocale: !isLocal && l (False)",
+        "parseLocale: l || (!isLocal && L) (False, True)"
+      ],
+      "covered_paths": [
+        "parseLocale: preset string, not found, no object, no hyphen, returns global L"
+      ]
+    },
+    {
+      "id": "TC013",
+      "description": "parseDate: date is null",
+      "input": {
+        "cfg": {
+          "date": null
+        }
+      },
+      "expected_output": "Invalid Date",
+      "covered_branches": [
+        "parseDate: date === null (True)"
+      ],
+      "covered_paths": [
+        "parseDate: date is null"
+      ]
+    },
+    {
+      "id": "TC014",
+      "description": "parseDate: date is undefined (Utils.u returns true)",
+      "input": {
+        "cfg": {
+          "date": null
+        }
+      },
+      "expected_output": "Current Date",
+      "covered_branches": [
+        "parseDate: date === null (False)",
+        "parseDate: Utils.u(date) (True)"
+      ],
+      "covered_paths": [
+        "parseDate: date is undefined"
+      ]
+    },
+    {
+      "id": "TC015",
+      "description": "parseDate: date is an instance of Date",
+      "input": {
+        "cfg": {
+          "date": "new Date('2023-01-15T10:00:00.000Z')"
+        }
+      },
+      "expected_output": "2023-01-15T10:00:00.000Z",
+      "covered_branches": [
+        "parseDate: date === null (False)",
+        "parseDate: Utils.u(date) (False)",
+        "parseDate: date instanceof Date (True)"
+      ],
+      "covered_paths": [
+        "parseDate: date is Date instance"
+      ]
+    },
+    {
+      "id": "TC016",
+      "description": "parseDate: date is a string matching REGEX_PARSE, non-UTC",
+      "input": {
+        "cfg": {
+          "date": "2023-01-15 10:30:45.123",
+          "utc": false
+        }
+      },
+      "expected_output": "2023-01-15T10:30:45.123 Local Time",
+      "covered_branches": [
+        "parseDate: date === null (False)",
+        "parseDate: Utils.u(date) (False)",
+        "parseDate: date instanceof Date (False)",
+        "parseDate: typeof date === 'string' && !/Z$/i.test(date) (True, True)",
+        "parseDate: d (match) (True)",
+        "parseDate: utc (False)"
+      ],
+      "covered_paths": [
+        "parseDate: string, regex match, non-UTC"
+      ]
+    },
+    {
+      "id": "TC017",
+      "description": "parseDate: date is a string matching REGEX_PARSE, UTC",
+      "input": {
+        "cfg": {
+          "date": "2023-01-15 10:30:45.123",
+          "utc": true
+        }
+      },
+      "expected_output": "2023-01-15T10:30:45.123Z UTC Time",
+      "covered_branches": [
+        "parseDate: date === null (False)",
+        "parseDate: Utils.u(date) (False)",
+        "parseDate: date instanceof Date (False)",
+        "parseDate: typeof date === 'string' && !/Z$/i.test(date) (True, True)",
+        "parseDate: d (match) (True)",
+        "parseDate: utc (True)"
+      ],
+      "covered_paths": [
+        "parseDate: string, regex match, UTC"
+      ]
+    },
+    {
+      "id": "TC018",
+      "description": "parseDate: date is a string not matching REGEX_PARSE, no 'Z'",
+      "input": {
+        "cfg": {
+          "date": "invalid date string",
+          "utc": false
+        }
+      },
+      "expected_output": "Invalid Date",
+      "covered_branches": [
+        "parseDate: date === null (False)",
+        "parseDate: Utils.u(date) (False)",
+        "parseDate: date instanceof Date (False)",
+        "parseDate: typeof date === 'string' && !/Z$/i.test(date) (True, True)",
+        "parseDate: d (match) (False)",
+        "parseDate: return new Date(date) (default path)"
+      ],
+      "covered_paths": [
+        "parseDate: string, regex no match, default new Date(date)"
+      ]
+    },
+    {
+      "id": "TC019",
+      "description": "parseDate: date is a string with 'Z' (ISO format), falls through to new Date(date)",
+      "input": {
+        "cfg": {
+          "date": "2023-01-15T10:30:45.123Z",
+          "utc": false
+        }
+      },
+      "expected_output": "2023-01-15T10:30:45.123Z",
+      "covered_branches": [
+        "parseDate: date === null (False)",
+        "parseDate: Utils.u(date) (False)",
+        "parseDate: date instanceof Date (False)",
+        "parseDate: typeof date === 'string' && !/Z$/i.test(date) (True, False)",
+        "parseDate: return new Date(date) (default path)"
+      ],
+      "covered_paths": [
+        "parseDate: string with 'Z', default new Date(date)"
+      ]
+    },
+    {
+      "id": "TC020",
+      "description": "parseDate: date is a number (timestamp)",
+      "input": {
+        "cfg": {
+          "date": 1673778645123,
+          "utc": false
+        }
+      },
+      "expected_output": "Date from timestamp",
+      "covered_branches": [
+        "parseDate: date === null (False)",
+        "parseDate: Utils.u(date) (False)",
+        "parseDate: date instanceof Date (False)",
+        "parseDate: typeof date === 'string' && !/Z$/i.test(date) (False)",
+        "parseDate: return new Date(date) (default path)"
+      ],
+      "covered_paths": [
+        "parseDate: date is number, default new Date(date)"
+      ]
+    },
+    {
+      "id": "TC021",
+      "description": "dayjs: date is a Dayjs instance, should clone",
+      "input": {
+        "date": {
+          "$isDayjsObject": true,
+          "clone": "mock_clone_function"
+        },
+        "c": {}
+      },
+      "expected_output": "cloned Dayjs instance",
+      "covered_branches": [
+        "dayjs: isDayjs(date) (True)"
+      ],
+      "covered_paths": [
+        "dayjs: date is Dayjs instance"
+      ]
+    },
+    {
+      "id": "TC022",
+      "description": "dayjs: date is not Dayjs, c is an object",
+      "input": {
+        "date": "new Date()",
+        "c": {
+          "locale": "fr"
+        }
+      },
+      "expected_output": "Dayjs instance with locale 'fr'",
+      "covered_branches": [
+        "dayjs: isDayjs(date) (False)",
+        "dayjs: typeof c === 'object' (True)"
+      ],
+      "covered_paths": [
+        "dayjs: date not Dayjs, c is object"
+      ]
+    },
+    {
+      "id": "TC023",
+      "description": "dayjs: date is not Dayjs, c is not an object",
+      "input": {
+        "date": "2023-01-15",
+        "c": "some string"
+      },
+      "expected_output": "Dayjs instance with default config",
+      "covered_branches": [
+        "dayjs: isDayjs(date) (False)",
+        "dayjs: typeof c === 'object' (False)"
+      ],
+      "covered_paths": [
+        "dayjs: date not Dayjs, c not object"
+      ]
+    },
+    {
+      "id": "TC024",
+      "description": "Dayjs constructor: with locale and x",
+      "input": {
+        "cfg": {
+          "locale": "es",
+          "x": {
+            "pluginData": true
+          },
+          "date": "2023-01-15"
+        },
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          },
+          "es": {
+            "name": "es"
+          }
+        }
+      },
+      "expected_output": {
+        "$L": "es",
+        "$x": {
+          "pluginData": true
+        },
+        "$isDayjsObject": true,
+        "$d": "2023-01-15T00:00:00.000 Local Time"
+      },
+      "covered_branches": [
+        "Dayjs.constructor: parseLocale (sets $L)",
+        "Dayjs.constructor: this.$x || cfg.x || {} (False, True)"
+      ],
+      "covered_paths": [
+        "Dayjs.constructor: with locale and x"
+      ]
+    },
+    {
+      "id": "TC025",
+      "description": "Dayjs constructor: no locale, no x",
+      "input": {
+        "cfg": {
+          "date": "2023-01-15"
+        },
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          }
+        }
+      },
+      "expected_output": {
+        "$L": "en",
+        "$x": {},
+        "$isDayjsObject": true,
+        "$d": "2023-01-15T00:00:00.000 Local Time"
+      },
+      "covered_branches": [
+        "Dayjs.constructor: parseLocale (sets $L to global L)",
+        "Dayjs.constructor: this.$x || cfg.x || {} (False, False, True)"
+      ],
+      "covered_paths": [
+        "Dayjs.constructor: no locale, no x"
+      ]
+    },
+    {
+      "id": "TC026",
+      "description": "Dayjs.isValid: valid date",
+      "input": {
+        "instance_date": "2023-01-15"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "Dayjs.isValid: !(this.$d.toString() === C.INVALID_DATE_STRING) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.isValid: valid date"
+      ]
+    },
+    {
+      "id": "TC027",
+      "description": "Dayjs.isValid: invalid date",
+      "input": {
+        "instance_date": null
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "Dayjs.isValid: !(this.$d.toString() === C.INVALID_DATE_STRING) (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.isValid: invalid date"
+      ]
+    },
+    {
+      "id": "TC028",
+      "description": "Dayjs.isSame: same year",
+      "input": {
+        "instance_date": "2023-01-15",
+        "that_date": "2023-06-20",
+        "units": "year"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "Dayjs.isSame: this.startOf(units) <= other && other <= this.endOf(units) (True, True)"
+      ],
+      "covered_paths": [
+        "Dayjs.isSame: same year"
+      ]
+    },
+    {
+      "id": "TC029",
+      "description": "Dayjs.isSame: different year",
+      "input": {
+        "instance_date": "2023-01-15",
+        "that_date": "2024-06-20",
+        "units": "year"
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "Dayjs.isSame: this.startOf(units) <= other && other <= this.endOf(units) (True, False)"
+      ],
+      "covered_paths": [
+        "Dayjs.isSame: different year"
+      ]
+    },
+    {
+      "id": "TC030",
+      "description": "Dayjs.isAfter: instance is after that",
+      "input": {
+        "instance_date": "2023-01-15",
+        "that_date": "2023-01-14",
+        "units": "day"
+      },
+      "expected_output": true,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.isAfter: instance is after"
+      ]
+    },
+    {
+      "id": "TC031",
+      "description": "Dayjs.isAfter: instance is not after that",
+      "input": {
+        "instance_date": "2023-01-15",
+        "that_date": "2023-01-16",
+        "units": "day"
+      },
+      "expected_output": false,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.isAfter: instance is not after"
+      ]
+    },
+    {
+      "id": "TC032",
+      "description": "Dayjs.isBefore: instance is before that",
+      "input": {
+        "instance_date": "2023-01-15",
+        "that_date": "2023-01-16",
+        "units": "day"
+      },
+      "expected_output": true,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.isBefore: instance is before"
+      ]
+    },
+    {
+      "id": "TC033",
+      "description": "Dayjs.isBefore: instance is not before that",
+      "input": {
+        "instance_date": "2023-01-15",
+        "that_date": "2023-01-14",
+        "units": "day"
+      },
+      "expected_output": false,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.isBefore: instance is not before"
+      ]
+    },
+    {
+      "id": "TC034",
+      "description": "Dayjs.$g: input is undefined, should return getter value",
+      "input": {
+        "instance_date": "2023-01-15",
+        "input": null,
+        "get": "$y",
+        "set": "year"
+      },
+      "expected_output": 2023,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.$g: input undefined, getter path"
+      ]
+    },
+    {
+      "id": "TC035",
+      "description": "Dayjs.$g: input is defined, should call set",
+      "input": {
+        "instance_date": "2023-01-15",
+        "input": 2024,
+        "get": "$y",
+        "set": "year"
+      },
+      "expected_output": "Dayjs instance with year 2024",
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.$g: input defined, setter path"
+      ]
+    },
+    {
+      "id": "TC036",
+      "description": "Dayjs.startOf: unit 'year', isStartOf true, non-UTC",
+      "input": {
+        "instance_date": "2023-06-15T10:30:00.000",
+        "units": "year",
+        "startOf": true
+      },
+      "expected_output": "2023-01-01T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.startOf: !Utils.u(startOf) (True)",
+        "Dayjs.startOf: switch (C.Y) (True)",
+        "Dayjs.startOf: isStartOf ? instanceFactory(1, 0) : ... (True)",
+        "Dayjs.startOf: this.$u ? Date.UTC(...) : new Date(...) (False)",
+        "Dayjs.startOf: isStartOf ? ins : ins.endOf(C.D) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: year, start, non-UTC"
+      ]
+    },
+    {
+      "id": "TC037",
+      "description": "Dayjs.startOf: unit 'year', isStartOf false (endOf year), non-UTC",
+      "input": {
+        "instance_date": "2023-06-15T10:30:00.000",
+        "units": "year",
+        "startOf": false
+      },
+      "expected_output": "2023-12-31T23:59:59.999 Local Time",
+      "covered_branches": [
+        "Dayjs.startOf: !Utils.u(startOf) (True)",
+        "Dayjs.startOf: switch (C.Y) (True)",
+        "Dayjs.startOf: isStartOf ? instanceFactory(1, 0) : ... (False)",
+        "Dayjs.startOf: this.$u ? Date.UTC(...) : new Date(...) (False)",
+        "Dayjs.startOf: isStartOf ? ins : ins.endOf(C.D) (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: year, end, non-UTC"
+      ]
+    },
+    {
+      "id": "TC038",
+      "description": "Dayjs.startOf: unit 'month', isStartOf true, UTC",
+      "input": {
+        "instance_date": "2023-06-15T10:30:00.000",
+        "utc": true,
+        "units": "month",
+        "startOf": true
+      },
+      "expected_output": "2023-06-01T00:00:00.000Z UTC Time",
+      "covered_branches": [
+        "Dayjs.startOf: !Utils.u(startOf) (True)",
+        "Dayjs.startOf: switch (C.M) (True)",
+        "Dayjs.startOf: isStartOf ? instanceFactory(1, $M) : ... (True)",
+        "Dayjs.startOf: this.$u ? Date.UTC(...) : new Date(...) (True)",
+        "Dayjs.startOf: isStartOf ? ins : ins.endOf(C.D) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: month, start, UTC"
+      ]
+    },
+    {
+      "id": "TC039",
+      "description": "Dayjs.startOf: unit 'month', isStartOf false (endOf month), UTC",
+      "input": {
+        "instance_date": "2023-06-15T10:30:00.000",
+        "utc": true,
+        "units": "month",
+        "startOf": false
+      },
+      "expected_output": "2023-06-30T23:59:59.999Z UTC Time",
+      "covered_branches": [
+        "Dayjs.startOf: !Utils.u(startOf) (True)",
+        "Dayjs.startOf: switch (C.M) (True)",
+        "Dayjs.startOf: isStartOf ? instanceFactory(1, $M) : ... (False)",
+        "Dayjs.startOf: this.$u ? Date.UTC(...) : new Date(...) (True)",
+        "Dayjs.startOf: isStartOf ? ins : ins.endOf(C.D) (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: month, end, UTC"
+      ]
+    },
+    {
+      "id": "TC040",
+      "description": "Dayjs.startOf: unit 'week', isStartOf true, weekStart 0 (Sunday)",
+      "input": {
+        "instance_date": "2023-01-18",
+        "units": "week",
+        "startOf": true,
+        "locale_weekStart": 0
+      },
+      "expected_output": "2023-01-15T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.startOf: switch (C.W) (True)",
+        "Dayjs.startOf: ($W < weekStart ? $W + 7 : $W) (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: week, start, weekStart 0, $W >= weekStart"
+      ]
+    },
+    {
+      "id": "TC041",
+      "description": "Dayjs.startOf: unit 'week', isStartOf true, weekStart 1 (Monday), $W < weekStart",
+      "input": {
+        "instance_date": "2023-01-15",
+        "units": "week",
+        "startOf": true,
+        "locale_weekStart": 1
+      },
+      "expected_output": "2023-01-09T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.startOf: switch (C.W) (True)",
+        "Dayjs.startOf: ($W < weekStart ? $W + 7 : $W) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: week, start, weekStart 1, $W < weekStart"
+      ]
+    },
+    {
+      "id": "TC042",
+      "description": "Dayjs.startOf: unit 'day', isStartOf true, non-UTC",
+      "input": {
+        "instance_date": "2023-01-15T10:30:45.123",
+        "units": "day",
+        "startOf": true
+      },
+      "expected_output": "2023-01-15T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.startOf: switch (C.D) (True)",
+        "Dayjs.startOf: utcPad (False, 'setHours')"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: day, start, non-UTC"
+      ]
+    },
+    {
+      "id": "TC043",
+      "description": "Dayjs.startOf: unit 'hour', isStartOf true, UTC",
+      "input": {
+        "instance_date": "2023-01-15T10:30:45.123",
+        "utc": true,
+        "units": "hour",
+        "startOf": true
+      },
+      "expected_output": "2023-01-15T10:00:00.000Z UTC Time",
+      "covered_branches": [
+        "Dayjs.startOf: switch (C.H) (True)",
+        "Dayjs.startOf: utcPad (True, 'setUTCHours')"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: hour, start, UTC"
+      ]
+    },
+    {
+      "id": "TC044",
+      "description": "Dayjs.startOf: unit 'minute', isStartOf true, non-UTC",
+      "input": {
+        "instance_date": "2023-01-15T10:30:45.123",
+        "units": "minute",
+        "startOf": true
+      },
+      "expected_output": "2023-01-15T10:30:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.startOf: switch (C.MIN) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: minute, start, non-UTC"
+      ]
+    },
+    {
+      "id": "TC045",
+      "description": "Dayjs.startOf: unit 'second', isStartOf true, non-UTC",
+      "input": {
+        "instance_date": "2023-01-15T10:30:45.123",
+        "units": "second",
+        "startOf": true
+      },
+      "expected_output": "2023-01-15T10:30:45.000 Local Time",
+      "covered_branches": [
+        "Dayjs.startOf: switch (C.S) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: second, start, non-UTC"
+      ]
+    },
+    {
+      "id": "TC046",
+      "description": "Dayjs.startOf: unknown unit, should clone",
+      "input": {
+        "instance_date": "2023-01-15",
+        "units": "unknown",
+        "startOf": true
+      },
+      "expected_output": "2023-01-15T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.startOf: switch (default) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: unknown unit, clone"
+      ]
+    },
+    {
+      "id": "TC047",
+      "description": "Dayjs.endOf: unit 'day'",
+      "input": {
+        "instance_date": "2023-01-15T10:30:45.123",
+        "arg": "day"
+      },
+      "expected_output": "2023-01-15T23:59:59.999 Local Time",
+      "covered_branches": [
+        "Dayjs.endOf: calls startOf with false"
+      ],
+      "covered_paths": [
+        "Dayjs.endOf: day"
+      ]
+    },
+    {
+      "id": "TC048",
+      "description": "Dayjs.$set: unit 'year', non-UTC",
+      "input": {
+        "instance_date": "2023-01-15",
+        "units": "year",
+        "int": 2024
+      },
+      "expected_output": "2024-01-15T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D ? ... : int (False)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (True, True)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: year, non-UTC"
+      ]
+    },
+    {
+      "id": "TC049",
+      "description": "Dayjs.$set: unit 'month', non-UTC, target month has fewer days",
+      "input": {
+        "instance_date": "2023-03-31",
+        "units": "month",
+        "int": 1
+      },
+      "expected_output": "2023-02-28T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.$set: unit === C.M || unit === C.Y (True, False)",
+        "Dayjs.$set: Math.min(this.$D, date.daysInMonth()) (True, for 28)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: month, non-UTC, fewer days"
+      ]
+    },
+    {
+      "id": "TC050",
+      "description": "Dayjs.$set: unit 'day' (day of week), non-UTC, set to next Friday",
+      "input": {
+        "instance_date": "2023-01-15",
+        "units": "day",
+        "int": 5
+      },
+      "expected_output": "2023-01-20T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D ? ... : int (True)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (False)",
+        "Dayjs.$set: name (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: day (day of week), non-UTC"
+      ]
+    },
+    {
+      "id": "TC051",
+      "description": "Dayjs.$set: unit 'hour', UTC",
+      "input": {
+        "instance_date": "2023-01-15T10:30:00.000",
+        "utc": true,
+        "units": "hour",
+        "int": 15
+      },
+      "expected_output": "2023-01-15T15:30:00.000Z UTC Time",
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D ? ... : int (False)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (False)",
+        "Dayjs.$set: name (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: hour, UTC"
+      ]
+    },
+    {
+      "id": "TC052",
+      "description": "Dayjs.$set: unit 'millisecond', non-UTC",
+      "input": {
+        "instance_date": "2023-01-15T10:30:45.123",
+        "units": "millisecond",
+        "int": 500
+      },
+      "expected_output": "2023-01-15T10:30:45.500 Local Time",
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D ? ... : int (False)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (False)",
+        "Dayjs.$set: name (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: millisecond, non-UTC"
+      ]
+    },
+    {
+      "id": "TC053",
+      "description": "Dayjs.$set: unknown unit, should not modify date",
+      "input": {
+        "instance_date": "2023-01-15",
+        "units": "unknown",
+        "int": 100
+      },
+      "expected_output": "2023-01-15T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D ? ... : int (False)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (False)",
+        "Dayjs.$set: name (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: unknown unit, no modification"
+      ]
+    },
+    {
+      "id": "TC054",
+      "description": "Dayjs.set: calls $set on a clone",
+      "input": {
+        "instance_date": "2023-01-15",
+        "string": "year",
+        "int": 2024
+      },
+      "expected_output": "2024-01-15T00:00:00.000 Local Time",
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.set: calls $set on clone"
+      ]
+    },
+    {
+      "id": "TC055",
+      "description": "Dayjs.get: unit 'year'",
+      "input": {
+        "instance_date": "2023-01-15",
+        "unit": "year"
+      },
+      "expected_output": 2023,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.get: year"
+      ]
+    },
+    {
+      "id": "TC056",
+      "description": "Dayjs.add: unit 'month'",
+      "input": {
+        "instance_date": "2023-01-15",
+        "number": 2,
+        "units": "month"
+      },
+      "expected_output": "2023-03-15T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: month"
+      ]
+    },
+    {
+      "id": "TC057",
+      "description": "Dayjs.add: unit 'year'",
+      "input": {
+        "instance_date": "2023-01-15",
+        "number": 1,
+        "units": "year"
+      },
+      "expected_output": "2024-01-15T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (False)",
+        "Dayjs.add: unit === C.Y (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: year"
+      ]
+    },
+    {
+      "id": "TC058",
+      "description": "Dayjs.add: unit 'day'",
+      "input": {
+        "instance_date": "2023-01-15",
+        "number": 5,
+        "units": "day"
+      },
+      "expected_output": "2023-01-20T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (False)",
+        "Dayjs.add: unit === C.Y (False)",
+        "Dayjs.add: unit === C.D (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: day"
+      ]
+    },
+    {
+      "id": "TC059",
+      "description": "Dayjs.add: unit 'week'",
+      "input": {
+        "instance_date": "2023-01-15",
+        "number": 1,
+        "units": "week"
+      },
+      "expected_output": "2023-01-22T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (False)",
+        "Dayjs.add: unit === C.Y (False)",
+        "Dayjs.add: unit === C.D (False)",
+        "Dayjs.add: unit === C.W (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: week"
+      ]
+    },
+    {
+      "id": "TC060",
+      "description": "Dayjs.add: unit 'hour'",
+      "input": {
+        "instance_date": "2023-01-15T10:00:00.000",
+        "number": 2,
+        "units": "hour"
+      },
+      "expected_output": "2023-01-15T12:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (False)",
+        "Dayjs.add: unit === C.Y (False)",
+        "Dayjs.add: unit === C.D (False)",
+        "Dayjs.add: unit === C.W (False)",
+        "Dayjs.add: step (C.H) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: hour"
+      ]
+    },
+    {
+      "id": "TC061",
+      "description": "Dayjs.add: unit 'millisecond'",
+      "input": {
+        "instance_date": "2023-01-15T10:00:00.000",
+        "number": 500,
+        "units": "millisecond"
+      },
+      "expected_output": "2023-01-15T10:00:00.500 Local Time",
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (False)",
+        "Dayjs.add: unit === C.Y (False)",
+        "Dayjs.add: unit === C.D (False)",
+        "Dayjs.add: unit === C.W (False)",
+        "Dayjs.add: step (C.MS) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: millisecond"
+      ]
+    },
+    {
+      "id": "TC062",
+      "description": "Dayjs.add: unknown unit, defaults to milliseconds",
+      "input": {
+        "instance_date": "2023-01-15T10:00:00.000",
+        "number": 100,
+        "units": "unknown"
+      },
+      "expected_output": "2023-01-15T10:00:00.100 Local Time",
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (False)",
+        "Dayjs.add: unit === C.Y (False)",
+        "Dayjs.add: unit === C.D (False)",
+        "Dayjs.add: unit === C.W (False)",
+        "Dayjs.add: step (default) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: unknown unit"
+      ]
+    },
+    {
+      "id": "TC063",
+      "description": "Dayjs.subtract: unit 'day'",
+      "input": {
+        "instance_date": "2023-01-15",
+        "number": 5,
+        "string": "day"
+      },
+      "expected_output": "2023-01-10T00:00:00.000 Local Time",
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.subtract: day"
+      ]
+    },
+    {
+      "id": "TC064",
+      "description": "Dayjs.format: invalid date, no locale invalidDate",
+      "input": {
+        "instance_date": null,
+        "formatStr": "YYYY-MM-DD",
+        "locale_invalidDate": null
+      },
+      "expected_output": "Invalid Date",
+      "covered_branches": [
+        "Dayjs.format: !this.isValid() (True)",
+        "Dayjs.format: locale.invalidDate || C.INVALID_DATE_STRING (False, True)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: invalid date, no locale invalidDate"
+      ]
+    },
+    {
+      "id": "TC065",
+      "description": "Dayjs.format: invalid date, with locale invalidDate",
+      "input": {
+        "instance_date": null,
+        "formatStr": "YYYY-MM-DD",
+        "locale_invalidDate": "Fecha inválida"
+      },
+      "expected_output": "Fecha inválida",
+      "covered_branches": [
+        "Dayjs.format: !this.isValid() (True)",
+        "Dayjs.format: locale.invalidDate || C.INVALID_DATE_STRING (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: invalid date, with locale invalidDate"
+      ]
+    },
+    {
+      "id": "TC066",
+      "description": "Dayjs.format: default format string",
+      "input": {
+        "instance_date": "2023-01-15T10:30:45.123",
+        "formatStr": null
+      },
+      "expected_output": "2023-01-15T10:30:45+XX:XX",
+      "covered_branches": [
+        "Dayjs.format: !this.isValid() (False)",
+        "Dayjs.format: formatStr || C.FORMAT_DEFAULT (False, True)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: default format string"
+      ]
+    },
+    {
+      "id": "TC067",
+      "description": "Dayjs.format: all format tokens (YYYY, MM, DD, HH, mm, ss, SSS, Z, a, A, d, dd, ddd, dddd, M, MMM, MMMM, h, hh)",
+      "input": {
+        "instance_date": "2023-01-15T10:30:05.007",
+        "formatStr": "YYYY-MM-DD HH:mm:ss.SSS Z a A d dd ddd dddd M MMM MMMM h hh"
+      },
+      "expected_output": "2023-01-15 10:30:05.007 +XX:XX am AM 0 Su Sun Sunday 1 Jan January 10 10",
+      "covered_branches": [
+        "Dayjs.format: switch (YY, YYYY, M, MM, MMM, MMMM, D, DD, d, dd, ddd, dddd, H, HH, h, hh, a, A, m, mm, s, ss, SSS, Z, default)",
+        "Dayjs.format: meridiemFunc (True)",
+        "Dayjs.format: getShort (arr && arr[index]) (True)",
+        "Dayjs.format: getShort (arr && arr(this, str)) (False)",
+        "Dayjs.format: getShort (full[index].slice) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: all format tokens"
+      ]
+    },
+    {
+      "id": "TC068",
+      "description": "Dayjs.format: locale with custom meridiem function",
+      "input": {
+        "instance_date": "2023-01-15T14:30:00.000",
+        "formatStr": "h A",
+        "locale_meridiem_func": "(h, m, lower) => lower ? (h < 12 ? 'ante' : 'post') : (h < 12 ? 'ANTE' : 'POST')"
+      },
+      "expected_output": "02 POST",
+      "covered_branches": [
+        "Dayjs.format: meridiem || ... (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: custom meridiem function"
+      ]
+    },
+    {
+      "id": "TC069",
+      "description": "Dayjs.format: escaped characters",
+      "input": {
+        "instance_date": "2023-01-15",
+        "formatStr": "[The year is] YYYY"
+      },
+      "expected_output": "The year is 2023",
+      "covered_branches": [
+        "Dayjs.format: str.replace (match, $1) ($1 is true)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: escaped characters"
+      ]
+    },
+    {
+      "id": "TC070",
+      "description": "Dayjs.format: getShort with locale array as function (months)",
+      "input": {
+        "instance_date": "2023-01-15",
+        "formatStr": "MMMM",
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          },
+          "custom": {
+            "name": "custom",
+            "months": "mock_months_function_jan"
+          }
+        }
+      },
+      "expected_output": "CustomJan",
+      "covered_branches": [
+        "Dayjs.format: getShort (arr && arr(this, str)) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: custom locale months as function (January)"
+      ]
+    },
+    {
+      "id": "TC071",
+      "description": "Dayjs.format: getShort with locale array as function (months, other month)",
+      "input": {
+        "instance_date": "2023-02-15",
+        "formatStr": "MMMM",
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          },
+          "custom": {
+            "name": "custom",
+            "months": "mock_months_function_feb"
+          }
+        }
+      },
+      "expected_output": "CustomMonth",
+      "covered_branches": [
+        "Dayjs.format: getShort (arr && arr(this, str)) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: custom locale months as function (February)"
+      ]
+    },
+    {
+      "id": "TC072",
+      "description": "Dayjs.diff: unit 'year', float true",
+      "input": {
+        "instance_date": "2024-01-15",
+        "input_date": "2023-01-15",
+        "units": "year",
+        "float": true
+      },
+      "expected_output": 1.0,
+      "covered_branches": [
+        "Dayjs.diff: switch (C.Y) (True)",
+        "Dayjs.diff: float ? result : ... (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: year, float true"
+      ]
+    },
+    {
+      "id": "TC073",
+      "description": "Dayjs.diff: unit 'month', float false",
+      "input": {
+        "instance_date": "2023-03-15",
+        "input_date": "2023-01-15",
+        "units": "month",
+        "float": false
+      },
+      "expected_output": 2,
+      "covered_branches": [
+        "Dayjs.diff: switch (C.M) (True)",
+        "Dayjs.diff: float ? result : ... (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: month, float false"
+      ]
+    },
+    {
+      "id": "TC074",
+      "description": "Dayjs.diff: unit 'quarter', float true",
+      "input": {
+        "instance_date": "2023-07-15",
+        "input_date": "2023-01-15",
+        "units": "quarter",
+        "float": true
+      },
+      "expected_output": 2.0,
+      "covered_branches": [
+        "Dayjs.diff: switch (C.Q) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: quarter, float true"
+      ]
+    },
+    {
+      "id": "TC075",
+      "description": "Dayjs.diff: unit 'week', float false, with timezone difference",
+      "input": {
+        "instance_date": "2023-01-15T12:00:00.000",
+        "input_date": "2023-01-08T12:00:00.000",
+        "units": "week",
+        "float": false,
+        "mock_utcOffset_instance": 0,
+        "mock_utcOffset_input": 60
+      },
+      "expected_output": 1,
+      "covered_branches": [
+        "Dayjs.diff: switch (C.W) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: week, float false, timezone diff"
+      ]
+    },
+    {
+      "id": "TC076",
+      "description": "Dayjs.diff: unit 'day', float true",
+      "input": {
+        "instance_date": "2023-01-15",
+        "input_date": "2023-01-14",
+        "units": "day",
+        "float": true
+      },
+      "expected_output": 1.0,
+      "covered_branches": [
+        "Dayjs.diff: switch (C.D) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: day, float true"
+      ]
+    },
+    {
+      "id": "TC077",
+      "description": "Dayjs.diff: unit 'hour', float false",
+      "input": {
+        "instance_date": "2023-01-15T12:00:00.000",
+        "input_date": "2023-01-15T10:00:00.000",
+        "units": "hour",
+        "float": false
+      },
+      "expected_output": 2,
+      "covered_branches": [
+        "Dayjs.diff: switch (C.H) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: hour, float false"
+      ]
+    },
+    {
+      "id": "TC078",
+      "description": "Dayjs.diff: unit 'minute', float true",
+      "input": {
+        "instance_date": "2023-01-15T10:30:00.000",
+        "input_date": "2023-01-15T10:00:00.000",
+        "units": "minute",
+        "float": true
+      },
+      "expected_output": 30.0,
+      "covered_branches": [
+        "Dayjs.diff: switch (C.MIN) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: minute, float true"
+      ]
+    },
+    {
+      "id": "TC079",
+      "description": "Dayjs.diff: unit 'second', float false",
+      "input": {
+        "instance_date": "2023-01-15T10:00:30.000",
+        "input_date": "2023-01-15T10:00:00.000",
+        "units": "second",
+        "float": false
+      },
+      "expected_output": 30,
+      "covered_branches": [
+        "Dayjs.diff: switch (C.S) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: second, float false"
+      ]
+    },
+    {
+      "id": "TC080",
+      "description": "Dayjs.diff: default unit (milliseconds), float true",
+      "input": {
+        "instance_date": "2023-01-15T10:00:00.500",
+        "input_date": "2023-01-15T10:00:00.000",
+        "units": "unknown",
+        "float": true
+      },
+      "expected_output": 500.0,
+      "covered_branches": [
+        "Dayjs.diff: switch (default) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: default unit, float true"
+      ]
+    },
+    {
+      "id": "TC081",
+      "description": "Dayjs.daysInMonth: January",
+      "input": {
+        "instance_date": "2023-01-15"
+      },
+      "expected_output": 31,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.daysInMonth: January"
+      ]
+    },
+    {
+      "id": "TC082",
+      "description": "Dayjs.daysInMonth: February (non-leap year)",
+      "input": {
+        "instance_date": "2023-02-15"
+      },
+      "expected_output": 28,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.daysInMonth: February non-leap"
+      ]
+    },
+    {
+      "id": "TC083",
+      "description": "Dayjs.daysInMonth: February (leap year)",
+      "input": {
+        "instance_date": "2024-02-15"
+      },
+      "expected_output": 29,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.daysInMonth: February leap"
+      ]
+    },
+    {
+      "id": "TC084",
+      "description": "Dayjs.locale: no preset, returns current locale name",
+      "input": {
+        "instance_date": "2023-01-15",
+        "locale": "es",
+        "preset": null,
+        "object": null
+      },
+      "expected_output": "es",
+      "covered_branches": [
+        "Dayjs.locale: !preset (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.locale: no preset"
+      ]
+    },
+    {
+      "id": "TC085",
+      "description": "Dayjs.locale: preset string, object provided, sets new locale on clone",
+      "input": {
+        "instance_date": "2023-01-15",
+        "locale": "en",
+        "preset": "fr",
+        "object": {
+          "name": "fr"
+        },
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          }
+        }
+      },
+      "expected_output": {
+        "$L": "fr",
+        "$d": "2023-01-15T00:00:00.000 Local Time"
+      },
+      "covered_branches": [
+        "Dayjs.locale: !preset (False)",
+        "Dayjs.locale: nextLocaleName (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.locale: preset string, object, new locale on clone"
+      ]
+    },
+    {
+      "id": "TC086",
+      "description": "Dayjs.locale: preset string, locale exists, switches locale on clone",
+      "input": {
+        "instance_date": "2023-01-15",
+        "locale": "en",
+        "preset": "es",
+        "object": null,
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          },
+          "es": {
+            "name": "es"
+          }
+        }
+      },
+      "expected_output": {
+        "$L": "es",
+        "$d": "2023-01-15T00:00:00.000 Local Time"
+      },
+      "covered_branches": [
+        "Dayjs.locale: !preset (False)",
+        "Dayjs.locale: nextLocaleName (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.locale: preset string, existing locale on clone"
+      ]
+    },
+    {
+      "id": "TC087",
+      "description": "Dayjs.locale: preset string, locale not found, returns clone with original locale",
+      "input": {
+        "instance_date": "2023-01-15",
+        "locale": "en",
+        "preset": "xx",
+        "object": null,
+        "initial_Ls": {
+          "en": {
+            "name": "en"
+          }
+        }
+      },
+      "expected_output": {
+        "$L": "en",
+        "$d": "2023-01-15T00:00:00.000 Local Time"
+      },
+      "covered_branches": [
+        "Dayjs.locale: !preset (False)",
+        "Dayjs.locale: nextLocaleName (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.locale: preset string, not found, original locale on clone"
+      ]
+    },
+    {
+      "id": "TC088",
+      "description": "Dayjs.toJSON: valid date",
+      "input": {
+        "instance_date": "2023-01-15T10:00:00.000Z"
+      },
+      "expected_output": "2023-01-15T10:00:00.000Z",
+      "covered_branches": [
+        "Dayjs.toJSON: this.isValid() ? ... : null (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.toJSON: valid date"
+      ]
+    },
+    {
+      "id": "TC089",
+      "description": "Dayjs.toJSON: invalid date",
+      "input": {
+        "instance_date": null
+      },
+      "expected_output": null,
+      "covered_branches": [
+        "Dayjs.toJSON: this.isValid() ? ... : null (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.toJSON: invalid date"
+      ]
+    },
+    {
+      "id": "TC090",
+      "description": "Dayjs.extend: plugin not installed",
+      "input": {
+        "plugin": "mock_plugin_function_not_installed",
+        "option": {
+          "key": "value"
+        }
+      },
+      "expected_output": "dayjs function",
+      "covered_branches": [
+        "dayjs.extend: !plugin.$i (True)"
+      ],
+      "covered_paths": [
+        "dayjs.extend: plugin not installed"
+      ]
+    },
+    {
+      "id": "TC091",
+      "description": "Dayjs.extend: plugin already installed",
+      "input": {
+        "plugin": {
+          "$i": true,
+          "func": "mock_plugin_function_installed"
+        },
+        "option": {
+          "key": "value"
+        }
+      },
+      "expected_output": "dayjs function",
+      "covered_branches": [
+        "dayjs.extend: !plugin.$i (False)"
+      ],
+      "covered_paths": [
+        "dayjs.extend: plugin already installed"
+      ]
+    },
+    {
+      "id": "TC092",
+      "description": "dayjs.unix: converts timestamp to Dayjs instance",
+      "input": {
+        "timestamp": 1673778645
+      },
+      "expected_output": "2023-01-15T10:30:45.000 Local Time",
+      "covered_branches": [],
+      "covered_paths": [
+        "dayjs.unix: converts timestamp"
+      ]
+    },
+    {
+      "id": "TC093",
+      "description": "Dayjs.prototype.ms: get milliseconds",
+      "input": {
+        "instance_date": "2023-01-15T10:30:45.123",
+        "input_to_g": null
+      },
+      "expected_output": 123,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.prototype.ms: get"
+      ]
+    },
+    {
+      "id": "TC094",
+      "description": "Dayjs.prototype.ms: set milliseconds",
+      "input": {
+        "instance_date": "2023-01-15T10:30:45.123",
+        "input_to_g": 500
+      },
+      "expected_output": "2023-01-15T10:30:45.500 Local Time",
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.prototype.ms: set"
+      ]
+    },
+    {
+      "id": "TC095",
+      "description": "Dayjs.prototype.day: get day of week (Sunday)",
+      "input": {
+        "instance_date": "2023-01-15",
+        "input_to_g": null
+      },
+      "expected_output": 0,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.prototype.day: get"
+      ]
+    },
+    {
+      "id": "TC096",
+      "description": "Dayjs.prototype.day: set day of week (C.D unit in proto mapping) to Friday",
+      "input": {
+        "instance_date": "2023-01-15",
+        "input_to_g": 5
+      },
+      "expected_output": "2023-01-20T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (False)",
+        "Dayjs.$set: unit === C.D ? ... : int (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.prototype.day: set"
+      ]
+    },
+    {
+      "id": "TC097",
+      "description": "Dayjs.prototype.date: get day of month",
+      "input": {
+        "instance_date": "2023-01-15",
+        "input_to_g": null
+      },
+      "expected_output": 15,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (True)"
+      ],
+      "covered_paths": [
+        "Dayjs.prototype.date: get"
+      ]
+    },
+    {
+      "id": "TC098",
+      "description": "Dayjs.prototype.date: set day of month",
+      "input": {
+        "instance_date": "2023-01-15",
+        "input_to_g": 20
+      },
+      "expected_output": "2023-01-20T00:00:00.000 Local Time",
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (False)",
+        "Dayjs.$set: unit === C.D ? ... : int (False)"
+      ],
+      "covered_paths": [
+        "Dayjs.prototype.date: set"
+      ]
+    },
+    {
+      "function": "parseLocale",
+      "args": [
+        {
+          "name": "my-locale",
+          "months": [
+            "Jan"
+          ]
+        },
+        null,
+        false
+      ]
+    },
+    {
+      "en": {
+        "name": "en"
+      }
+    },
+    {
+      "function": "parseLocale",
+      "args": [
+        "fr",
+        {
+          "name": "fr",
+          "months": [
+            "Janvier"
+          ]
+        },
+        false
+      ]
+    },
+    {
+      "en": {
+        "name": "en"
+      }
+    },
+    {
+      "en": {
+        "name": "en"
+      }
+    },
+    {
+      "en": {
+        "name": "en"
+      }
+    },
+    {
+      "$L": "en",
+      "$u": false,
+      "$x": {},
+      "$offset": 0
+    },
+    {
+      "function": "parseDate",
+      "args": [
+        {
+          "date": "2023-01-01T00:00:00.000Z"
+        }
+      ]
+    },
+    {
+      "function": "parseDate",
+      "args": [
+        {
+          "date": "2023-01",
+          "utc": true
+        }
+      ]
+    },
+    {
+      "function": "parseDate",
+      "args": [
+        {
+          "date": "2023-01-15",
+          "utc": true
+        }
+      ]
+    },
+    {
+      "function": "parseDate",
+      "args": [
+        {
+          "date": "2023-01-15",
+          "utc": false
+        }
+      ]
+    },
+    {
+      "function": "parseDate",
+      "args": [
+        {
+          "date": "2023-01-15 10:20:30.123",
+          "utc": false
+        }
+      ]
+    },
+    {
+      "id": "TC_SUP_014",
+      "description": "测试 Dayjs.$utils() 方法，覆盖 L112",
+      "input": {
+        "method": "$utils",
+        "instance": "dayjs('2023-01-15')"
+      },
+      "expected_output": "Utils_object",
+      "covered_branches": [],
+      "covered_paths": [
+        "L112"
+      ]
+    },
+    {
+      "id": "TC_SUP_015",
+      "description": "测试 Dayjs.isSame() 方法：日期相同，覆盖 L120, L121 binary-expr branch-0, branch-1",
+      "input": {
+        "method": "isSame",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "2023-01-15",
+          "day"
+        ]
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "L121: binary-expr branch-0",
+        "L121: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "L120",
+        "L121"
+      ]
+    },
+    {
+      "id": "TC_SUP_016",
+      "description": "测试 Dayjs.isAfter() 方法：日期在后，覆盖 L125",
+      "input": {
+        "method": "isAfter",
+        "instance": "dayjs('2023-01-16')",
+        "args": [
+          "2023-01-15",
+          "day"
+        ]
+      },
+      "expected_output": true,
+      "covered_branches": [],
+      "covered_paths": [
+        "L125"
+      ]
+    },
+    {
+      "id": "TC_SUP_017",
+      "description": "测试 Dayjs.isBefore() 方法：日期在前，覆盖 L129",
+      "input": {
+        "method": "isBefore",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "2023-01-16",
+          "day"
+        ]
+      },
+      "expected_output": true,
+      "covered_branches": [],
+      "covered_paths": [
+        "L129"
+      ]
+    },
+    {
+      "id": "TC_SUP_019",
+      "description": "测试 Dayjs.$g() 方法：input 为有效值，覆盖 L133 if branch-1, L134",
+      "input": {
+        "method": "$g",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          2024,
+          "$y",
+          "year"
+        ]
+      },
+      "expected_output": "2024-01-15T00:00:00.000Z",
+      "covered_branches": [
+        "L133: if branch-1"
+      ],
+      "covered_paths": [
+        "L134"
+      ]
+    },
+    {
+      "id": "TC_SUP_020",
+      "description": "测试 Dayjs.unix() 方法，覆盖 L138",
+      "input": {
+        "method": "unix",
+        "instance": "dayjs('2023-01-01T00:00:00.000Z')"
+      },
+      "expected_output": 1672531200,
+      "covered_branches": [],
+      "covered_paths": [
+        "L138"
+      ]
+    },
+    {
+      "id": "TC_SUP_021",
+      "description": "测试 Dayjs.valueOf() 方法，覆盖 L143",
+      "input": {
+        "method": "valueOf",
+        "instance": "dayjs('2023-01-01T00:00:00.000Z')"
+      },
+      "expected_output": 1672531200000,
+      "covered_branches": [],
+      "covered_paths": [
+        "L143"
+      ]
+    },
+    {
+      "id": "TC_SUP_022",
+      "description": "测试 Dayjs.startOf() 方法：不传 startOf 参数，覆盖 L147 cond-expr branch-0, L148, L149, L150 cond-expr branch-0, L152 cond-expr branch-0, L154, L155, L156, L157, L162, L163 cond-expr branch-0, L164 switch branch for C.D, L178, L159 cond-expr branch-0",
+      "input": {
+        "method": "startOf",
+        "instance": "dayjs('2023-01-15 10:30:45')",
+        "args": [
+          "day"
+        ]
+      },
+      "expected_output": "2023-01-15T00:00:00.000",
+      "covered_branches": [
+        "L147: cond-expr branch-0",
+        "L150: cond-expr branch-0",
+        "L152: cond-expr branch-0",
+        "L159: cond-expr branch-0",
+        "L163: cond-expr branch-0",
+        "L164: switch branch-3"
+      ],
+      "covered_paths": [
+        "L148",
+        "L149",
+        "L154",
+        "L155",
+        "L156",
+        "L157",
+        "L162",
+        "L178"
+      ]
+    },
+    {
+      "id": "TC_SUP_023",
+      "description": "测试 Dayjs.startOf() 方法：传 startOf 参数为 true，覆盖 L147 cond-expr branch-1",
+      "input": {
+        "method": "startOf",
+        "instance": "dayjs('2023-01-15 10:30:45')",
+        "args": [
+          "day",
+          true
+        ]
+      },
+      "expected_output": "2023-01-15T00:00:00.000",
+      "covered_branches": [
+        "L147: cond-expr branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_024",
+      "description": "测试 Dayjs.startOf() 方法：单位为 'year'，覆盖 L164 switch branch-0, L166 cond-expr branch-0",
+      "input": {
+        "method": "startOf",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "year"
+        ]
+      },
+      "expected_output": "2023-01-01T00:00:00.000",
+      "covered_branches": [
+        "L164: switch branch-0",
+        "L166: cond-expr branch-0"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_025",
+      "description": "测试 Dayjs.endOf() 方法：单位为 'year'，覆盖 L166 cond-expr branch-1, L152 cond-expr branch-1",
+      "input": {
+        "method": "endOf",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "year"
+        ]
+      },
+      "expected_output": "2023-12-31T23:59:59.999",
+      "covered_branches": [
+        "L166: cond-expr branch-1",
+        "L152: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "L191"
+      ]
+    },
+    {
+      "id": "TC_SUP_026",
+      "description": "测试 Dayjs.startOf() 方法：单位为 'month'，覆盖 L164 switch branch-1, L169 cond-expr branch-0",
+      "input": {
+        "method": "startOf",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "month"
+        ]
+      },
+      "expected_output": "2023-01-01T00:00:00.000",
+      "covered_branches": [
+        "L164: switch branch-1",
+        "L169: cond-expr branch-0"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_027",
+      "description": "测试 Dayjs.endOf() 方法：单位为 'month'，覆盖 L169 cond-expr branch-1",
+      "input": {
+        "method": "endOf",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "month"
+        ]
+      },
+      "expected_output": "2023-01-31T23:59:59.999",
+      "covered_branches": [
+        "L169: cond-expr branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_028",
+      "description": "测试 Dayjs.startOf() 方法：单位为 'week' (默认 weekStart=0)，当前日期为周日，覆盖 L164 switch branch-2, L172 binary-expr branch-1, L173 cond-expr branch-1, L174 cond-expr branch-0",
+      "input": {
+        "method": "startOf",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "week"
+        ]
+      },
+      "expected_output": "2023-01-15T00:00:00.000",
+      "covered_branches": [
+        "L164: switch branch-2",
+        "L172: binary-expr branch-1",
+        "L173: cond-expr branch-1",
+        "L174: cond-expr branch-0"
+      ],
+      "covered_paths": []
+    },
+    {
+      "method": "startOf",
+      "instance": "dayjs('2023-01-15').locale({ name: 'custom', weekStart: 1 })",
+      "args": [
+        "week"
+      ]
+    },
+    {
+      "id": "TC_SUP_030",
+      "description": "测试 Dayjs.endOf() 方法：单位为 'week'，覆盖 L174 cond-expr branch-1",
+      "input": {
+        "method": "endOf",
+        "instance": "dayjs('2023-01-18')",
+        "args": [
+          "week"
+        ]
+      },
+      "expected_output": "2023-01-21T23:59:59.999",
+      "covered_branches": [
+        "L174: cond-expr branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_031",
+      "description": "测试 Dayjs.startOf() 方法：单位为 'hour'，覆盖 L164 switch branch-4, L180",
+      "input": {
+        "method": "startOf",
+        "instance": "dayjs('2023-01-15 10:30:45')",
+        "args": [
+          "hour"
+        ]
+      },
+      "expected_output": "2023-01-15T10:00:00.000",
+      "covered_branches": [
+        "L164: switch branch-4"
+      ],
+      "covered_paths": [
+        "L180"
+      ]
+    },
+    {
+      "id": "TC_SUP_032",
+      "description": "测试 Dayjs.startOf() 方法：单位为 'minute'，覆盖 L164 switch branch-5, L182",
+      "input": {
+        "method": "startOf",
+        "instance": "dayjs('2023-01-15 10:30:45')",
+        "args": [
+          "minute"
+        ]
+      },
+      "expected_output": "2023-01-15T10:30:00.000",
+      "covered_branches": [
+        "L164: switch branch-5"
+      ],
+      "covered_paths": [
+        "L182"
+      ]
+    },
+    {
+      "id": "TC_SUP_033",
+      "description": "测试 Dayjs.startOf() 方法：单位为 'second'，覆盖 L164 switch branch-6, L184",
+      "input": {
+        "method": "startOf",
+        "instance": "dayjs('2023-01-15 10:30:45.123')",
+        "args": [
+          "second"
+        ]
+      },
+      "expected_output": "2023-01-15T10:30:45.000",
+      "covered_branches": [
+        "L164: switch branch-6"
+      ],
+      "covered_paths": [
+        "L184"
+      ]
+    },
+    {
+      "id": "TC_SUP_034",
+      "description": "测试 Dayjs.startOf() 方法：单位为未知，覆盖 L164 switch branch-8, L186",
+      "input": {
+        "method": "startOf",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "unknown"
+        ]
+      },
+      "expected_output": "2023-01-15T00:00:00.000",
+      "covered_branches": [
+        "L164: switch branch-8"
+      ],
+      "covered_paths": [
+        "L186"
+      ]
+    },
+    {
+      "id": "TC_SUP_035",
+      "description": "测试 Dayjs.startOf() 方法：UTC 实例，覆盖 L150 cond-expr branch-1, L163 cond-expr branch-1",
+      "input": {
+        "method": "startOf",
+        "instance": "dayjs('2023-01-15 10:30:45').utc(true)",
+        "args": [
+          "day"
+        ]
+      },
+      "expected_output": "2023-01-15T00:00:00.000Z",
+      "covered_branches": [
+        "L150: cond-expr branch-1",
+        "L163: cond-expr branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_036",
+      "description": "测试 Dayjs.$set() 方法：设置 'day'，覆盖 L195, L196 cond-expr branch-0, L197, L207 cond-expr branch-0, L215 if branch-0, L217, L218",
+      "input": {
+        "method": "$set",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "day",
+          3
+        ]
+      },
+      "expected_output": "2023-01-18T00:00:00.000",
+      "covered_branches": [
+        "L196: cond-expr branch-0",
+        "L207: cond-expr branch-0",
+        "L215: if branch-0"
+      ],
+      "covered_paths": [
+        "L195",
+        "L197",
+        "L217",
+        "L218"
+      ]
+    },
+    {
+      "id": "TC_SUP_037",
+      "description": "测试 Dayjs.$set() 方法：设置 'month'，覆盖 L207 cond-expr branch-1, L209 if branch-0, L209 binary-expr branch-0, L211, L212, L213, L214",
+      "input": {
+        "method": "$set",
+        "instance": "dayjs('2023-01-31')",
+        "args": [
+          "month",
+          1
+        ]
+      },
+      "expected_output": "2023-02-28T00:00:00.000",
+      "covered_branches": [
+        "L207: cond-expr branch-1",
+        "L209: if branch-0",
+        "L209: binary-expr branch-0"
+      ],
+      "covered_paths": [
+        "L211",
+        "L212",
+        "L213",
+        "L214"
+      ]
+    },
+    {
+      "id": "TC_SUP_038",
+      "description": "测试 Dayjs.$set() 方法：设置 'year'，覆盖 L209 binary-expr branch-1",
+      "input": {
+        "method": "$set",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "year",
+          2024
+        ]
+      },
+      "expected_output": "2024-01-15T00:00:00.000",
+      "covered_branches": [
+        "L209: binary-expr branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_039",
+      "description": "测试 Dayjs.$set() 方法：设置 'hour'，覆盖 L209 if branch-1",
+      "input": {
+        "method": "$set",
+        "instance": "dayjs('2023-01-15 10:00:00')",
+        "args": [
+          "hour",
+          15
+        ]
+      },
+      "expected_output": "2023-01-15T15:00:00.000",
+      "covered_branches": [
+        "L209: if branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_040",
+      "description": "测试 Dayjs.$set() 方法：UTC 实例，覆盖 L196 cond-expr branch-1",
+      "input": {
+        "method": "$set",
+        "instance": "dayjs('2023-01-15 10:00:00').utc(true)",
+        "args": [
+          "hour",
+          15
+        ]
+      },
+      "expected_output": "2023-01-15T15:00:00.000Z",
+      "covered_branches": [
+        "L196: cond-expr branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_041",
+      "description": "测试 Dayjs.$set() 方法：无效单位，覆盖 L215 if branch-1",
+      "input": {
+        "method": "$set",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "invalid",
+          1
+        ]
+      },
+      "expected_output": "2023-01-15T00:00:00.000",
+      "covered_branches": [
+        "L215: if branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_042",
+      "description": "测试 Dayjs.set() 方法，覆盖 L222",
+      "input": {
+        "method": "set",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "year",
+          2024
+        ]
+      },
+      "expected_output": "2024-01-15T00:00:00.000",
+      "covered_branches": [],
+      "covered_paths": [
+        "L222"
+      ]
+    },
+    {
+      "id": "TC_SUP_043",
+      "description": "测试 Dayjs.get() 方法，覆盖 L226",
+      "input": {
+        "method": "get",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "year"
+        ]
+      },
+      "expected_output": 2023,
+      "covered_branches": [],
+      "covered_paths": [
+        "L226"
+      ]
+    },
+    {
+      "id": "TC_SUP_044",
+      "description": "测试 Dayjs.add() 方法：添加 'month'，覆盖 L230, L231, L236 if branch-0, L237",
+      "input": {
+        "method": "add",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          1,
+          "month"
+        ]
+      },
+      "expected_output": "2023-02-15T00:00:00.000",
+      "covered_branches": [
+        "L236: if branch-0"
+      ],
+      "covered_paths": [
+        "L230",
+        "L231",
+        "L237"
+      ]
+    },
+    {
+      "id": "TC_SUP_045",
+      "description": "测试 Dayjs.add() 方法：添加 'year'，覆盖 L236 if branch-1, L239 if branch-0, L240",
+      "input": {
+        "method": "add",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          1,
+          "year"
+        ]
+      },
+      "expected_output": "2024-01-15T00:00:00.000",
+      "covered_branches": [
+        "L236: if branch-1",
+        "L239: if branch-0"
+      ],
+      "covered_paths": [
+        "L240"
+      ]
+    },
+    {
+      "id": "TC_SUP_046",
+      "description": "测试 Dayjs.add() 方法：添加 'day'，覆盖 L239 if branch-1, L242 if branch-0, L243, L232, L233, L234",
+      "input": {
+        "method": "add",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          1,
+          "day"
+        ]
+      },
+      "expected_output": "2023-01-16T00:00:00.000",
+      "covered_branches": [
+        "L239: if branch-1",
+        "L242: if branch-0"
+      ],
+      "covered_paths": [
+        "L243",
+        "L232",
+        "L233",
+        "L234"
+      ]
+    },
+    {
+      "id": "TC_SUP_047",
+      "description": "测试 Dayjs.add() 方法：添加 'week'，覆盖 L242 if branch-1, L245 if branch-0, L246",
+      "input": {
+        "method": "add",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          1,
+          "week"
+        ]
+      },
+      "expected_output": "2023-01-22T00:00:00.000",
+      "covered_branches": [
+        "L242: if branch-1",
+        "L245: if branch-0"
+      ],
+      "covered_paths": [
+        "L246"
+      ]
+    },
+    {
+      "id": "TC_SUP_048",
+      "description": "测试 Dayjs.add() 方法：添加 'hour'，覆盖 L245 if branch-1, L248 binary-expr branch-0, L254, L255",
+      "input": {
+        "method": "add",
+        "instance": "dayjs('2023-01-15 10:00:00')",
+        "args": [
+          1,
+          "hour"
+        ]
+      },
+      "expected_output": "2023-01-15T11:00:00.000",
+      "covered_branches": [
+        "L245: if branch-1",
+        "L248: binary-expr branch-0"
+      ],
+      "covered_paths": [
+        "L254",
+        "L255"
+      ]
+    },
+    {
+      "id": "TC_SUP_049",
+      "description": "测试 Dayjs.add() 方法：添加 'minute'",
+      "input": {
+        "method": "add",
+        "instance": "dayjs('2023-01-15 10:00:00')",
+        "args": [
+          1,
+          "minute"
+        ]
+      },
+      "expected_output": "2023-01-15T10:01:00.000",
+      "covered_branches": [],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_050",
+      "description": "测试 Dayjs.add() 方法：添加 'second'",
+      "input": {
+        "method": "add",
+        "instance": "dayjs('2023-01-15 10:00:00')",
+        "args": [
+          1,
+          "second"
+        ]
+      },
+      "expected_output": "2023-01-15T10:00:01.000",
+      "covered_branches": [],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_051",
+      "description": "测试 Dayjs.add() 方法：添加 'millisecond' (默认 step)，覆盖 L248 binary-expr branch-1",
+      "input": {
+        "method": "add",
+        "instance": "dayjs('2023-01-15 10:00:00.000')",
+        "args": [
+          1,
+          "millisecond"
+        ]
+      },
+      "expected_output": "2023-01-15T10:00:00.001",
+      "covered_branches": [
+        "L248: binary-expr branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_052",
+      "description": "测试 Dayjs.subtract() 方法，覆盖 L259",
+      "input": {
+        "method": "subtract",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          1,
+          "day"
+        ]
+      },
+      "expected_output": "2023-01-14T00:00:00.000",
+      "covered_branches": [],
+      "covered_paths": [
+        "L259"
+      ]
+    },
+    {
+      "id": "TC_SUP_053",
+      "description": "测试 Dayjs.format() 方法：无效日期，覆盖 L263, L265 if branch-0, L265 binary-expr branch-1",
+      "input": {
+        "method": "format",
+        "instance": "dayjs(null)",
+        "args": []
+      },
+      "expected_output": "Invalid Date",
+      "covered_branches": [
+        "L265: if branch-0",
+        "L265: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "L263"
+      ]
+    },
+    {
+      "method": "format",
+      "instance": "dayjs(null).locale({ invalidDate: 'Bad Date' })",
+      "args": []
+    },
+    {
+      "id": "TC_SUP_055",
+      "description": "测试 Dayjs.format() 方法：无 formatStr 参数 (默认格式)，覆盖 L267 binary-expr branch-1, L268, L269, L272, L280 binary-expr branch-1, L281 cond-expr branch-0, L282 cond-expr branch-0, L285, L286 switch branches for default tokens",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 10:30:45.123')",
+        "args": []
+      },
+      "expected_output": "2023-01-15T10:30:45-05:00",
+      "covered_branches": [
+        "L267: binary-expr branch-1",
+        "L280: binary-expr branch-1",
+        "L281: cond-expr branch-0",
+        "L282: cond-expr branch-0"
+      ],
+      "covered_paths": [
+        "L268",
+        "L269",
+        "L272",
+        "L285"
+      ]
+    },
+    {
+      "id": "TC_SUP_056",
+      "description": "测试 Dayjs.format() 方法：格式化 'YY'，覆盖 L286 switch branch-0, L288",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "YY"
+        ]
+      },
+      "expected_output": "23",
+      "covered_branches": [
+        "L286: switch branch-0"
+      ],
+      "covered_paths": [
+        "L288"
+      ]
+    },
+    {
+      "id": "TC_SUP_057",
+      "description": "测试 Dayjs.format() 方法：格式化 'YYYY'，覆盖 L286 switch branch-1, L290, L267 binary-expr branch-0",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "YYYY"
+        ]
+      },
+      "expected_output": "2023",
+      "covered_branches": [
+        "L286: switch branch-1",
+        "L267: binary-expr branch-0"
+      ],
+      "covered_paths": [
+        "L290"
+      ]
+    },
+    {
+      "id": "TC_SUP_058",
+      "description": "测试 Dayjs.format() 方法：格式化 'M'，覆盖 L286 switch branch-2, L292",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "M"
+        ]
+      },
+      "expected_output": "1",
+      "covered_branches": [
+        "L286: switch branch-2"
+      ],
+      "covered_paths": [
+        "L292"
+      ]
+    },
+    {
+      "id": "TC_SUP_059",
+      "description": "测试 Dayjs.format() 方法：格式化 'MM'，覆盖 L286 switch branch-3, L294",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-05')",
+        "args": [
+          "MM"
+        ]
+      },
+      "expected_output": "01",
+      "covered_branches": [
+        "L286: switch branch-3"
+      ],
+      "covered_paths": [
+        "L294"
+      ]
+    },
+    {
+      "id": "TC_SUP_060",
+      "description": "测试 Dayjs.format() 方法：格式化 'MMM' (默认 locale)，覆盖 L286 switch branch-4, L296, L273, L274 binary-expr branch-0, branch-2",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "MMM"
+        ]
+      },
+      "expected_output": "Jan",
+      "covered_branches": [
+        "L286: switch branch-4",
+        "L274: binary-expr branch-0",
+        "L274: binary-expr branch-2"
+      ],
+      "covered_paths": [
+        "L296",
+        "L273"
+      ]
+    },
+    {
+      "method": "format",
+      "instance": "dayjs('2023-01-15').locale({ monthsShort: (d) => 'J' + (d.month() + 1) })",
+      "args": [
+        "MMM"
+      ]
+    },
+    {
+      "id": "TC_SUP_062",
+      "description": "测试 Dayjs.format() 方法：格式化 'MMMM'，覆盖 L286 switch branch-5, L298, L274 binary-expr branch-1",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "MMMM"
+        ]
+      },
+      "expected_output": "January",
+      "covered_branches": [
+        "L286: switch branch-5",
+        "L274: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "L298"
+      ]
+    },
+    {
+      "id": "TC_SUP_063",
+      "description": "测试 Dayjs.format() 方法：格式化 'D'，覆盖 L286 switch branch-6, L300",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-05')",
+        "args": [
+          "D"
+        ]
+      },
+      "expected_output": "5",
+      "covered_branches": [
+        "L286: switch branch-6"
+      ],
+      "covered_paths": [
+        "L300"
+      ]
+    },
+    {
+      "id": "TC_SUP_064",
+      "description": "测试 Dayjs.format() 方法：格式化 'DD'，覆盖 L286 switch branch-7, L302",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-05')",
+        "args": [
+          "DD"
+        ]
+      },
+      "expected_output": "05",
+      "covered_branches": [
+        "L286: switch branch-7"
+      ],
+      "covered_paths": [
+        "L302"
+      ]
+    },
+    {
+      "id": "TC_SUP_065",
+      "description": "测试 Dayjs.format() 方法：格式化 'd'，覆盖 L286 switch branch-8, L304",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "d"
+        ]
+      },
+      "expected_output": "0",
+      "covered_branches": [
+        "L286: switch branch-8"
+      ],
+      "covered_paths": [
+        "L304"
+      ]
+    },
+    {
+      "id": "TC_SUP_066",
+      "description": "测试 Dayjs.format() 方法：格式化 'dd'，覆盖 L286 switch branch-9, L306",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "dd"
+        ]
+      },
+      "expected_output": "Su",
+      "covered_branches": [
+        "L286: switch branch-9"
+      ],
+      "covered_paths": [
+        "L306"
+      ]
+    },
+    {
+      "id": "TC_SUP_067",
+      "description": "测试 Dayjs.format() 方法：格式化 'ddd'，覆盖 L286 switch branch-10, L308",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "ddd"
+        ]
+      },
+      "expected_output": "Sun",
+      "covered_branches": [
+        "L286: switch branch-10"
+      ],
+      "covered_paths": [
+        "L308"
+      ]
+    },
+    {
+      "id": "TC_SUP_068",
+      "description": "测试 Dayjs.format() 方法：格式化 'dddd'，覆盖 L286 switch branch-11, L310",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "dddd"
+        ]
+      },
+      "expected_output": "Sunday",
+      "covered_branches": [
+        "L286: switch branch-11"
+      ],
+      "covered_paths": [
+        "L310"
+      ]
+    },
+    {
+      "id": "TC_SUP_069",
+      "description": "测试 Dayjs.format() 方法：格式化 'H'，覆盖 L286 switch branch-12, L312",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 13:00:00')",
+        "args": [
+          "H"
+        ]
+      },
+      "expected_output": "13",
+      "covered_branches": [
+        "L286: switch branch-12"
+      ],
+      "covered_paths": [
+        "L312"
+      ]
+    },
+    {
+      "id": "TC_SUP_070",
+      "description": "测试 Dayjs.format() 方法：格式化 'HH'，覆盖 L286 switch branch-13, L314",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 03:00:00')",
+        "args": [
+          "HH"
+        ]
+      },
+      "expected_output": "03",
+      "covered_branches": [
+        "L286: switch branch-13"
+      ],
+      "covered_paths": [
+        "L314"
+      ]
+    },
+    {
+      "id": "TC_SUP_071",
+      "description": "测试 Dayjs.format() 方法：格式化 'h' (1 PM)，覆盖 L286 switch branch-14, L316, L277 binary-expr branch-0",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 13:00:00')",
+        "args": [
+          "h"
+        ]
+      },
+      "expected_output": "1",
+      "covered_branches": [
+        "L286: switch branch-14",
+        "L277: binary-expr branch-0"
+      ],
+      "covered_paths": [
+        "L316"
+      ]
+    },
+    {
+      "id": "TC_SUP_072",
+      "description": "测试 Dayjs.format() 方法：格式化 'h' (12 PM)，覆盖 L277 binary-expr branch-1",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 12:00:00')",
+        "args": [
+          "h"
+        ]
+      },
+      "expected_output": "12",
+      "covered_branches": [
+        "L277: binary-expr branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_073",
+      "description": "测试 Dayjs.format() 方法：格式化 'hh'，覆盖 L286 switch branch-15, L318",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 01:00:00')",
+        "args": [
+          "hh"
+        ]
+      },
+      "expected_output": "01",
+      "covered_branches": [
+        "L286: switch branch-15"
+      ],
+      "covered_paths": [
+        "L318"
+      ]
+    },
+    {
+      "id": "TC_SUP_074",
+      "description": "测试 Dayjs.format() 方法：格式化 'a' (10 AM)，覆盖 L286 switch branch-16, L320, L281 cond-expr branch-0, L282 cond-expr branch-0",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 10:00:00')",
+        "args": [
+          "a"
+        ]
+      },
+      "expected_output": "am",
+      "covered_branches": [
+        "L286: switch branch-16",
+        "L281: cond-expr branch-0",
+        "L282: cond-expr branch-0"
+      ],
+      "covered_paths": [
+        "L320"
+      ]
+    },
+    {
+      "id": "TC_SUP_075",
+      "description": "测试 Dayjs.format() 方法：格式化 'A' (1 PM)，覆盖 L286 switch branch-17, L322, L281 cond-expr branch-1, L282 cond-expr branch-1",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 13:00:00')",
+        "args": [
+          "A"
+        ]
+      },
+      "expected_output": "PM",
+      "covered_branches": [
+        "L286: switch branch-17",
+        "L281: cond-expr branch-1",
+        "L282: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "L322"
+      ]
+    },
+    {
+      "method": "format",
+      "instance": "dayjs('2023-01-15 10:00:00').locale({ meridiem: (h, m, l) => l ? 'custom_am' : 'CUSTOM_AM' })",
+      "args": [
+        "a"
+      ]
+    },
+    {
+      "id": "TC_SUP_077",
+      "description": "测试 Dayjs.format() 方法：格式化 'm'，覆盖 L286 switch branch-18, L324",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 10:05:00')",
+        "args": [
+          "m"
+        ]
+      },
+      "expected_output": "5",
+      "covered_branches": [
+        "L286: switch branch-18"
+      ],
+      "covered_paths": [
+        "L324"
+      ]
+    },
+    {
+      "id": "TC_SUP_078",
+      "description": "测试 Dayjs.format() 方法：格式化 'mm'，覆盖 L286 switch branch-19, L326",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 10:05:00')",
+        "args": [
+          "mm"
+        ]
+      },
+      "expected_output": "05",
+      "covered_branches": [
+        "L286: switch branch-19"
+      ],
+      "covered_paths": [
+        "L326"
+      ]
+    },
+    {
+      "id": "TC_SUP_079",
+      "description": "测试 Dayjs.format() 方法：格式化 's'，覆盖 L286 switch branch-20, L328",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 10:00:05')",
+        "args": [
+          "s"
+        ]
+      },
+      "expected_output": "5",
+      "covered_branches": [
+        "L286: switch branch-20"
+      ],
+      "covered_paths": [
+        "L328"
+      ]
+    },
+    {
+      "id": "TC_SUP_080",
+      "description": "测试 Dayjs.format() 方法：格式化 'ss'，覆盖 L286 switch branch-21, L330",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 10:00:05')",
+        "args": [
+          "ss"
+        ]
+      },
+      "expected_output": "05",
+      "covered_branches": [
+        "L286: switch branch-21"
+      ],
+      "covered_paths": [
+        "L330"
+      ]
+    },
+    {
+      "id": "TC_SUP_081",
+      "description": "测试 Dayjs.format() 方法：格式化 'SSS'，覆盖 L286 switch branch-22, L332",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15 10:00:00.005')",
+        "args": [
+          "SSS"
+        ]
+      },
+      "expected_output": "005",
+      "covered_branches": [
+        "L286: switch branch-22"
+      ],
+      "covered_paths": [
+        "L332"
+      ]
+    },
+    {
+      "id": "TC_SUP_082",
+      "description": "测试 Dayjs.format() 方法：格式化 'Z'，覆盖 L286 switch branch-23, L334",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "Z"
+        ]
+      },
+      "expected_output": "-05:00",
+      "covered_branches": [
+        "L286: switch branch-23"
+      ],
+      "covered_paths": [
+        "L334"
+      ]
+    },
+    {
+      "id": "TC_SUP_083",
+      "description": "测试 Dayjs.format() 方法：格式化 'ZZ'，覆盖 L341 binary-expr branch-2",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "ZZ"
+        ]
+      },
+      "expected_output": "-0500",
+      "covered_branches": [
+        "L341: binary-expr branch-2"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_084",
+      "description": "测试 Dayjs.format() 方法：格式化带转义字符，覆盖 L341 binary-expr branch-0",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "[Year:]YYYY"
+        ]
+      },
+      "expected_output": "Year:2023",
+      "covered_branches": [
+        "L341: binary-expr branch-0"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_085",
+      "description": "测试 Dayjs.format() 方法：格式化标准 token，覆盖 L341 binary-expr branch-1",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "YYYY"
+        ]
+      },
+      "expected_output": "2023",
+      "covered_branches": [
+        "L341: binary-expr branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_086",
+      "description": "测试 Dayjs.format() 方法：格式化未知 token，覆盖 L286 switch branch-24, L336, L338",
+      "input": {
+        "method": "format",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "UNKNOWN"
+        ]
+      },
+      "expected_output": "UNKNOWN",
+      "covered_branches": [
+        "L286: switch branch-24"
+      ],
+      "covered_paths": [
+        "L336",
+        "L338"
+      ]
+    },
+    {
+      "id": "TC_SUP_087",
+      "description": "测试 Dayjs.utcOffset() 方法，覆盖 L347",
+      "input": {
+        "method": "utcOffset",
+        "instance": "dayjs('2023-01-15')"
+      },
+      "expected_output": -300,
+      "covered_branches": [],
+      "covered_paths": [
+        "L347"
+      ]
+    },
+    {
+      "id": "TC_SUP_088",
+      "description": "测试 Dayjs.diff() 方法：单位为 'year'，覆盖 L351, L352, L353, L354, L355, L358 switch branch-0, L360, L361, L388 cond-expr branch-1",
+      "input": {
+        "method": "diff",
+        "instance": "dayjs('2024-01-15')",
+        "args": [
+          "2023-01-15",
+          "year"
+        ]
+      },
+      "expected_output": 1,
+      "covered_branches": [
+        "L358: switch branch-0",
+        "L388: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "L351",
+        "L352",
+        "L353",
+        "L354",
+        "L355",
+        "L360",
+        "L361"
+      ]
+    },
+    {
+      "id": "TC_SUP_089",
+      "description": "测试 Dayjs.diff() 方法：单位为 'month'，覆盖 L358 switch branch-1, L363, L364",
+      "input": {
+        "method": "diff",
+        "instance": "dayjs('2023-03-15')",
+        "args": [
+          "2023-01-15",
+          "month"
+        ]
+      },
+      "expected_output": 2,
+      "covered_branches": [
+        "L358: switch branch-1"
+      ],
+      "covered_paths": [
+        "L363",
+        "L364"
+      ]
+    },
+    {
+      "id": "TC_SUP_090",
+      "description": "测试 Dayjs.diff() 方法：单位为 'quarter'，覆盖 L358 switch branch-2, L366, L367",
+      "input": {
+        "method": "diff",
+        "instance": "dayjs('2023-07-15')",
+        "args": [
+          "2023-01-15",
+          "quarter"
+        ]
+      },
+      "expected_output": 2,
+      "covered_branches": [
+        "L358: switch branch-2"
+      ],
+      "covered_paths": [
+        "L366",
+        "L367"
+      ]
+    },
+    {
+      "id": "TC_SUP_091",
+      "description": "测试 Dayjs.diff() 方法：单位为 'week'，覆盖 L358 switch branch-3, L369, L370",
+      "input": {
+        "method": "diff",
+        "instance": "dayjs('2023-01-22')",
+        "args": [
+          "2023-01-15",
+          "week"
+        ]
+      },
+      "expected_output": 1,
+      "covered_branches": [
+        "L358: switch branch-3"
+      ],
+      "covered_paths": [
+        "L369",
+        "L370"
+      ]
+    },
+    {
+      "id": "TC_SUP_092",
+      "description": "测试 Dayjs.diff() 方法：单位为 'day'，覆盖 L358 switch branch-4, L372, L373",
+      "input": {
+        "method": "diff",
+        "instance": "dayjs('2023-01-16')",
+        "args": [
+          "2023-01-15",
+          "day"
+        ]
+      },
+      "expected_output": 1,
+      "covered_branches": [
+        "L358: switch branch-4"
+      ],
+      "covered_paths": [
+        "L372",
+        "L373"
+      ]
+    },
+    {
+      "id": "TC_SUP_093",
+      "description": "测试 Dayjs.diff() 方法：单位为 'hour'，覆盖 L358 switch branch-5, L375, L376",
+      "input": {
+        "method": "diff",
+        "instance": "dayjs('2023-01-15 11:00:00')",
+        "args": [
+          "2023-01-15 10:00:00",
+          "hour"
+        ]
+      },
+      "expected_output": 1,
+      "covered_branches": [
+        "L358: switch branch-5"
+      ],
+      "covered_paths": [
+        "L375",
+        "L376"
+      ]
+    },
+    {
+      "id": "TC_SUP_094",
+      "description": "测试 Dayjs.diff() 方法：单位为 'minute'，覆盖 L358 switch branch-6, L378, L379",
+      "input": {
+        "method": "diff",
+        "instance": "dayjs('2023-01-15 10:01:00')",
+        "args": [
+          "2023-01-15 10:00:00",
+          "minute"
+        ]
+      },
+      "expected_output": 1,
+      "covered_branches": [
+        "L358: switch branch-6"
+      ],
+      "covered_paths": [
+        "L378",
+        "L379"
+      ]
+    },
+    {
+      "id": "TC_SUP_095",
+      "description": "测试 Dayjs.diff() 方法：单位为 'second'，覆盖 L358 switch branch-7, L381, L382",
+      "input": {
+        "method": "diff",
+        "instance": "dayjs('2023-01-15 10:00:01')",
+        "args": [
+          "2023-01-15 10:00:00",
+          "second"
+        ]
+      },
+      "expected_output": 1,
+      "covered_branches": [
+        "L358: switch branch-7"
+      ],
+      "covered_paths": [
+        "L381",
+        "L382"
+      ]
+    },
+    {
+      "id": "TC_SUP_096",
+      "description": "测试 Dayjs.diff() 方法：单位为 'millisecond' (默认)，覆盖 L358 switch branch-8, L384, L385",
+      "input": {
+        "method": "diff",
+        "instance": "dayjs('2023-01-15 10:00:00.001')",
+        "args": [
+          "2023-01-15 10:00:00.000",
+          "millisecond"
+        ]
+      },
+      "expected_output": 1,
+      "covered_branches": [
+        "L358: switch branch-8"
+      ],
+      "covered_paths": [
+        "L384",
+        "L385"
+      ]
+    },
+    {
+      "id": "TC_SUP_097",
+      "description": "测试 Dayjs.diff() 方法：float 为 true，覆盖 L388 cond-expr branch-0",
+      "input": {
+        "method": "diff",
+        "instance": "dayjs('2023-01-15 10:30:00')",
+        "args": [
+          "2023-01-15 10:00:00",
+          "hour",
+          true
+        ]
+      },
+      "expected_output": 0.5,
+      "covered_branches": [
+        "L388: cond-expr branch-0"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_098",
+      "description": "测试 Dayjs.daysInMonth() 方法，覆盖 L392",
+      "input": {
+        "method": "daysInMonth",
+        "instance": "dayjs('2023-01-15')"
+      },
+      "expected_output": 31,
+      "covered_branches": [],
+      "covered_paths": [
+        "L392"
+      ]
+    },
+    {
+      "id": "TC_SUP_099",
+      "description": "测试 Dayjs.$locale() 方法，覆盖 L396",
+      "input": {
+        "method": "$locale",
+        "instance": "dayjs('2023-01-15')"
+      },
+      "expected_output": {
+        "name": "en",
+        "weekdays": [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday"
+        ],
+        "months": [
+          "January",
+          "February",
+          "March",
+          "April",
+          "May",
+          "June",
+          "July",
+          "August",
+          "September",
+          "October",
+          "November",
+          "December"
+        ],
+        "invalidDate": "Invalid Date"
+      },
+      "covered_branches": [],
+      "covered_paths": [
+        "L396"
+      ]
+    },
+    {
+      "id": "TC_SUP_100",
+      "description": "测试 Dayjs.locale() 方法：无参数，覆盖 L400 if branch-0",
+      "input": {
+        "method": "locale",
+        "instance": "dayjs('2023-01-15')",
+        "args": []
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "L400: if branch-0"
+      ],
+      "covered_paths": [
+        "L400"
+      ]
+    },
+    {
+      "method": "locale",
+      "instance": "dayjs('2023-01-15')",
+      "args": [
+        "fr",
+        {
+          "months": [
+            "Janvier"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "TC_SUP_102",
+      "description": "测试 Dayjs.locale() 方法：设置无效 locale，覆盖 L403 if branch-1",
+      "input": {
+        "method": "locale",
+        "instance": "dayjs('2023-01-15')",
+        "args": [
+          "invalid"
+        ]
+      },
+      "expected_output": "2023-01-15T00:00:00.000",
+      "covered_branches": [
+        "L403: if branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_103",
+      "description": "测试 Dayjs.clone() 方法，覆盖 L408",
+      "input": {
+        "method": "clone",
+        "instance": "dayjs('2023-01-15')"
+      },
+      "expected_output": "2023-01-15T00:00:00.000",
+      "covered_branches": [],
+      "covered_paths": [
+        "L408"
+      ]
+    },
+    {
+      "id": "TC_SUP_104",
+      "description": "测试 Dayjs.toDate() 方法，覆盖 L412",
+      "input": {
+        "method": "toDate",
+        "instance": "dayjs('2023-01-15')"
+      },
+      "expected_output": "2023-01-15T00:00:00.000",
+      "covered_branches": [],
+      "covered_paths": [
+        "L412"
+      ]
+    },
+    {
+      "id": "TC_SUP_105",
+      "description": "测试 Dayjs.toString() 方法，覆盖 L427",
+      "input": {
+        "method": "toString",
+        "instance": "dayjs('2023-01-15T10:00:00.000Z')"
+      },
+      "expected_output": "Sun, 15 Jan 2023 10:00:00 GMT",
+      "covered_branches": [],
+      "covered_paths": [
+        "L427"
+      ]
+    },
+    {
+      "function": "dayjs.extend",
+      "args": [
+        "(o, D, d) => { D.prototype.myMethod = () => 'hello'; }",
+        null
+      ]
+    },
+    {
+      "function": "dayjs.extend",
+      "args": [
+        "(o, D, d) => { D.prototype.myMethod = () => 'hello'; }",
+        null
+      ],
+      "setup": {
+        "plugin_installed": true
+      }
+    },
+    {
+      "id": "TC_SUP_108",
+      "description": "测试 dayjs.unix() 方法，覆盖 L461",
+      "input": {
+        "function": "dayjs.unix",
+        "args": [
+          1672531200
+        ]
+      },
+      "expected_output": "2023-01-01T00:00:00.000Z",
+      "covered_branches": [],
+      "covered_paths": [
+        "L461"
+      ]
+    },
+    {
+      "id": "TC_SUP_109",
+      "description": "测试 Dayjs.endOf() 方法：单位为 'day'，覆盖 L159 cond-expr branch-1",
+      "input": {
+        "method": "endOf",
+        "instance": "dayjs('2023-01-15 10:30:45')",
+        "args": [
+          "day"
+        ]
+      },
+      "expected_output": "2023-01-15T23:59:59.999",
+      "covered_branches": [
+        "L159: cond-expr branch-1"
+      ],
+      "covered_paths": []
+    },
+    {
+      "id": "TC_SUP_001",
+      "description": "测试 parseLocale 函数，当 preset 是一个对象时，覆盖 L17 if branch-1 和 L31-L33。",
+      "input": {
+        "method": "dayjs.locale",
+        "args": [
+          {
+            "name": "custom-locale",
+            "months": [
+              "Jan",
+              "Feb",
+              "Mar",
+              "Apr",
+              "May",
+              "Jun",
+              "Jul",
+              "Aug",
+              "Sep",
+              "Oct",
+              "Nov",
+              "Dec"
+            ],
+            "weekdays": [
+              "Sunday",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday"
+            ]
+          }
+        ]
+      },
+      "expected_output": "返回 'custom-locale'",
+      "covered_branches": [
+        "L17: if branch-1"
+      ],
+      "covered_paths": [
+        "L31",
+        "L32",
+        "L33"
+      ]
+    },
+    {
+      "id": "TC_SUP_002",
+      "description": "测试 parseLocale 函数，当 preset 是字符串且 object 存在时，覆盖 L23-L24。",
+      "input": {
+        "method": "dayjs.locale",
+        "args": [
+          "fr",
+          {
+            "name": "fr",
+            "months": [
+              "janvier",
+              "février",
+              "mars",
+              "avril",
+              "mai",
+              "juin",
+              "juillet",
+              "août",
+              "septembre",
+              "octobre",
+              "novembre",
+              "décembre"
+            ]
+          }
+        ]
+      },
+      "expected_output": "返回 'fr'",
+      "covered_branches": [],
+      "covered_paths": [
+        "L23",
+        "L24"
+      ]
+    },
+    {
+      "id": "TC_SUP_003",
+      "description": "测试 parseLocale 函数，当 preset 是 'zh-cn' 且 'zh-cn' 和 'zh' 都未加载时，触发 L27 if branch-0 和 L28。",
+      "input": {
+        "method": "dayjs.locale",
+        "args": [
+          "zh-cn"
+        ]
+      },
+      "expected_output": "返回 'en' (或默认语言)",
+      "covered_branches": [
+        "L27: if branch-0"
+      ],
+      "covered_paths": [
+        "L28"
+      ]
+    },
+    {
+      "id": "TC_SUP_004",
+      "description": "测试 parseLocale 函数，当 preset 导致 l 为 falsy，且 isLocal 为 falsy时，覆盖 L36 binary-expr branch-2。",
+      "input": {
+        "method": "dayjs.locale",
+        "args": [
+          "non-existent-locale"
+        ]
+      },
+      "expected_output": "返回当前全局语言 'en'",
+      "covered_branches": [
+        "L36: binary-expr branch-2"
+      ]
+    },
+    {
+      "id": "TC_SUP_005",
+      "description": "测试 parseDate 函数，当日期字符串缺少日部分且 utc 为 true 时，覆盖 L74 binary-expr branches。",
+      "input": {
+        "method": "dayjs",
+        "args": [
+          "2023-01",
+          {
+            "utc": true
+          }
+        ]
+      },
+      "expected_output": "返回 2023-01-01T00:00:00.000Z 的 Dayjs 对象",
+      "covered_branches": [
+        "L73: if branch-0",
+        "L74: binary-expr branch-0",
+        "L74: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "L74"
+      ]
+    },
+    {
+      "id": "TC_SUP_006",
+      "description": "测试 parseDate 函数，当日期字符串缺少时间部分且 utc 为 true 时，覆盖 L75 binary-expr branches。",
+      "input": {
+        "method": "dayjs",
+        "args": [
+          "2023-01-01",
+          {
+            "utc": true
+          }
+        ]
+      },
+      "expected_output": "返回 2023-01-01T00:00:00.000Z 的 Dayjs 对象",
+      "covered_branches": [
+        "L75: binary-expr branch-0",
+        "L75: binary-expr branch-1",
+        "L75: binary-expr branch-0",
+        "L75: binary-expr branch-1",
+        "L75: binary-expr branch-0",
+        "L75: binary-expr branch-1"
+      ]
+    },
+    {
+      "id": "TC_SUP_007",
+      "description": "测试 parseDate 函数，当日期字符串缺少日部分且 utc 为 false 时，覆盖 L77 binary-expr branch-1。",
+      "input": {
+        "method": "dayjs",
+        "args": [
+          "2023-01"
+        ]
+      },
+      "expected_output": "返回 2023-01-01T00:00:00.000 (本地时区) 的 Dayjs 对象",
+      "covered_branches": [
+        "L77: binary-expr branch-1"
+      ]
+    },
+    {
+      "id": "TC_SUP_008",
+      "description": "测试 Dayjs.$utils() 方法，覆盖 L112。",
+      "input": {
+        "method": "dayjs().$utils",
+        "initial_date": "2023-01-01"
+      },
+      "expected_output": "返回 Utils 对象",
+      "covered_paths": [
+        "L112"
+      ]
+    },
+    {
+      "id": "TC_SUP_009",
+      "description": "测试 Dayjs.$g() 方法，当 input 为 undefined 时，覆盖 L133 if branch-0。",
+      "input": {
+        "method": "dayjs().year",
+        "initial_date": "2023-01-01",
+        "args": [
+          null
+        ]
+      },
+      "expected_output": "返回当前年份 2023",
+      "covered_branches": [
+        "L133: if branch-0"
+      ],
+      "covered_paths": [
+        "L133"
+      ]
+    },
+    {
+      "id": "TC_SUP_010",
+      "description": "测试 Dayjs.$g() 方法，当 input 有定义时，覆盖 L133 if branch-1 和 L134。",
+      "input": {
+        "method": "dayjs().year",
+        "initial_date": "2023-01-01",
+        "args": [
+          2024
+        ]
+      },
+      "expected_output": "返回年份设置为 2024 的 Dayjs 对象",
+      "covered_branches": [
+        "L133: if branch-1"
+      ],
+      "covered_paths": [
+        "L134"
+      ]
+    },
+    {
+      "id": "TC_SUP_011",
+      "description": "测试 Dayjs.startOf('year') 方法，当 utc 为 true 时，覆盖 L150 cond-expr branch-0 和 L163 cond-expr branch-0。",
+      "input": {
+        "method": "dayjs.utc().startOf",
+        "args": [
+          "year"
+        ]
+      },
+      "expected_output": "返回 UTC 2023-01-01 00:00:00.000 的 Dayjs 对象",
+      "covered_branches": [
+        "L150: cond-expr branch-0",
+        "L163: cond-expr branch-0"
+      ]
+    },
+    {
+      "id": "TC_SUP_012",
+      "description": "测试 Dayjs.endOf('year') 方法，覆盖 L166 cond-expr branch-1。",
+      "input": {
+        "method": "dayjs().endOf",
+        "initial_date": "2023-06-15",
+        "args": [
+          "year"
+        ]
+      },
+      "expected_output": "返回 2023-12-31 23:59:59.999 的 Dayjs 对象",
+      "covered_branches": [
+        "L166: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "L166"
+      ]
+    },
+    {
+      "id": "TC_SUP_013",
+      "description": "测试 Dayjs.startOf('month', true) 方法，覆盖 L169 cond-expr branch-0。",
+      "input": {
+        "method": "dayjs().startOf",
+        "initial_date": "2023-06-15",
+        "args": [
+          "month",
+          true
+        ]
+      },
+      "expected_output": "返回 2023-06-01 00:00:00.000 的 Dayjs 对象",
+      "covered_branches": [
+        "L169: cond-expr branch-0"
+      ]
+    },
+    {
+      "id": "TC_SUP_014",
+      "description": "测试 Dayjs.startOf('week') 方法，自定义 weekStart 且 $W < weekStart 为 true，覆盖 L172-L174。",
+      "input": {
+        "method": "dayjs().startOf",
+        "initial_date": "2023-01-01",
+        "args": [
+          "week"
+        ],
+        "locale_config": {
+          "weekStart": 1
+        }
+      },
+      "expected_output": "返回 2022-12-26 00:00:00.000 的 Dayjs 对象 (周一为一周开始，2023-01-01是周日)",
+      "covered_branches": [
+        "L172: binary-expr branch-0",
+        "L172: binary-expr branch-1",
+        "L173: cond-expr branch-0",
+        "L174: cond-expr branch-0"
+      ],
+      "covered_paths": [
+        "L172",
+        "L173",
+        "L174"
+      ]
+    },
+    {
+      "id": "TC_SUP_015",
+      "description": "测试 Dayjs.endOf('week') 方法，自定义 weekStart 且 $W < weekStart 为 false，覆盖 L173 cond-expr branch-1 和 L174 cond-expr branch-1。",
+      "input": {
+        "method": "dayjs().endOf",
+        "initial_date": "2023-01-02",
+        "args": [
+          "week"
+        ],
+        "locale_config": {
+          "weekStart": 1
+        }
+      },
+      "expected_output": "返回 2023-01-08 23:59:59.999 的 Dayjs 对象 (周一为一周开始，2023-01-02是周一)",
+      "covered_branches": [
+        "L173: cond-expr branch-1",
+        "L174: cond-expr branch-1"
+      ]
+    },
+    {
+      "id": "TC_SUP_016",
+      "description": "测试 Dayjs.startOf('hour') 方法，覆盖 L180。",
+      "input": {
+        "method": "dayjs().startOf",
+        "initial_date": "2023-01-01 12:34:56",
+        "args": [
+          "hour"
+        ]
+      },
+      "expected_output": "返回 2023-01-01 12:00:00.000 的 Dayjs 对象",
+      "covered_paths": [
+        "L180"
+      ]
+    },
+    {
+      "id": "TC_SUP_017",
+      "description": "测试 Dayjs.startOf('minute') 方法，覆盖 L182。",
+      "input": {
+        "method": "dayjs().startOf",
+        "initial_date": "2023-01-01 12:34:56",
+        "args": [
+          "minute"
+        ]
+      },
+      "expected_output": "返回 2023-01-01 12:34:00.000 的 Dayjs 对象",
+      "covered_paths": [
+        "L182"
+      ]
+    },
+    {
+      "id": "TC_SUP_018",
+      "description": "测试 Dayjs.startOf('second') 方法，覆盖 L184。",
+      "input": {
+        "method": "dayjs().startOf",
+        "initial_date": "2023-01-01 12:34:56.789",
+        "args": [
+          "second"
+        ]
+      },
+      "expected_output": "返回 2023-01-01 12:34:56.000 的 Dayjs 对象",
+      "covered_paths": [
+        "L184"
+      ]
+    },
+    {
+      "id": "TC_SUP_019",
+      "description": "测试 Dayjs.$set() 方法，设置月份导致日期调整，覆盖 L209 if branch-0 和 L211-L214。",
+      "input": {
+        "method": "dayjs().set",
+        "initial_date": "2023-03-31",
+        "args": [
+          "month",
+          1
+        ]
+      },
+      "expected_output": "返回 2023-02-28 的 Dayjs 对象",
+      "covered_branches": [
+        "L209: if branch-0"
+      ],
+      "covered_paths": [
+        "L211",
+        "L212",
+        "L213",
+        "L214"
+      ]
+    },
+    {
+      "id": "TC_SUP_020",
+      "description": "测试 Dayjs.$set() 方法，设置非月份/年份单位，覆盖 L215 if branch-0。",
+      "input": {
+        "method": "dayjs().set",
+        "initial_date": "2023-01-01",
+        "args": [
+          "hour",
+          10
+        ]
+      },
+      "expected_output": "返回小时设置为 10 的 Dayjs 对象",
+      "covered_branches": [
+        "L215: if branch-0"
+      ],
+      "covered_paths": [
+        "L215"
+      ]
+    },
+    {
+      "id": "TC_SUP_021",
+      "description": "测试 Dayjs.add(1, 'month') 方法，覆盖 L236 if branch-0 和 L237。",
+      "input": {
+        "method": "dayjs().add",
+        "initial_date": "2023-01-31",
+        "args": [
+          1,
+          "month"
+        ]
+      },
+      "expected_output": "返回 2023-02-28 的 Dayjs 对象",
+      "covered_branches": [
+        "L236: if branch-0"
+      ],
+      "covered_paths": [
+        "L237"
+      ]
+    },
+    {
+      "id": "TC_SUP_022",
+      "description": "测试 Dayjs.add(1, 'year') 方法，覆盖 L239 if branch-0 和 L240。",
+      "input": {
+        "method": "dayjs().add",
+        "initial_date": "2024-02-29",
+        "args": [
+          1,
+          "year"
+        ]
+      },
+      "expected_output": "返回 2025-02-28 的 Dayjs 对象",
+      "covered_branches": [
+        "L239: if branch-0"
+      ],
+      "covered_paths": [
+        "L240"
+      ]
+    },
+    {
+      "id": "TC_SUP_023",
+      "description": "测试 Dayjs.add(1, 'day') 方法，覆盖 L242 if branch-0 和 L243，以及 L233-L234。",
+      "input": {
+        "method": "dayjs().add",
+        "initial_date": "2023-01-01",
+        "args": [
+          1,
+          "day"
+        ]
+      },
+      "expected_output": "返回 2023-01-02 的 Dayjs 对象",
+      "covered_branches": [
+        "L242: if branch-0"
+      ],
+      "covered_paths": [
+        "L233",
+        "L234",
+        "L243"
+      ]
+    },
+    {
+      "id": "TC_SUP_024",
+      "description": "测试 Dayjs.add(1, 'week') 方法，覆盖 L245 if branch-0 和 L246。",
+      "input": {
+        "method": "dayjs().add",
+        "initial_date": "2023-01-01",
+        "args": [
+          1,
+          "week"
+        ]
+      },
+      "expected_output": "返回 2023-01-08 的 Dayjs 对象",
+      "covered_branches": [
+        "L245: if branch-0"
+      ],
+      "covered_paths": [
+        "L246"
+      ]
+    },
+    {
+      "id": "TC_SUP_025",
+      "description": "测试 Dayjs.format() 方法，当日期无效时，覆盖 L265 if branch-1。",
+      "input": {
+        "method": "dayjs",
+        "args": [
+          null
+        ],
+        "call_method": "format"
+      },
+      "expected_output": "返回 'Invalid Date'",
+      "covered_branches": [
+        "L265: if branch-1"
+      ]
+    },
+    {
+      "id": "TC_SUP_026",
+      "description": "测试 Dayjs.format() 方法，不传入 formatStr 参数，覆盖 L267 binary-expr branch-1 和 L268-L269, L272-L273, L276, L280, L285。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 12:34:56"
+      },
+      "expected_output": "返回默认格式的日期字符串",
+      "covered_branches": [
+        "L267: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "L267",
+        "L268",
+        "L269",
+        "L272",
+        "L273",
+        "L276",
+        "L280",
+        "L285"
+      ]
+    },
+    {
+      "id": "TC_SUP_027",
+      "description": "测试 Dayjs.format() 方法，自定义 locale 的 monthsShort 为函数，覆盖 L274 binary-expr branch-0, branch-1。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "MMM"
+        ],
+        "locale_config": {
+          "monthsShort": "(d, f) => 'CustomMonth'"
+        }
+      },
+      "expected_output": "返回 'CustomMonth'",
+      "covered_branches": [
+        "L274: binary-expr branch-0",
+        "L274: binary-expr branch-1"
+      ]
+    },
+    {
+      "id": "TC_SUP_028",
+      "description": "测试 Dayjs.format() 方法，自定义 locale 的 monthsShort 为 undefined，回退到 slice，覆盖 L274 binary-expr branch-2, branch-3。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "MMM"
+        ],
+        "locale_config": {
+          "monthsShort": null
+        }
+      },
+      "expected_output": "返回 'Jan'",
+      "covered_branches": [
+        "L274: binary-expr branch-2",
+        "L274: binary-expr branch-3"
+      ]
+    },
+    {
+      "id": "TC_SUP_029",
+      "description": "测试 Dayjs.format('h') 方法，小时为 0 (12 AM)，覆盖 L277 binary-expr branch-0。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 00:30:00",
+        "args": [
+          "h"
+        ]
+      },
+      "expected_output": "返回 '12'",
+      "covered_branches": [
+        "L277: binary-expr branch-0"
+      ]
+    },
+    {
+      "id": "TC_SUP_030",
+      "description": "测试 Dayjs.format('h') 方法，小时为 13 (1 PM)，覆盖 L277 binary-expr branch-1。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:30:00",
+        "args": [
+          "h"
+        ]
+      },
+      "expected_output": "返回 '1'",
+      "covered_branches": [
+        "L277: binary-expr branch-1"
+      ]
+    },
+    {
+      "id": "TC_SUP_031",
+      "description": "测试 Dayjs.format('a') 方法，小时为 1 (AM)，覆盖 L281 cond-expr branch-0 和 L282 cond-expr branch-0。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 01:00:00",
+        "args": [
+          "a"
+        ]
+      },
+      "expected_output": "返回 'am'",
+      "covered_branches": [
+        "L281: cond-expr branch-0",
+        "L282: cond-expr branch-0"
+      ]
+    },
+    {
+      "id": "TC_SUP_032",
+      "description": "测试 Dayjs.format('A') 方法，小时为 13 (PM)，覆盖 L281 cond-expr branch-1 和 L282 cond-expr branch-1。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:00:00",
+        "args": [
+          "A"
+        ]
+      },
+      "expected_output": "返回 'PM'",
+      "covered_branches": [
+        "L281: cond-expr branch-1",
+        "L282: cond-expr branch-1"
+      ]
+    },
+    {
+      "id": "TC_SUP_033",
+      "description": "测试 Dayjs.format() 方法，自定义 meridiem 函数，覆盖 L280 binary-expr branch-0。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 01:00:00",
+        "args": [
+          "a"
+        ],
+        "locale_config": {
+          "meridiem": "(h, m, l) => l ? 'custom_am' : 'CUSTOM_AM'"
+        }
+      },
+      "expected_output": "返回 'custom_am'",
+      "covered_branches": [
+        "L280: binary-expr branch-0"
+      ]
+    },
+    {
+      "id": "TC_SUP_034",
+      "description": "测试 Dayjs.format('YY') 格式化，覆盖 L286 switch branch-0 和 L288。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "YY"
+        ]
+      },
+      "expected_output": "返回 '23'",
+      "covered_branches": [
+        "L286: switch branch-0"
+      ],
+      "covered_paths": [
+        "L288"
+      ]
+    },
+    {
+      "id": "TC_SUP_035",
+      "description": "测试 Dayjs.format('YYYY') 格式化，覆盖 L286 switch branch-1 和 L290。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "YYYY"
+        ]
+      },
+      "expected_output": "返回 '2023'",
+      "covered_branches": [
+        "L286: switch branch-1"
+      ],
+      "covered_paths": [
+        "L290"
+      ]
+    },
+    {
+      "id": "TC_SUP_036",
+      "description": "测试 Dayjs.format('M') 格式化，覆盖 L286 switch branch-2 和 L292。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "M"
+        ]
+      },
+      "expected_output": "返回 '1'",
+      "covered_branches": [
+        "L286: switch branch-2"
+      ],
+      "covered_paths": [
+        "L292"
+      ]
+    },
+    {
+      "id": "TC_SUP_037",
+      "description": "测试 Dayjs.format('MM') 格式化，覆盖 L286 switch branch-3 和 L294。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "MM"
+        ]
+      },
+      "expected_output": "返回 '01'",
+      "covered_branches": [
+        "L286: switch branch-3"
+      ],
+      "covered_paths": [
+        "L294"
+      ]
+    },
+    {
+      "id": "TC_SUP_038",
+      "description": "测试 Dayjs.format('MMM') 格式化，覆盖 L286 switch branch-4 和 L296。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "MMM"
+        ]
+      },
+      "expected_output": "返回 'Jan'",
+      "covered_branches": [
+        "L286: switch branch-4"
+      ],
+      "covered_paths": [
+        "L296"
+      ]
+    },
+    {
+      "id": "TC_SUP_039",
+      "description": "测试 Dayjs.format('MMMM') 格式化，覆盖 L286 switch branch-5 和 L298。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "MMMM"
+        ]
+      },
+      "expected_output": "返回 'January'",
+      "covered_branches": [
+        "L286: switch branch-5"
+      ],
+      "covered_paths": [
+        "L298"
+      ]
+    },
+    {
+      "id": "TC_SUP_040",
+      "description": "测试 Dayjs.format('D') 格式化，覆盖 L286 switch branch-6 和 L300。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "D"
+        ]
+      },
+      "expected_output": "返回 '1'",
+      "covered_branches": [
+        "L286: switch branch-6"
+      ],
+      "covered_paths": [
+        "L300"
+      ]
+    },
+    {
+      "id": "TC_SUP_041",
+      "description": "测试 Dayjs.format('DD') 格式化，覆盖 L286 switch branch-7 和 L302。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "DD"
+        ]
+      },
+      "expected_output": "返回 '01'",
+      "covered_branches": [
+        "L286: switch branch-7"
+      ],
+      "covered_paths": [
+        "L302"
+      ]
+    },
+    {
+      "id": "TC_SUP_042",
+      "description": "测试 Dayjs.format('d') 格式化，覆盖 L286 switch branch-8 和 L304。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "d"
+        ]
+      },
+      "expected_output": "返回 '0'",
+      "covered_branches": [
+        "L286: switch branch-8"
+      ],
+      "covered_paths": [
+        "L304"
+      ]
+    },
+    {
+      "id": "TC_SUP_043",
+      "description": "测试 Dayjs.format('dd') 格式化，覆盖 L286 switch branch-9 和 L306。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "dd"
+        ]
+      },
+      "expected_output": "返回 'Su'",
+      "covered_branches": [
+        "L286: switch branch-9"
+      ],
+      "covered_paths": [
+        "L306"
+      ]
+    },
+    {
+      "id": "TC_SUP_044",
+      "description": "测试 Dayjs.format('ddd') 格式化，覆盖 L286 switch branch-10 和 L308。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "ddd"
+        ]
+      },
+      "expected_output": "返回 'Sun'",
+      "covered_branches": [
+        "L286: switch branch-10"
+      ],
+      "covered_paths": [
+        "L308"
+      ]
+    },
+    {
+      "id": "TC_SUP_045",
+      "description": "测试 Dayjs.format('dddd') 格式化，覆盖 L286 switch branch-11 和 L310。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "dddd"
+        ]
+      },
+      "expected_output": "返回 'Sunday'",
+      "covered_branches": [
+        "L286: switch branch-11"
+      ],
+      "covered_paths": [
+        "L310"
+      ]
+    },
+    {
+      "id": "TC_SUP_046",
+      "description": "测试 Dayjs.format('H') 格式化，覆盖 L286 switch branch-12 和 L312。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:00:00",
+        "args": [
+          "H"
+        ]
+      },
+      "expected_output": "返回 '13'",
+      "covered_branches": [
+        "L286: switch branch-12"
+      ],
+      "covered_paths": [
+        "L312"
+      ]
+    },
+    {
+      "id": "TC_SUP_047",
+      "description": "测试 Dayjs.format('HH') 格式化，覆盖 L286 switch branch-13 和 L314。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:00:00",
+        "args": [
+          "HH"
+        ]
+      },
+      "expected_output": "返回 '13'",
+      "covered_branches": [
+        "L286: switch branch-13"
+      ],
+      "covered_paths": [
+        "L314"
+      ]
+    },
+    {
+      "id": "TC_SUP_048",
+      "description": "测试 Dayjs.format('h') 格式化，覆盖 L286 switch branch-14 和 L316。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:00:00",
+        "args": [
+          "h"
+        ]
+      },
+      "expected_output": "返回 '1'",
+      "covered_branches": [
+        "L286: switch branch-14"
+      ],
+      "covered_paths": [
+        "L316"
+      ]
+    },
+    {
+      "id": "TC_SUP_049",
+      "description": "测试 Dayjs.format('hh') 格式化，覆盖 L286 switch branch-15 和 L318。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:00:00",
+        "args": [
+          "hh"
+        ]
+      },
+      "expected_output": "返回 '01'",
+      "covered_branches": [
+        "L286: switch branch-15"
+      ],
+      "covered_paths": [
+        "L318"
+      ]
+    },
+    {
+      "id": "TC_SUP_050",
+      "description": "测试 Dayjs.format('a') 格式化，覆盖 L286 switch branch-16 和 L320。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:00:00",
+        "args": [
+          "a"
+        ]
+      },
+      "expected_output": "返回 'pm'",
+      "covered_branches": [
+        "L286: switch branch-16"
+      ],
+      "covered_paths": [
+        "L320"
+      ]
+    },
+    {
+      "id": "TC_SUP_051",
+      "description": "测试 Dayjs.format('A') 格式化，覆盖 L286 switch branch-17 和 L322。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:00:00",
+        "args": [
+          "A"
+        ]
+      },
+      "expected_output": "返回 'PM'",
+      "covered_branches": [
+        "L286: switch branch-17"
+      ],
+      "covered_paths": [
+        "L322"
+      ]
+    },
+    {
+      "id": "TC_SUP_052",
+      "description": "测试 Dayjs.format('m') 格式化，覆盖 L286 switch branch-18 和 L324。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:05:00",
+        "args": [
+          "m"
+        ]
+      },
+      "expected_output": "返回 '5'",
+      "covered_branches": [
+        "L286: switch branch-18"
+      ],
+      "covered_paths": [
+        "L324"
+      ]
+    },
+    {
+      "id": "TC_SUP_053",
+      "description": "测试 Dayjs.format('mm') 格式化，覆盖 L286 switch branch-19 和 L326。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:05:00",
+        "args": [
+          "mm"
+        ]
+      },
+      "expected_output": "返回 '05'",
+      "covered_branches": [
+        "L286: switch branch-19"
+      ],
+      "covered_paths": [
+        "L326"
+      ]
+    },
+    {
+      "id": "TC_SUP_054",
+      "description": "测试 Dayjs.format('s') 格式化，覆盖 L286 switch branch-20 和 L328。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:00:05",
+        "args": [
+          "s"
+        ]
+      },
+      "expected_output": "返回 '5'",
+      "covered_branches": [
+        "L286: switch branch-20"
+      ],
+      "covered_paths": [
+        "L328"
+      ]
+    },
+    {
+      "id": "TC_SUP_055",
+      "description": "测试 Dayjs.format('ss') 格式化，覆盖 L286 switch branch-21 和 L330。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:00:05",
+        "args": [
+          "ss"
+        ]
+      },
+      "expected_output": "返回 '05'",
+      "covered_branches": [
+        "L286: switch branch-21"
+      ],
+      "covered_paths": [
+        "L330"
+      ]
+    },
+    {
+      "id": "TC_SUP_056",
+      "description": "测试 Dayjs.format('SSS') 格式化，覆盖 L286 switch branch-22 和 L332。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01 13:00:00.123",
+        "args": [
+          "SSS"
+        ]
+      },
+      "expected_output": "返回 '123'",
+      "covered_branches": [
+        "L286: switch branch-22"
+      ],
+      "covered_paths": [
+        "L332"
+      ]
+    },
+    {
+      "id": "TC_SUP_057",
+      "description": "测试 Dayjs.format('Z') 格式化，覆盖 L286 switch branch-23 和 L334。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "Z"
+        ]
+      },
+      "expected_output": "返回时区偏移字符串，例如 '+08:00'",
+      "covered_branches": [
+        "L286: switch branch-23"
+      ],
+      "covered_paths": [
+        "L334"
+      ]
+    },
+    {
+      "id": "TC_SUP_058",
+      "description": "测试 Dayjs.format('ZZ') 格式化，覆盖 L341 binary-expr branch-2。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "ZZ"
+        ]
+      },
+      "expected_output": "返回时区偏移字符串（无冒号），例如 '+0800'",
+      "covered_branches": [
+        "L341: binary-expr branch-2"
+      ],
+      "covered_paths": [
+        "L341"
+      ]
+    },
+    {
+      "id": "TC_SUP_059",
+      "description": "测试 Dayjs.format('[escaped text]') 格式化，覆盖 L341 binary-expr branch-0。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "[Hello]"
+        ]
+      },
+      "expected_output": "返回 'Hello'",
+      "covered_branches": [
+        "L341: binary-expr branch-0"
+      ]
+    },
+    {
+      "id": "TC_SUP_060",
+      "description": "测试 Dayjs.format('X') 格式化，覆盖 L286 switch branch-24 (default) 和 L336, L338。",
+      "input": {
+        "method": "dayjs().format",
+        "initial_date": "2023-01-01",
+        "args": [
+          "X"
+        ]
+      },
+      "expected_output": "返回 'X'",
+      "covered_branches": [
+        "L286: switch branch-24"
+      ],
+      "covered_paths": [
+        "L336",
+        "L338"
+      ]
+    },
+    {
+      "id": "TC_SUP_061",
+      "description": "测试 Dayjs.diff() 方法，按年计算差异，覆盖 L355, L358 switch branch-0, L360, L361。",
+      "input": {
+        "method": "dayjs().diff",
+        "initial_date": "2024-01-01",
+        "args": [
+          "2023-01-01",
+          "year"
+        ]
+      },
+      "expected_output": "返回 1",
+      "covered_branches": [
+        "L358: switch branch-0"
+      ],
+      "covered_paths": [
+        "L355",
+        "L360",
+        "L361"
+      ]
+    },
+    {
+      "id": "TC_SUP_062",
+      "description": "测试 Dayjs.diff() 方法，按月计算差异，覆盖 L358 switch branch-1, L363, L364。",
+      "input": {
+        "method": "dayjs().diff",
+        "initial_date": "2023-02-01",
+        "args": [
+          "2023-01-01",
+          "month"
+        ]
+      },
+      "expected_output": "返回 1",
+      "covered_branches": [
+        "L358: switch branch-1"
+      ],
+      "covered_paths": [
+        "L363",
+        "L364"
+      ]
+    },
+    {
+      "id": "TC_SUP_063",
+      "description": "测试 Dayjs.diff() 方法，按季度计算差异，覆盖 L358 switch branch-2, L366, L367。",
+      "input": {
+        "method": "dayjs().diff",
+        "initial_date": "2023-04-01",
+        "args": [
+          "2023-01-01",
+          "quarter"
+        ]
+      },
+      "expected_output": "返回 1",
+      "covered_branches": [
+        "L358: switch branch-2"
+      ],
+      "covered_paths": [
+        "L366",
+        "L367"
+      ]
+    },
+    {
+      "id": "TC_SUP_064",
+      "description": "测试 Dayjs.diff() 方法，按周计算差异，覆盖 L358 switch branch-3, L369, L370。",
+      "input": {
+        "method": "dayjs().diff",
+        "initial_date": "2023-01-08",
+        "args": [
+          "2023-01-01",
+          "week"
+        ]
+      },
+      "expected_output": "返回 1",
+      "covered_branches": [
+        "L358: switch branch-3"
+      ],
+      "covered_paths": [
+        "L369",
+        "L370"
+      ]
+    },
+    {
+      "id": "TC_SUP_065",
+      "description": "测试 Dayjs.diff() 方法，按天计算差异，覆盖 L358 switch branch-4, L372, L373。",
+      "input": {
+        "method": "dayjs().diff",
+        "initial_date": "2023-01-02",
+        "args": [
+          "2023-01-01",
+          "day"
+        ]
+      },
+      "expected_output": "返回 1",
+      "covered_branches": [
+        "L358: switch branch-4"
+      ],
+      "covered_paths": [
+        "L372",
+        "L373"
+      ]
+    },
+    {
+      "id": "TC_SUP_066",
+      "description": "测试 Dayjs.diff() 方法，按小时计算差异，覆盖 L358 switch branch-5, L375, L376。",
+      "input": {
+        "method": "dayjs().diff",
+        "initial_date": "2023-01-01 01:00:00",
+        "args": [
+          "2023-01-01 00:00:00",
+          "hour"
+        ]
+      },
+      "expected_output": "返回 1",
+      "covered_branches": [
+        "L358: switch branch-5"
+      ],
+      "covered_paths": [
+        "L375",
+        "L376"
+      ]
+    },
+    {
+      "id": "TC_SUP_067",
+      "description": "测试 Dayjs.diff() 方法，按分钟计算差异，覆盖 L358 switch branch-6, L378, L379。",
+      "input": {
+        "method": "dayjs().diff",
+        "initial_date": "2023-01-01 00:01:00",
+        "args": [
+          "2023-01-01 00:00:00",
+          "minute"
+        ]
+      },
+      "expected_output": "返回 1",
+      "covered_branches": [
+        "L358: switch branch-6"
+      ],
+      "covered_paths": [
+        "L378",
+        "L379"
+      ]
+    },
+    {
+      "id": "TC_SUP_068",
+      "description": "测试 Dayjs.diff() 方法，按秒计算差异，覆盖 L358 switch branch-7, L381, L382。",
+      "input": {
+        "method": "dayjs().diff",
+        "initial_date": "2023-01-01 00:00:01",
+        "args": [
+          "2023-01-01 00:00:00",
+          "second"
+        ]
+      },
+      "expected_output": "返回 1",
+      "covered_branches": [
+        "L358: switch branch-7"
+      ],
+      "covered_paths": [
+        "L381",
+        "L382"
+      ]
+    },
+    {
+      "id": "TC_SUP_069",
+      "description": "测试 Dayjs.diff() 方法，float 参数为 true，覆盖 L388 cond-expr branch-0。",
+      "input": {
+        "method": "dayjs().diff",
+        "initial_date": "2023-01-01 12:00:00",
+        "args": [
+          "2023-01-01 00:00:00",
+          "day",
+          true
+        ]
+      },
+      "expected_output": "返回 0.5",
+      "covered_branches": [
+        "L388: cond-expr branch-0"
+      ]
+    },
+    {
+      "id": "TC_SUP_070",
+      "description": "测试 Dayjs.locale() 方法，设置新语言环境，覆盖 L400 if branch-1, L401-L404。",
+      "input": {
+        "method": "dayjs().locale",
+        "initial_date": "2023-01-01",
+        "args": [
+          "es",
+          {
+            "name": "es",
+            "months": [
+              "enero",
+              "febrero"
+            ]
+          }
+        ]
+      },
+      "expected_output": "返回一个设置了 'es' 语言环境的 Dayjs 对象",
+      "covered_branches": [
+        "L400: if branch-1",
+        "L403: if branch-0"
+      ],
+      "covered_paths": [
+        "L401",
+        "L402",
+        "L403",
+        "L404"
+      ]
+    },
+    {
+      "id": "TC_SUP_071",
+      "description": "测试 Dayjs.locale() 方法，设置不存在的语言环境，覆盖 L403 if branch-1。",
+      "input": {
+        "method": "dayjs().locale",
+        "initial_date": "2023-01-01",
+        "args": [
+          "nonexistent-locale"
+        ]
+      },
+      "expected_output": "返回一个语言环境未改变的 Dayjs 对象",
+      "covered_branches": [
+        "L403: if branch-1"
+      ]
+    },
+    {
+      "id": "TC_SUP_072",
+      "description": "测试 Dayjs.prototype 上的 getter/setter (例如 year)，覆盖 L444。",
+      "input": {
+        "method": "dayjs().year",
+        "initial_date": "2023-01-01"
+      },
+      "expected_output": "返回年份 2023",
+      "covered_paths": [
+        "L444"
+      ]
+    },
+    {
+      "id": "TC_SUP_073",
+      "description": "测试 dayjs.extend() 方法，首次安装插件，覆盖 L449 if branch-0, L450, L451, L453。",
+      "input": {
+        "method": "dayjs.extend",
+        "args": [
+          "plugin_function_1",
+          {}
+        ]
+      },
+      "expected_output": "返回 dayjs 对象",
+      "covered_branches": [
+        "L449: if branch-0"
+      ],
+      "covered_paths": [
+        "L449",
+        "L450",
+        "L451",
+        "L453"
+      ]
+    },
+    {
+      "id": "TC_SUP_074",
+      "description": "测试 dayjs.extend() 方法，重复安装已安装插件，覆盖 L449 if branch-1 和 L453。",
+      "input": {
+        "method": "dayjs.extend",
+        "args": [
+          "plugin_function_2",
+          {}
+        ],
+        "pre_setup": "const plugin_function_2 = () => {}; dayjs.extend(plugin_function_2);"
+      },
+      "expected_output": "返回 dayjs 对象",
+      "covered_branches": [
+        "L449: if branch-1"
+      ],
+      "covered_paths": [
+        "L453"
+      ]
+    },
+    {
+      "id": "TC_SUP_075",
+      "description": "测试 dayjs.unix() 方法，覆盖 L461。",
+      "input": {
+        "method": "dayjs.unix",
+        "args": [
+          1672531200
+        ]
+      },
+      "expected_output": "返回对应时间戳的 Dayjs 对象 (2023-01-01 00:00:00 UTC)",
+      "covered_paths": [
+        "L461"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 58.4,
+    "branch_coverage": 43.96,
+    "uncovered_lines": [
+      23,
+      24,
+      28,
+      31,
+      32,
+      33,
+      35,
+      74,
+      112,
+      133,
+      134,
+      166,
+      172,
+      173,
+      174,
+      180,
+      182,
+      184,
+      211,
+      212,
+      213,
+      214,
+      215,
+      233,
+      234,
+      237,
+      240,
+      243,
+      246,
+      267,
+      268,
+      269,
+      272,
+      273,
+      274,
+      276,
+      277,
+      280,
+      281,
+      282,
+      285,
+      286,
+      288,
+      290,
+      292,
+      294,
+      296,
+      298,
+      300,
+      302,
+      304,
+      306,
+      308,
+      310,
+      312,
+      314,
+      316,
+      318,
+      320,
+      322,
+      324,
+      326,
+      328,
+      330,
+      332,
+      334,
+      336,
+      338,
+      341,
+      355,
+      360,
+      361,
+      363,
+      364,
+      366,
+      367,
+      369,
+      370,
+      372,
+      373,
+      375,
+      376,
+      378,
+      379,
+      381,
+      382,
+      401,
+      402,
+      403,
+      404,
+      444,
+      449,
+      450,
+      451,
+      453,
+      461
+    ],
+    "uncovered_branches": [
+      "L17: if branch-1",
+      "L22: if branch-0",
+      "L27: if branch-0",
+      "L35: if branch-0",
+      "L35: binary-expr branch-1",
+      "L36: binary-expr branch-2",
+      "L73: if branch-0",
+      "L74: binary-expr branch-0",
+      "L74: binary-expr branch-1",
+      "L75: binary-expr branch-0",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-0",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-0",
+      "L75: binary-expr branch-1",
+      "L77: binary-expr branch-1",
+      "L121: binary-expr branch-1",
+      "L133: if branch-0",
+      "L133: if branch-1",
+      "L150: cond-expr branch-0",
+      "L152: cond-expr branch-0",
+      "L159: cond-expr branch-0",
+      "L163: cond-expr branch-0",
+      "L164: switch branch-0",
+      "L164: switch branch-2",
+      "L164: switch branch-5",
+      "L164: switch branch-6",
+      "L164: switch branch-7",
+      "L166: cond-expr branch-0",
+      "L166: cond-expr branch-1",
+      "L169: cond-expr branch-0",
+      "L172: binary-expr branch-0",
+      "L172: binary-expr branch-1",
+      "L173: cond-expr branch-0",
+      "L173: cond-expr branch-1",
+      "L174: cond-expr branch-0",
+      "L174: cond-expr branch-1",
+      "L196: cond-expr branch-0",
+      "L207: cond-expr branch-0",
+      "L209: if branch-0",
+      "L215: if branch-0",
+      "L236: if branch-0",
+      "L239: if branch-0",
+      "L242: if branch-0",
+      "L245: if branch-0",
+      "L265: if branch-1",
+      "L267: binary-expr branch-0",
+      "L267: binary-expr branch-1",
+      "L274: binary-expr branch-0",
+      "L274: binary-expr branch-1",
+      "L274: binary-expr branch-2",
+      "L274: binary-expr branch-3",
+      "L277: binary-expr branch-0",
+      "L277: binary-expr branch-1",
+      "L280: binary-expr branch-0",
+      "L280: binary-expr branch-1",
+      "L281: cond-expr branch-0",
+      "L281: cond-expr branch-1",
+      "L282: cond-expr branch-0",
+      "L282: cond-expr branch-1",
+      "L286: switch branch-0",
+      "L286: switch branch-1",
+      "L286: switch branch-2",
+      "L286: switch branch-3",
+      "L286: switch branch-4",
+      "L286: switch branch-5",
+      "L286: switch branch-6",
+      "L286: switch branch-7",
+      "L286: switch branch-8",
+      "L286: switch branch-9",
+      "L286: switch branch-10",
+      "L286: switch branch-11",
+      "L286: switch branch-12",
+      "L286: switch branch-13",
+      "L286: switch branch-14",
+      "L286: switch branch-15",
+      "L286: switch branch-16",
+      "L286: switch branch-17",
+      "L286: switch branch-18",
+      "L286: switch branch-19",
+      "L286: switch branch-20",
+      "L286: switch branch-21",
+      "L286: switch branch-22",
+      "L286: switch branch-23",
+      "L286: switch branch-24",
+      "L341: binary-expr branch-0",
+      "L341: binary-expr branch-1",
+      "L341: binary-expr branch-2",
+      "L358: switch branch-0",
+      "L358: switch branch-1",
+      "L358: switch branch-2",
+      "L358: switch branch-3",
+      "L358: switch branch-4",
+      "L358: switch branch-5",
+      "L358: switch branch-6",
+      "L358: switch branch-7",
+      "L388: cond-expr branch-0",
+      "L400: if branch-1",
+      "L403: if branch-0",
+      "L403: if branch-1",
+      "L449: if branch-0",
+      "L449: if branch-1"
+    ],
+    "test_results": {
+      "total": 280,
+      "passed": 1,
+      "failed": 279,
+      "error": 0
+    }
+  }
+}

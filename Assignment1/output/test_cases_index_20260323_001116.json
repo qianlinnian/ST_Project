@@ -1,0 +1,1903 @@
+{
+  "source_file": "index.js",
+  "language": "javascript",
+  "llm_provider": "deepseek-chat",
+  "llm_model": "deepseek-chat",
+  "analysis": null,
+  "test_cases": [
+    {
+      "id": "TC002",
+      "description": "测试 dayjs 函数传入 null 日期",
+      "input": {
+        "date": null
+      },
+      "expected_output": "一个表示无效日期的 Dayjs 对象",
+      "covered_branches": [
+        "parseDate 中 date === null 为 true"
+      ],
+      "covered_paths": [
+        "dayjs -> parseDate -> date === null 路径"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "测试 dayjs 函数传入有效的日期字符串（非 UTC）",
+      "input": {
+        "date": "2023-01-01 12:00:00.123"
+      },
+      "expected_output": "一个表示 2023-01-01 12:00:00.123 的 Dayjs 对象",
+      "covered_branches": [
+        "parseDate 中 typeof date === 'string' 为 true 且 REGEX_PARSE 匹配成功"
+      ],
+      "covered_paths": [
+        "dayjs -> parseDate -> 字符串解析成功路径"
+      ]
+    },
+    {
+      "id": "TC006",
+      "description": "测试 dayjs 函数传入无效的日期字符串",
+      "input": {
+        "date": "invalid-date"
+      },
+      "expected_output": "一个表示无效日期的 Dayjs 对象",
+      "covered_branches": [
+        "parseDate 中 typeof date === 'string' 为 true 但 REGEX_PARSE 匹配失败"
+      ],
+      "covered_paths": [
+        "dayjs -> parseDate -> 字符串解析失败路径"
+      ]
+    },
+    {
+      "id": "TC007",
+      "description": "测试 dayjs 函数传入数字时间戳",
+      "input": {
+        "date": 1672531200000
+      },
+      "expected_output": "一个表示 2023-01-01 的 Dayjs 对象",
+      "covered_branches": [
+        "parseDate 中默认的 new Date(date) 路径"
+      ],
+      "covered_paths": [
+        "dayjs -> parseDate -> 默认 new Date(date) 路径"
+      ]
+    },
+    {
+      "id": "TC008",
+      "description": "测试 parseLocale 函数传入空 preset",
+      "input": {
+        "preset": null
+      },
+      "expected_output": "当前全局 locale 'en'",
+      "covered_branches": [
+        "parseLocale 中 !preset 为 true"
+      ],
+      "covered_paths": [
+        "parseLocale -> !preset 路径"
+      ]
+    },
+    {
+      "id": "TC009",
+      "description": "测试 parseLocale 函数传入已存在的 locale 字符串",
+      "input": {
+        "preset": "en"
+      },
+      "expected_output": "'en'",
+      "covered_branches": [
+        "parseLocale 中 typeof preset === 'string' 为 true 且 Ls[presetLower] 存在"
+      ],
+      "covered_paths": [
+        "parseLocale -> 字符串 preset -> 已存在 locale 路径"
+      ]
+    },
+    {
+      "preset": "fr",
+      "object": {
+        "name": "fr"
+      }
+    },
+    {
+      "id": "TC011",
+      "description": "测试 parseLocale 函数传入带连字符的 locale 字符串且无对应对象",
+      "input": {
+        "preset": "zh-CN"
+      },
+      "expected_output": "'zh'",
+      "covered_branches": [
+        "parseLocale 中 presetSplit.length > 1 为 true"
+      ],
+      "covered_paths": [
+        "parseLocale -> 字符串 preset -> 连字符分割路径"
+      ]
+    },
+    {
+      "preset": {
+        "name": "ja"
+      }
+    },
+    {
+      "id": "TC013",
+      "description": "测试 isValid 方法在有效日期时返回 true",
+      "input": {
+        "date": "2023-01-01"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "isValid 中 toString() !== INVALID_DATE_STRING 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.isValid -> 有效日期路径"
+      ]
+    },
+    {
+      "id": "TC014",
+      "description": "测试 isValid 方法在无效日期时返回 false",
+      "input": {
+        "date": "invalid"
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "isValid 中 toString() === INVALID_DATE_STRING 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.isValid -> 无效日期路径"
+      ]
+    },
+    {
+      "id": "TC015",
+      "description": "测试 isSame 方法在相同日期时返回 true",
+      "input": {
+        "date1": "2023-01-01",
+        "date2": "2023-01-01"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "isSame 中 startOf <= other <= endOf 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.isSame -> 相同日期路径"
+      ]
+    },
+    {
+      "id": "TC016",
+      "description": "测试 isAfter 方法在当前日期晚于比较日期时返回 true",
+      "input": {
+        "date1": "2023-01-02",
+        "date2": "2023-01-01"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "isAfter 中 dayjs(that) < this.startOf(units) 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.isAfter -> 当前日期晚于比较日期路径"
+      ]
+    },
+    {
+      "id": "TC017",
+      "description": "测试 isBefore 方法在当前日期早于比较日期时返回 true",
+      "input": {
+        "date1": "2023-01-01",
+        "date2": "2023-01-02"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "isBefore 中 this.endOf(units) < dayjs(that) 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.isBefore -> 当前日期早于比较日期路径"
+      ]
+    },
+    {
+      "id": "TC019",
+      "description": "测试 $g 方法在 input 有值时调用 set 方法",
+      "input": {
+        "date": "2023-01-01",
+        "input": 2024,
+        "get": "$y",
+        "set": "year"
+      },
+      "expected_output": "一个年份为 2024 的 Dayjs 对象",
+      "covered_branches": [
+        "$g 中 Utils.u(input) 为 false"
+      ],
+      "covered_paths": [
+        "Dayjs.$g -> input 有值路径"
+      ]
+    },
+    {
+      "id": "TC020",
+      "description": "测试 startOf 方法对年单位的处理（开始）",
+      "input": {
+        "date": "2023-06-15",
+        "units": "year"
+      },
+      "expected_output": "一个表示 2023-01-01 00:00:00 的 Dayjs 对象",
+      "covered_branches": [
+        "startOf 中 unit === C.Y 且 isStartOf 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf -> C.Y -> isStartOf true 路径"
+      ]
+    },
+    {
+      "id": "TC021",
+      "description": "测试 startOf 方法对年单位的处理（结束）",
+      "input": {
+        "date": "2023-06-15",
+        "units": "year",
+        "startOf": false
+      },
+      "expected_output": "一个表示 2023-12-31 23:59:59.999 的 Dayjs 对象",
+      "covered_branches": [
+        "startOf 中 unit === C.Y 且 isStartOf 为 false"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf -> C.Y -> isStartOf false 路径"
+      ]
+    },
+    {
+      "id": "TC022",
+      "description": "测试 startOf 方法对周单位的处理",
+      "input": {
+        "date": "2023-06-15",
+        "units": "week"
+      },
+      "expected_output": "一个表示当周第一天的 Dayjs 对象",
+      "covered_branches": [
+        "startOf 中 unit === C.W 路径"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf -> C.W 路径"
+      ]
+    },
+    {
+      "id": "TC023",
+      "description": "测试 startOf 方法对小时单位的处理",
+      "input": {
+        "date": "2023-06-15 12:30:45",
+        "units": "hour"
+      },
+      "expected_output": "一个表示 2023-06-15 12:00:00 的 Dayjs 对象",
+      "covered_branches": [
+        "startOf 中 unit === C.H 路径"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf -> C.H 路径"
+      ]
+    },
+    {
+      "id": "TC024",
+      "description": "测试 startOf 方法对无效单位的处理",
+      "input": {
+        "date": "2023-06-15",
+        "units": "invalid"
+      },
+      "expected_output": "一个克隆的 Dayjs 对象",
+      "covered_branches": [
+        "startOf 中 default 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf -> default 路径"
+      ]
+    },
+    {
+      "id": "TC025",
+      "description": "测试 $set 方法对月份单位的设置",
+      "input": {
+        "date": "2023-01-15",
+        "units": "month",
+        "int": 5
+      },
+      "expected_output": "一个月份为 6 月的 Dayjs 对象",
+      "covered_branches": [
+        "$set 中 unit === C.M 路径"
+      ],
+      "covered_paths": [
+        "Dayjs.$set -> C.M 路径"
+      ]
+    },
+    {
+      "id": "TC026",
+      "description": "测试 $set 方法对日期单位的设置",
+      "input": {
+        "date": "2023-01-15",
+        "units": "date",
+        "int": 20
+      },
+      "expected_output": "一个日期为 20 日的 Dayjs 对象",
+      "covered_branches": [
+        "$set 中 unit === C.D 路径"
+      ],
+      "covered_paths": [
+        "Dayjs.$set -> C.D 路径"
+      ]
+    },
+    {
+      "id": "TC027",
+      "description": "测试 add 方法添加月份",
+      "input": {
+        "date": "2023-01-15",
+        "number": 2,
+        "units": "month"
+      },
+      "expected_output": "一个月份为 3 月的 Dayjs 对象",
+      "covered_branches": [
+        "add 中 unit === C.M 路径"
+      ],
+      "covered_paths": [
+        "Dayjs.add -> C.M 路径"
+      ]
+    },
+    {
+      "id": "TC028",
+      "description": "测试 add 方法添加天数",
+      "input": {
+        "date": "2023-01-15",
+        "number": 10,
+        "units": "day"
+      },
+      "expected_output": "一个日期为 2023-01-25 的 Dayjs 对象",
+      "covered_branches": [
+        "add 中 unit === C.D 路径"
+      ],
+      "covered_paths": [
+        "Dayjs.add -> C.D 路径"
+      ]
+    },
+    {
+      "id": "TC029",
+      "description": "测试 add 方法添加小时",
+      "input": {
+        "date": "2023-01-15 12:00:00",
+        "number": 3,
+        "units": "hour"
+      },
+      "expected_output": "一个时间为 15:00:00 的 Dayjs 对象",
+      "covered_branches": [
+        "add 中 unit === C.H 路径"
+      ],
+      "covered_paths": [
+        "Dayjs.add -> C.H 路径"
+      ]
+    },
+    {
+      "id": "TC030",
+      "description": "测试 format 方法使用默认格式",
+      "input": {
+        "date": "2023-01-01 12:30:45",
+        "formatStr": null
+      },
+      "expected_output": "2023-01-01T12:30:45+00:00",
+      "covered_branches": [
+        "format 中 !formatStr 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.format -> 默认格式路径"
+      ]
+    },
+    {
+      "id": "TC031",
+      "description": "测试 format 方法使用自定义格式 YYYY-MM-DD",
+      "input": {
+        "date": "2023-01-01",
+        "formatStr": "YYYY-MM-DD"
+      },
+      "expected_output": "2023-01-01",
+      "covered_branches": [
+        "format 中 match 为 'YYYY' 和 'MM' 和 'DD'"
+      ],
+      "covered_paths": [
+        "Dayjs.format -> 自定义格式匹配路径"
+      ]
+    },
+    {
+      "id": "TC032",
+      "description": "测试 format 方法在无效日期时返回无效字符串",
+      "input": {
+        "date": "invalid",
+        "formatStr": "YYYY-MM-DD"
+      },
+      "expected_output": "Invalid Date",
+      "covered_branches": [
+        "format 中 !this.isValid() 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.format -> 无效日期路径"
+      ]
+    },
+    {
+      "id": "TC033",
+      "description": "测试 diff 方法计算月份差",
+      "input": {
+        "date1": "2023-06-01",
+        "date2": "2023-01-01",
+        "units": "month"
+      },
+      "expected_output": 5,
+      "covered_branches": [
+        "diff 中 unit === C.M 路径"
+      ],
+      "covered_paths": [
+        "Dayjs.diff -> C.M 路径"
+      ]
+    },
+    {
+      "id": "TC034",
+      "description": "测试 diff 方法计算天数差（浮点数）",
+      "input": {
+        "date1": "2023-01-02 12:00:00",
+        "date2": "2023-01-01",
+        "units": "day",
+        "float": true
+      },
+      "expected_output": 1.5,
+      "covered_branches": [
+        "diff 中 unit === C.D 且 float 为 true"
+      ],
+      "covered_paths": [
+        "Dayjs.diff -> C.D -> float true 路径"
+      ]
+    },
+    {
+      "date": "2023-01-01",
+      "preset": "fr",
+      "object": {
+        "name": "fr"
+      }
+    },
+    {
+      "id": "TC036",
+      "description": "测试 dayjs.unix 方法",
+      "input": {
+        "timestamp": 1672531200
+      },
+      "expected_output": "一个表示 2023-01-01 的 Dayjs 对象",
+      "covered_branches": [
+        "dayjs.unix 路径"
+      ],
+      "covered_paths": [
+        "dayjs.unix -> 时间戳转换路径"
+      ]
+    },
+    {
+      "id": "TC038",
+      "description": "测试 parseDate 函数传入 UTC 日期字符串",
+      "input": {
+        "date": "2023-01-01T12:00:00Z",
+        "utc": true
+      },
+      "expected_output": "一个 UTC 时间的 Date 对象",
+      "covered_branches": [
+        "parseDate 中 /Z$/i.test(date) 为 true"
+      ],
+      "covered_paths": [
+        "parseDate -> UTC 字符串路径"
+      ]
+    },
+    {
+      "id": "TC_SUP_002",
+      "description": "测试 parseDate 函数中 utc=true 且日期字符串包含可选字段的情况",
+      "input": {
+        "date": "2023-05-15T10:30:45.123",
+        "utc": true
+      },
+      "expected_output": "UTC 日期对象",
+      "covered_branches": [
+        "L73: if branch-0",
+        "L74: binary-expr branch-0",
+        "L74: binary-expr branch-1",
+        "L75: binary-expr branch-0",
+        "L75: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "L74",
+        "L75"
+      ]
+    },
+    {
+      "id": "TC_SUP_003",
+      "description": "测试 $utils 方法",
+      "input": {},
+      "expected_output": "Utils 对象",
+      "covered_branches": [],
+      "covered_paths": [
+        "L112"
+      ]
+    },
+    {
+      "id": "TC_SUP_004",
+      "description": "测试 unix 方法",
+      "input": {
+        "date": "2023-01-01T00:00:00.000Z"
+      },
+      "expected_output": 1672531200,
+      "covered_branches": [],
+      "covered_paths": [
+        "L138"
+      ]
+    },
+    {
+      "id": "TC_SUP_005",
+      "description": "测试 startOf 方法中 units 为 'minute' 的情况",
+      "input": {
+        "date": "2023-05-15T10:30:45.123",
+        "units": "minute"
+      },
+      "expected_output": "2023-05-15T10:30:00.000",
+      "covered_branches": [
+        "L286: switch branch-4"
+      ],
+      "covered_paths": [
+        "L182"
+      ]
+    },
+    {
+      "id": "TC_SUP_006",
+      "description": "测试 startOf 方法中 units 为 'second' 的情况",
+      "input": {
+        "date": "2023-05-15T10:30:45.123",
+        "units": "second"
+      },
+      "expected_output": "2023-05-15T10:30:45.000",
+      "covered_branches": [
+        "L286: switch branch-5"
+      ],
+      "covered_paths": [
+        "L184"
+      ]
+    },
+    {
+      "id": "TC_SUP_007",
+      "description": "测试 get 方法",
+      "input": {
+        "date": "2023-05-15T10:30:45.123",
+        "unit": "month"
+      },
+      "expected_output": 4,
+      "covered_branches": [],
+      "covered_paths": [
+        "L226"
+      ]
+    },
+    {
+      "id": "TC_SUP_008",
+      "description": "测试 add 方法中 units 为 'year' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "number": 1,
+        "units": "year"
+      },
+      "expected_output": "2024-05-15",
+      "covered_branches": [
+        "L239: if branch-0"
+      ],
+      "covered_paths": [
+        "L240"
+      ]
+    },
+    {
+      "id": "TC_SUP_009",
+      "description": "测试 add 方法中 units 为 'week' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "number": 1,
+        "units": "week"
+      },
+      "expected_output": "2023-05-22",
+      "covered_branches": [
+        "L245: if branch-0",
+        "L248: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "L246"
+      ]
+    },
+    {
+      "id": "TC_SUP_010",
+      "description": "测试 subtract 方法",
+      "input": {
+        "date": "2023-05-15",
+        "number": 1,
+        "string": "day"
+      },
+      "expected_output": "2023-05-14",
+      "covered_branches": [],
+      "covered_paths": [
+        "L259"
+      ]
+    },
+    {
+      "id": "TC_SUP_011",
+      "description": "测试 format 方法中 formatStr 包含 'YY' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "formatStr": "YY"
+      },
+      "expected_output": "23",
+      "covered_branches": [
+        "L286: switch branch-0"
+      ],
+      "covered_paths": [
+        "L288"
+      ]
+    },
+    {
+      "id": "TC_SUP_012",
+      "description": "测试 format 方法中 formatStr 包含 'M' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "formatStr": "M"
+      },
+      "expected_output": "5",
+      "covered_branches": [
+        "L286: switch branch-2"
+      ],
+      "covered_paths": [
+        "L292"
+      ]
+    },
+    {
+      "id": "TC_SUP_013",
+      "description": "测试 format 方法中 formatStr 包含 'MMM' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "formatStr": "MMM"
+      },
+      "expected_output": "May",
+      "covered_branches": [
+        "L274: binary-expr branch-0",
+        "L274: binary-expr branch-1",
+        "L274: binary-expr branch-2",
+        "L274: binary-expr branch-3"
+      ],
+      "covered_paths": [
+        "L296"
+      ]
+    },
+    {
+      "id": "TC_SUP_014",
+      "description": "测试 format 方法中 formatStr 包含 'MMMM' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "formatStr": "MMMM"
+      },
+      "expected_output": "May",
+      "covered_branches": [
+        "L277: binary-expr branch-0",
+        "L277: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "L298"
+      ]
+    },
+    {
+      "id": "TC_SUP_015",
+      "description": "测试 format 方法中 formatStr 包含 'D' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "formatStr": "D"
+      },
+      "expected_output": "15",
+      "covered_branches": [
+        "L286: switch branch-6"
+      ],
+      "covered_paths": [
+        "L300"
+      ]
+    },
+    {
+      "id": "TC_SUP_016",
+      "description": "测试 format 方法中 formatStr 包含 'd' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "formatStr": "d"
+      },
+      "expected_output": "1",
+      "covered_branches": [
+        "L286: switch branch-8"
+      ],
+      "covered_paths": [
+        "L304"
+      ]
+    },
+    {
+      "id": "TC_SUP_017",
+      "description": "测试 format 方法中 formatStr 包含 'dd' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "formatStr": "dd"
+      },
+      "expected_output": "Mo",
+      "covered_branches": [],
+      "covered_paths": [
+        "L306"
+      ]
+    },
+    {
+      "id": "TC_SUP_018",
+      "description": "测试 format 方法中 formatStr 包含 'ddd' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "formatStr": "ddd"
+      },
+      "expected_output": "Mon",
+      "covered_branches": [],
+      "covered_paths": [
+        "L308"
+      ]
+    },
+    {
+      "id": "TC_SUP_019",
+      "description": "测试 format 方法中 formatStr 包含 'dddd' 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "formatStr": "dddd"
+      },
+      "expected_output": "Monday",
+      "covered_branches": [],
+      "covered_paths": [
+        "L310"
+      ]
+    },
+    {
+      "id": "TC_SUP_020",
+      "description": "测试 format 方法中 formatStr 包含 'H' 的情况",
+      "input": {
+        "date": "2023-05-15T14:30:45",
+        "formatStr": "H"
+      },
+      "expected_output": "14",
+      "covered_branches": [
+        "L286: switch branch-10"
+      ],
+      "covered_paths": [
+        "L312"
+      ]
+    },
+    {
+      "id": "TC_SUP_021",
+      "description": "测试 format 方法中 formatStr 包含 'h' 的情况",
+      "input": {
+        "date": "2023-05-15T14:30:45",
+        "formatStr": "h"
+      },
+      "expected_output": "2",
+      "covered_branches": [],
+      "covered_paths": [
+        "L316"
+      ]
+    },
+    {
+      "id": "TC_SUP_022",
+      "description": "测试 format 方法中 formatStr 包含 'hh' 的情况",
+      "input": {
+        "date": "2023-05-15T14:30:45",
+        "formatStr": "hh"
+      },
+      "expected_output": "02",
+      "covered_branches": [],
+      "covered_paths": [
+        "L318"
+      ]
+    },
+    {
+      "id": "TC_SUP_023",
+      "description": "测试 format 方法中 formatStr 包含 'a' 的情况",
+      "input": {
+        "date": "2023-05-15T14:30:45",
+        "formatStr": "a"
+      },
+      "expected_output": "pm",
+      "covered_branches": [
+        "L281: cond-expr branch-0",
+        "L281: cond-expr branch-1",
+        "L282: cond-expr branch-0",
+        "L282: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "L320"
+      ]
+    },
+    {
+      "id": "TC_SUP_024",
+      "description": "测试 format 方法中 formatStr 包含 'A' 的情况",
+      "input": {
+        "date": "2023-05-15T14:30:45",
+        "formatStr": "A"
+      },
+      "expected_output": "PM",
+      "covered_branches": [],
+      "covered_paths": [
+        "L322"
+      ]
+    },
+    {
+      "id": "TC_SUP_025",
+      "description": "测试 format 方法中 formatStr 包含 'm' 的情况",
+      "input": {
+        "date": "2023-05-15T14:30:45",
+        "formatStr": "m"
+      },
+      "expected_output": "30",
+      "covered_branches": [
+        "L286: switch branch-12"
+      ],
+      "covered_paths": [
+        "L324"
+      ]
+    },
+    {
+      "id": "TC_SUP_026",
+      "description": "测试 format 方法中 formatStr 包含 's' 的情况",
+      "input": {
+        "date": "2023-05-15T14:30:45",
+        "formatStr": "s"
+      },
+      "expected_output": "45",
+      "covered_branches": [
+        "L286: switch branch-14"
+      ],
+      "covered_paths": [
+        "L328"
+      ]
+    },
+    {
+      "id": "TC_SUP_027",
+      "description": "测试 format 方法中 formatStr 包含 'SSS' 的情况",
+      "input": {
+        "date": "2023-05-15T14:30:45.123",
+        "formatStr": "SSS"
+      },
+      "expected_output": "123",
+      "covered_branches": [
+        "L286: switch branch-15"
+      ],
+      "covered_paths": [
+        "L332"
+      ]
+    },
+    {
+      "id": "TC_SUP_028",
+      "description": "测试 format 方法中 formatStr 包含不匹配的字符的情况",
+      "input": {
+        "date": "2023-05-15",
+        "formatStr": "X"
+      },
+      "expected_output": "X",
+      "covered_branches": [
+        "L286: switch branch-16",
+        "L286: switch branch-17",
+        "L286: switch branch-18",
+        "L286: switch branch-20",
+        "L286: switch branch-22",
+        "L286: switch branch-24",
+        "L341: binary-expr branch-2"
+      ],
+      "covered_paths": [
+        "L336",
+        "L338"
+      ]
+    },
+    {
+      "id": "TC_SUP_029",
+      "description": "测试 diff 方法中 units 为 'year' 的情况",
+      "input": {
+        "date1": "2023-05-15",
+        "date2": "2021-05-15",
+        "units": "year"
+      },
+      "expected_output": 2,
+      "covered_branches": [
+        "L358: switch branch-0"
+      ],
+      "covered_paths": [
+        "L360",
+        "L361"
+      ]
+    },
+    {
+      "id": "TC_SUP_030",
+      "description": "测试 diff 方法中 units 为 'quarter' 的情况",
+      "input": {
+        "date1": "2023-08-15",
+        "date2": "2023-02-15",
+        "units": "quarter"
+      },
+      "expected_output": 2,
+      "covered_branches": [
+        "L358: switch branch-2"
+      ],
+      "covered_paths": [
+        "L366",
+        "L367"
+      ]
+    },
+    {
+      "id": "TC_SUP_031",
+      "description": "测试 diff 方法中 units 为 'week' 的情况",
+      "input": {
+        "date1": "2023-05-22",
+        "date2": "2023-05-15",
+        "units": "week"
+      },
+      "expected_output": 1,
+      "covered_branches": [
+        "L358: switch branch-3"
+      ],
+      "covered_paths": [
+        "L369",
+        "L370"
+      ]
+    },
+    {
+      "id": "TC_SUP_032",
+      "description": "测试 diff 方法中 units 为 'hour' 的情况",
+      "input": {
+        "date1": "2023-05-15T14:00:00",
+        "date2": "2023-05-15T10:00:00",
+        "units": "hour"
+      },
+      "expected_output": 4,
+      "covered_branches": [
+        "L358: switch branch-5"
+      ],
+      "covered_paths": [
+        "L375",
+        "L376"
+      ]
+    },
+    {
+      "id": "TC_SUP_033",
+      "description": "测试 diff 方法中 units 为 'minute' 的情况",
+      "input": {
+        "date1": "2023-05-15T14:30:00",
+        "date2": "2023-05-15T14:00:00",
+        "units": "minute"
+      },
+      "expected_output": 30,
+      "covered_branches": [
+        "L358: switch branch-6"
+      ],
+      "covered_paths": [
+        "L378",
+        "L379"
+      ]
+    },
+    {
+      "id": "TC_SUP_034",
+      "description": "测试 diff 方法中 units 为 'second' 的情况",
+      "input": {
+        "date1": "2023-05-15T14:30:45",
+        "date2": "2023-05-15T14:30:00",
+        "units": "second"
+      },
+      "expected_output": 45,
+      "covered_branches": [
+        "L358: switch branch-7"
+      ],
+      "covered_paths": [
+        "L381",
+        "L382"
+      ]
+    },
+    {
+      "id": "TC_SUP_036",
+      "description": "测试 locale 方法中 preset 为 null 的情况",
+      "input": {
+        "date": "2023-05-15",
+        "preset": null
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "L400: if branch-0"
+      ],
+      "covered_paths": [
+        "L400"
+      ]
+    },
+    {
+      "id": "TC_SUP_037",
+      "description": "测试 toJSON 方法中无效日期的情况",
+      "input": {
+        "date": "invalid date"
+      },
+      "expected_output": null,
+      "covered_branches": [
+        "L416: cond-expr branch-0",
+        "L416: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "L416"
+      ]
+    },
+    {
+      "id": "TC_SUP_038",
+      "description": "测试 toString 方法",
+      "input": {
+        "date": "2023-05-15T14:30:45.123Z"
+      },
+      "expected_output": "Mon, 15 May 2023 14:30:45 GMT",
+      "covered_branches": [],
+      "covered_paths": [
+        "L427"
+      ]
+    },
+    {
+      "plugin": {
+        "$i": false,
+        "function": "mockPlugin"
+      }
+    },
+    {
+      "id": "TC_SUP_001",
+      "description": "测试 parseLocale 函数，传入字符串 preset 且 Ls 中已存在对应语言",
+      "input": {
+        "preset": "en"
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "L17: if branch-0",
+        "L17: if branch-1",
+        "L19: if branch-0",
+        "L19: if branch-1"
+      ],
+      "covered_paths": [
+        "17-20"
+      ]
+    },
+    {
+      "preset": "zh-cn",
+      "object": {
+        "name": "zh-cn"
+      }
+    },
+    {
+      "id": "TC_SUP_003",
+      "description": "测试 parseLocale 函数，传入带连字符的字符串 preset 且无对应语言，触发递归",
+      "input": {
+        "preset": "zh-CN"
+      },
+      "expected_output": "zh",
+      "covered_branches": [
+        "L17: if branch-0",
+        "L17: if branch-1",
+        "L27: if branch-0",
+        "L27: if branch-1",
+        "L27: binary-expr branch-0",
+        "L27: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "17-18",
+        "26-28"
+      ]
+    },
+    {
+      "preset": {
+        "name": "ja"
+      }
+    },
+    {
+      "preset": {
+        "name": "fr"
+      },
+      "isLocal": false
+    },
+    {
+      "id": "TC_SUP_006",
+      "description": "测试 parseLocale 函数，传入空字符串 preset 且 isLocal 为 true",
+      "input": {
+        "preset": "",
+        "isLocal": true
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "L16: if branch-1"
+      ],
+      "covered_paths": [
+        "16"
+      ]
+    },
+    {
+      "id": "TC_SUP_010",
+      "description": "测试 parseDate 函数，传入字符串且 utc 为 true",
+      "input": {
+        "date": "2023-01-01T00:00:00",
+        "utc": true
+      },
+      "expected_output": "Date 实例",
+      "covered_branches": [
+        "L74: binary-expr branch-0",
+        "L74: binary-expr branch-1",
+        "L75: binary-expr branch-0",
+        "L75: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "74-75"
+      ]
+    },
+    {
+      "id": "TC_SUP_011",
+      "description": "测试 $utils 方法",
+      "input": {},
+      "expected_output": "Utils 对象",
+      "covered_branches": [],
+      "covered_paths": [
+        "112"
+      ]
+    },
+    {
+      "id": "TC_SUP_013",
+      "description": "测试 isAfter 方法",
+      "input": {
+        "that": "2023-01-01",
+        "units": "day"
+      },
+      "expected_output": false,
+      "covered_branches": [],
+      "covered_paths": [
+        "125"
+      ]
+    },
+    {
+      "id": "TC_SUP_014",
+      "description": "测试 isBefore 方法",
+      "input": {
+        "that": "2023-01-01",
+        "units": "day"
+      },
+      "expected_output": false,
+      "covered_branches": [],
+      "covered_paths": [
+        "129"
+      ]
+    },
+    {
+      "id": "TC_SUP_015",
+      "description": "测试 $g 方法，传入 input 参数",
+      "input": {
+        "input": 15,
+        "get": "$D",
+        "set": "date"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L133: if branch-0",
+        "L133: if branch-1"
+      ],
+      "covered_paths": [
+        "133-134"
+      ]
+    },
+    {
+      "id": "TC_SUP_016",
+      "description": "测试 unix 方法",
+      "input": {},
+      "expected_output": 1672531200,
+      "covered_branches": [],
+      "covered_paths": [
+        "138"
+      ]
+    },
+    {
+      "id": "TC_SUP_017",
+      "description": "测试 valueOf 方法",
+      "input": {},
+      "expected_output": 1672531200000,
+      "covered_branches": [],
+      "covered_paths": [
+        "143"
+      ]
+    },
+    {
+      "id": "TC_SUP_018",
+      "description": "测试 startOf 方法，units 为 'year'，startOf 为 false",
+      "input": {
+        "units": "year",
+        "startOf": false
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L147: cond-expr branch-0",
+        "L147: cond-expr branch-1",
+        "L152: cond-expr branch-0",
+        "L152: cond-expr branch-1",
+        "L166: cond-expr branch-0",
+        "L166: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "147-148",
+        "152",
+        "166-167"
+      ]
+    },
+    {
+      "id": "TC_SUP_019",
+      "description": "测试 startOf 方法，units 为 'month'",
+      "input": {
+        "units": "month"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L169: cond-expr branch-0",
+        "L169: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "169-170"
+      ]
+    },
+    {
+      "id": "TC_SUP_020",
+      "description": "测试 startOf 方法，units 为 'week'，且 $W < weekStart",
+      "input": {
+        "units": "week"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L172: binary-expr branch-0",
+        "L172: binary-expr branch-1",
+        "L173: cond-expr branch-0",
+        "L173: cond-expr branch-1",
+        "L174: cond-expr branch-0",
+        "L174: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "172-174"
+      ]
+    },
+    {
+      "id": "TC_SUP_021",
+      "description": "测试 startOf 方法，units 为 'day'",
+      "input": {
+        "units": "day"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [],
+      "covered_paths": [
+        "178"
+      ]
+    },
+    {
+      "id": "TC_SUP_022",
+      "description": "测试 startOf 方法，units 为 'hour'",
+      "input": {
+        "units": "hour"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [],
+      "covered_paths": [
+        "180"
+      ]
+    },
+    {
+      "id": "TC_SUP_023",
+      "description": "测试 startOf 方法，units 为 'minute'",
+      "input": {
+        "units": "minute"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [],
+      "covered_paths": [
+        "182"
+      ]
+    },
+    {
+      "id": "TC_SUP_024",
+      "description": "测试 startOf 方法，units 为 'second'",
+      "input": {
+        "units": "second"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [],
+      "covered_paths": [
+        "184"
+      ]
+    },
+    {
+      "id": "TC_SUP_025",
+      "description": "测试 startOf 方法，units 为无效值",
+      "input": {
+        "units": "invalid"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [],
+      "covered_paths": [
+        "186"
+      ]
+    },
+    {
+      "id": "TC_SUP_026",
+      "description": "测试 endOf 方法",
+      "input": {
+        "arg": "month"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [],
+      "covered_paths": [
+        "191"
+      ]
+    },
+    {
+      "id": "TC_SUP_027",
+      "description": "测试 $set 方法，units 为 'day'",
+      "input": {
+        "units": "day",
+        "int": 15
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L196: cond-expr branch-0",
+        "L196: cond-expr branch-1",
+        "L207: cond-expr branch-0",
+        "L207: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "195-197",
+        "207"
+      ]
+    },
+    {
+      "id": "TC_SUP_028",
+      "description": "测试 $set 方法，units 为 'month'",
+      "input": {
+        "units": "month",
+        "int": 5
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L209: if branch-0",
+        "L209: if branch-1",
+        "L209: binary-expr branch-0",
+        "L209: binary-expr branch-1",
+        "L215: if branch-0",
+        "L215: if branch-1"
+      ],
+      "covered_paths": [
+        "209-215"
+      ]
+    },
+    {
+      "id": "TC_SUP_029",
+      "description": "测试 $set 方法，units 为 'year'",
+      "input": {
+        "units": "year",
+        "int": 2024
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [],
+      "covered_paths": [
+        "209-215"
+      ]
+    },
+    {
+      "id": "TC_SUP_030",
+      "description": "测试 $set 方法，units 为 'hour'",
+      "input": {
+        "units": "hour",
+        "int": 10
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L236: if branch-0",
+        "L236: if branch-1"
+      ],
+      "covered_paths": [
+        "236"
+      ]
+    },
+    {
+      "id": "TC_SUP_031",
+      "description": "测试 set 方法",
+      "input": {
+        "string": "date",
+        "int": 15
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [],
+      "covered_paths": [
+        "222"
+      ]
+    },
+    {
+      "id": "TC_SUP_032",
+      "description": "测试 get 方法",
+      "input": {
+        "unit": "year"
+      },
+      "expected_output": 2023,
+      "covered_branches": [],
+      "covered_paths": [
+        "226"
+      ]
+    },
+    {
+      "id": "TC_SUP_033",
+      "description": "测试 add 方法，units 为 'month'",
+      "input": {
+        "number": 2,
+        "units": "month"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L236: if branch-0",
+        "L236: if branch-1"
+      ],
+      "covered_paths": [
+        "236-237"
+      ]
+    },
+    {
+      "id": "TC_SUP_034",
+      "description": "测试 add 方法，units 为 'year'",
+      "input": {
+        "number": 1,
+        "units": "year"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L239: if branch-0",
+        "L239: if branch-1"
+      ],
+      "covered_paths": [
+        "239-240"
+      ]
+    },
+    {
+      "id": "TC_SUP_035",
+      "description": "测试 add 方法，units 为 'day'",
+      "input": {
+        "number": 5,
+        "units": "day"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L242: if branch-0",
+        "L242: if branch-1"
+      ],
+      "covered_paths": [
+        "242-243"
+      ]
+    },
+    {
+      "id": "TC_SUP_036",
+      "description": "测试 add 方法，units 为 'week'",
+      "input": {
+        "number": 2,
+        "units": "week"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L245: if branch-0",
+        "L245: if branch-1"
+      ],
+      "covered_paths": [
+        "245-246"
+      ]
+    },
+    {
+      "id": "TC_SUP_037",
+      "description": "测试 add 方法，units 为 'minute'",
+      "input": {
+        "number": 30,
+        "units": "minute"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [
+        "L248: binary-expr branch-0",
+        "L248: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "248-255"
+      ]
+    },
+    {
+      "id": "TC_SUP_038",
+      "description": "测试 subtract 方法",
+      "input": {
+        "number": 5,
+        "string": "day"
+      },
+      "expected_output": "Dayjs 实例",
+      "covered_branches": [],
+      "covered_paths": [
+        "259"
+      ]
+    },
+    {
+      "id": "TC_SUP_039",
+      "description": "测试 format 方法，无效日期",
+      "input": {
+        "formatStr": "YYYY-MM-DD"
+      },
+      "expected_output": "Invalid Date",
+      "covered_branches": [
+        "L265: if branch-0",
+        "L265: if branch-1",
+        "L265: binary-expr branch-0",
+        "L265: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "263-265"
+      ]
+    },
+    {
+      "id": "TC_SUP_040",
+      "description": "测试 format 方法，无 formatStr 参数",
+      "input": {},
+      "expected_output": "2023-01-01T00:00:00+08:00",
+      "covered_branches": [
+        "L267: binary-expr branch-0",
+        "L267: binary-expr branch-1"
+      ],
+      "covered_paths": [
+        "267"
+      ]
+    },
+    {
+      "id": "TC_SUP_041",
+      "description": "测试 format 方法，包含多种格式符",
+      "input": {
+        "formatStr": "YYYY-MM-DD HH:mm:ss ddd"
+      },
+      "expected_output": "2023-01-01 00:00:00 Sun",
+      "covered_branches": [
+        "L274: binary-expr branch-0",
+        "L274: binary-expr branch-1",
+        "L274: binary-expr branch-2",
+        "L274: binary-expr branch-3",
+        "L277: binary-expr branch-0",
+        "L277: binary-expr branch-1",
+        "L280: binary-expr branch-0",
+        "L280: binary-expr branch-1",
+        "L281: cond-expr branch-0",
+        "L281: cond-expr branch-1",
+        "L282: cond-expr branch-0",
+        "L282: cond-expr branch-1"
+      ],
+      "covered_paths": [
+        "274-275",
+        "277",
+        "280-283"
+      ]
+    },
+    {
+      "id": "TC_SUP_042",
+      "description": "测试 format 方法，匹配 'YY'",
+      "input": {
+        "formatStr": "YY"
+      },
+      "expected_output": "23",
+      "covered_branches": [
+        "L286: switch branch-0"
+      ],
+      "covered_paths": [
+        "288"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 26.89,
+    "branch_coverage": 19.78,
+    "uncovered_lines": [
+      17,
+      18,
+      19,
+      20,
+      22,
+      23,
+      24,
+      26,
+      27,
+      28,
+      31,
+      32,
+      33,
+      35,
+      36,
+      41,
+      51,
+      67,
+      74,
+      112,
+      120,
+      121,
+      125,
+      129,
+      133,
+      134,
+      138,
+      143,
+      147,
+      148,
+      149,
+      150,
+      152,
+      154,
+      155,
+      156,
+      157,
+      162,
+      163,
+      164,
+      166,
+      169,
+      172,
+      173,
+      174,
+      178,
+      180,
+      182,
+      184,
+      186,
+      191,
+      195,
+      196,
+      197,
+      207,
+      209,
+      211,
+      212,
+      213,
+      214,
+      215,
+      217,
+      218,
+      222,
+      226,
+      230,
+      231,
+      232,
+      233,
+      234,
+      236,
+      237,
+      239,
+      240,
+      242,
+      243,
+      245,
+      246,
+      248,
+      254,
+      255,
+      259,
+      263,
+      265,
+      267,
+      268,
+      269,
+      272,
+      273,
+      274,
+      276,
+      277,
+      280,
+      281,
+      282,
+      285,
+      286,
+      288,
+      290,
+      292,
+      294,
+      296,
+      298,
+      300,
+      302,
+      304,
+      306,
+      308,
+      310,
+      312,
+      314,
+      316,
+      318,
+      320,
+      322,
+      324,
+      326,
+      328,
+      330,
+      332,
+      334,
+      336,
+      338,
+      341,
+      347,
+      351,
+      352,
+      353,
+      354,
+      355,
+      358,
+      360,
+      361,
+      363,
+      364,
+      366,
+      367,
+      369,
+      370,
+      372,
+      373,
+      375,
+      376,
+      378,
+      379,
+      381,
+      382,
+      384,
+      385,
+      388,
+      392,
+      396,
+      400,
+      401,
+      402,
+      403,
+      404,
+      408,
+      412,
+      427,
+      444,
+      449,
+      450,
+      451,
+      453,
+      461
+    ],
+    "uncovered_branches": [
+      "L16: if branch-1",
+      "L17: if branch-0",
+      "L17: if branch-1",
+      "L19: if branch-0",
+      "L19: if branch-1",
+      "L22: if branch-0",
+      "L22: if branch-1",
+      "L27: if branch-0",
+      "L27: if branch-1",
+      "L27: binary-expr branch-0",
+      "L27: binary-expr branch-1",
+      "L35: if branch-0",
+      "L35: if branch-1",
+      "L35: binary-expr branch-0",
+      "L35: binary-expr branch-1",
+      "L36: binary-expr branch-0",
+      "L36: binary-expr branch-1",
+      "L36: binary-expr branch-2",
+      "L40: if branch-0",
+      "L67: if branch-0",
+      "L73: if branch-0",
+      "L74: binary-expr branch-0",
+      "L74: binary-expr branch-1",
+      "L75: binary-expr branch-0",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-0",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-0",
+      "L75: binary-expr branch-1",
+      "L77: binary-expr branch-1",
+      "L121: binary-expr branch-0",
+      "L121: binary-expr branch-1",
+      "L133: if branch-0",
+      "L133: if branch-1",
+      "L147: cond-expr branch-0",
+      "L147: cond-expr branch-1",
+      "L150: cond-expr branch-0",
+      "L150: cond-expr branch-1",
+      "L152: cond-expr branch-0",
+      "L152: cond-expr branch-1",
+      "L159: cond-expr branch-0",
+      "L159: cond-expr branch-1",
+      "L163: cond-expr branch-0",
+      "L163: cond-expr branch-1",
+      "L164: switch branch-0",
+      "L164: switch branch-1",
+      "L164: switch branch-2",
+      "L164: switch branch-3",
+      "L164: switch branch-4",
+      "L164: switch branch-5",
+      "L164: switch branch-6",
+      "L164: switch branch-7",
+      "L164: switch branch-8",
+      "L166: cond-expr branch-0",
+      "L166: cond-expr branch-1",
+      "L169: cond-expr branch-0",
+      "L169: cond-expr branch-1",
+      "L172: binary-expr branch-0",
+      "L172: binary-expr branch-1",
+      "L173: cond-expr branch-0",
+      "L173: cond-expr branch-1",
+      "L174: cond-expr branch-0",
+      "L174: cond-expr branch-1",
+      "L196: cond-expr branch-0",
+      "L196: cond-expr branch-1",
+      "L207: cond-expr branch-0",
+      "L207: cond-expr branch-1",
+      "L209: if branch-0",
+      "L209: if branch-1",
+      "L209: binary-expr branch-0",
+      "L209: binary-expr branch-1",
+      "L215: if branch-0",
+      "L215: if branch-1",
+      "L236: if branch-0",
+      "L236: if branch-1",
+      "L239: if branch-0",
+      "L239: if branch-1",
+      "L242: if branch-0",
+      "L242: if branch-1",
+      "L245: if branch-0",
+      "L245: if branch-1",
+      "L248: binary-expr branch-0",
+      "L248: binary-expr branch-1",
+      "L265: if branch-0",
+      "L265: if branch-1",
+      "L265: binary-expr branch-0",
+      "L265: binary-expr branch-1",
+      "L267: binary-expr branch-0",
+      "L267: binary-expr branch-1",
+      "L274: binary-expr branch-0",
+      "L274: binary-expr branch-1",
+      "L274: binary-expr branch-2",
+      "L274: binary-expr branch-3",
+      "L277: binary-expr branch-0",
+      "L277: binary-expr branch-1",
+      "L280: binary-expr branch-0",
+      "L280: binary-expr branch-1",
+      "L281: cond-expr branch-0",
+      "L281: cond-expr branch-1",
+      "L282: cond-expr branch-0",
+      "L282: cond-expr branch-1",
+      "L286: switch branch-0",
+      "L286: switch branch-1",
+      "L286: switch branch-2",
+      "L286: switch branch-3",
+      "L286: switch branch-4",
+      "L286: switch branch-5",
+      "L286: switch branch-6",
+      "L286: switch branch-7",
+      "L286: switch branch-8",
+      "L286: switch branch-9",
+      "L286: switch branch-10",
+      "L286: switch branch-11",
+      "L286: switch branch-12",
+      "L286: switch branch-13",
+      "L286: switch branch-14",
+      "L286: switch branch-15",
+      "L286: switch branch-16",
+      "L286: switch branch-17",
+      "L286: switch branch-18",
+      "L286: switch branch-19",
+      "L286: switch branch-20",
+      "L286: switch branch-21",
+      "L286: switch branch-22",
+      "L286: switch branch-23",
+      "L286: switch branch-24",
+      "L341: binary-expr branch-0",
+      "L341: binary-expr branch-1",
+      "L341: binary-expr branch-2",
+      "L358: switch branch-0",
+      "L358: switch branch-1",
+      "L358: switch branch-2",
+      "L358: switch branch-3",
+      "L358: switch branch-4",
+      "L358: switch branch-5",
+      "L358: switch branch-6",
+      "L358: switch branch-7",
+      "L358: switch branch-8",
+      "L388: cond-expr branch-0",
+      "L388: cond-expr branch-1",
+      "L400: if branch-0",
+      "L400: if branch-1",
+      "L403: if branch-0",
+      "L403: if branch-1",
+      "L449: if branch-0",
+      "L449: if branch-1"
+    ],
+    "test_results": {
+      "total": 108,
+      "passed": 0,
+      "failed": 108,
+      "error": 0
+    }
+  }
+}

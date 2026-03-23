@@ -1,0 +1,602 @@
+{
+  "source_file": "convert_number_to_words.py",
+  "language": "python",
+  "llm_provider": "deepseek-reasoner",
+  "llm_model": "deepseek-reasoner",
+  "analysis": {
+    "functions": [
+      {
+        "name": "convert_small_number",
+        "params": [
+          "num"
+        ],
+        "start_line": 95,
+        "end_line": 134,
+        "decorators": []
+      },
+      {
+        "name": "convert_number",
+        "params": [
+          "num",
+          "system"
+        ],
+        "start_line": 137,
+        "end_line": 197,
+        "decorators": []
+      },
+      {
+        "name": "max_value",
+        "params": [
+          "cls",
+          "system"
+        ],
+        "start_line": 33,
+        "end_line": 53,
+        "decorators": [
+          "Name(id='classmethod', ctx=Load())"
+        ]
+      }
+    ],
+    "branches": [
+      {
+        "type": "if",
+        "line": 200,
+        "condition": "__name__ == '__main__'",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 121,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 123,
+        "condition": "num >= 100",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 126,
+        "condition": "tens == 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 128,
+        "condition": "tens == 1",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 179,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 183,
+        "condition": "num > NumberingSystem.max_value(system)",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "for",
+        "line": 186,
+        "iter": "NumberingSystem[system.upper()].value",
+        "target": "(power, unit)",
+        "has_else": false
+      },
+      {
+        "type": "if",
+        "line": 195,
+        "condition": "num > 0 or not word_groups",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 188,
+        "condition": "digit_group > 0",
+        "has_else": false,
+        "has_elif": false
+      }
+    ],
+    "conditions": [
+      {
+        "line": 195,
+        "operator": "or",
+        "expression": "num > 0 or not word_groups",
+        "sub_conditions": [
+          "num > 0",
+          "not word_groups"
+        ]
+      },
+      {
+        "line": 127,
+        "operator": "or",
+        "expression": "NumberWords.ONES.value[ones] or 'zero'",
+        "sub_conditions": [
+          "NumberWords.ONES.value[ones]",
+          "'zero'"
+        ]
+      }
+    ],
+    "paths": {
+      "convert_small_number": [
+        "L95→L96→L121(T)→L122",
+        "L95→L96→L121(F)"
+      ],
+      "convert_number": [
+        "L137→L140→L177→L179(T)→L180→L181",
+        "L137→L140→L177→L179(F)"
+      ],
+      "max_value": [
+        "L33→L34→L44→L53"
+      ]
+    },
+    "total_lines": 205
+  },
+  "test_cases": [
+    {
+      "id": "TC001",
+      "description": "Test convert_small_number with negative input",
+      "input": {
+        "num": -1
+      },
+      "expected_output": "This function only accepts non-negative integers",
+      "covered_branches": [
+        "convert_small_number: num < 0 True"
+      ],
+      "covered_paths": [
+        "convert_small_number: path1 (num < 0 -> raise ValueError)"
+      ]
+    },
+    {
+      "id": "TC002",
+      "description": "Test convert_small_number with number >= 100",
+      "input": {
+        "num": 100
+      },
+      "expected_output": "This function only converts numbers less than 100",
+      "covered_branches": [
+        "convert_small_number: num >= 100 True"
+      ],
+      "covered_paths": [
+        "convert_small_number: path2 (num >= 100 -> raise ValueError)"
+      ]
+    },
+    {
+      "id": "TC003",
+      "description": "Test convert_small_number with zero",
+      "input": {
+        "num": 0
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "convert_small_number: tens == 0 True",
+        "convert_small_number: ones == 0 with empty string in ONES"
+      ],
+      "covered_paths": [
+        "convert_small_number: path3 (tens == 0 -> return 'zero')"
+      ]
+    },
+    {
+      "id": "TC004",
+      "description": "Test convert_small_number with single digit (1-9)",
+      "input": {
+        "num": 5
+      },
+      "expected_output": "five",
+      "covered_branches": [
+        "convert_small_number: tens == 0 True",
+        "convert_small_number: ones > 0"
+      ],
+      "covered_paths": [
+        "convert_small_number: path3 (tens == 0 -> return ONES[ones])"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "Test convert_small_number with ten",
+      "input": {
+        "num": 10
+      },
+      "expected_output": "ten",
+      "covered_branches": [
+        "convert_small_number: tens == 1 True",
+        "convert_small_number: ones == 0"
+      ],
+      "covered_paths": [
+        "convert_small_number: path4 (tens == 1 -> return TEENS[ones])"
+      ]
+    },
+    {
+      "id": "TC006",
+      "description": "Test convert_small_number with teen number (11-19)",
+      "input": {
+        "num": 15
+      },
+      "expected_output": "fifteen",
+      "covered_branches": [
+        "convert_small_number: tens == 1 True",
+        "convert_small_number: ones > 0"
+      ],
+      "covered_paths": [
+        "convert_small_number: path4 (tens == 1 -> return TEENS[ones])"
+      ]
+    },
+    {
+      "id": "TC007",
+      "description": "Test convert_small_number with tens number and zero ones (20,30,...,90)",
+      "input": {
+        "num": 20
+      },
+      "expected_output": "twenty",
+      "covered_branches": [
+        "convert_small_number: tens > 1",
+        "convert_small_number: ones == 0"
+      ],
+      "covered_paths": [
+        "convert_small_number: path5 (tens > 1 -> return TENS[tens] without hyphen)"
+      ]
+    },
+    {
+      "id": "TC008",
+      "description": "Test convert_small_number with tens number and non-zero ones (21-99)",
+      "input": {
+        "num": 25
+      },
+      "expected_output": "twenty-five",
+      "covered_branches": [
+        "convert_small_number: tens > 1",
+        "convert_small_number: ones > 0"
+      ],
+      "covered_paths": [
+        "convert_small_number: path5 (tens > 1 -> return TENS[tens] + '-' + ONES[ones])"
+      ]
+    },
+    {
+      "id": "TC009",
+      "description": "Test NumberingSystem.max_value with 'short' system",
+      "input": {
+        "system": "short"
+      },
+      "expected_output": "999999999999999999",
+      "covered_branches": [
+        "NumberingSystem.max_value: match case SHORT"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: path for SHORT"
+      ]
+    },
+    {
+      "id": "TC010",
+      "description": "Test NumberingSystem.max_value with 'long' system",
+      "input": {
+        "system": "long"
+      },
+      "expected_output": "999999999999999999999",
+      "covered_branches": [
+        "NumberingSystem.max_value: match case LONG"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: path for LONG"
+      ]
+    },
+    {
+      "id": "TC011",
+      "description": "Test NumberingSystem.max_value with 'indian' system",
+      "input": {
+        "system": "indian"
+      },
+      "expected_output": "9999999999999999999",
+      "covered_branches": [
+        "NumberingSystem.max_value: match case INDIAN"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: path for INDIAN"
+      ]
+    },
+    {
+      "id": "TC012",
+      "description": "Test NumberingSystem.max_value with invalid system",
+      "input": {
+        "system": "invalid"
+      },
+      "expected_output": "Invalid numbering system",
+      "covered_branches": [
+        "NumberingSystem.max_value: default case"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: path for invalid system"
+      ]
+    },
+    {
+      "id": "TC013",
+      "description": "Test convert_number with zero",
+      "input": {
+        "num": 0,
+        "system": "short"
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "convert_number: num > 0 False",
+        "convert_number: not word_groups True",
+        "convert_number: num > NumberingSystem.max_value(system) False"
+      ],
+      "covered_paths": [
+        "convert_number: path with num=0 -> word_groups empty -> add 'zero'"
+      ]
+    },
+    {
+      "id": "TC014",
+      "description": "Test convert_number with positive single digit",
+      "input": {
+        "num": 1,
+        "system": "short"
+      },
+      "expected_output": "one",
+      "covered_branches": [
+        "convert_number: num > 0 True",
+        "convert_number: not word_groups True",
+        "convert_number: num > NumberingSystem.max_value(system) False",
+        "convert_number: loop with all digit_group == 0"
+      ],
+      "covered_paths": [
+        "convert_number: path with small number, word_groups empty -> add convert_small_number(num)"
+      ]
+    },
+    {
+      "id": "TC015",
+      "description": "Test convert_number with negative number",
+      "input": {
+        "num": -100,
+        "system": "short"
+      },
+      "expected_output": "negative one hundred",
+      "covered_branches": [
+        "convert_number: num < 0 True",
+        "convert_number: digit_group > 0 True for hundred",
+        "convert_number: digit_group >= 100 False",
+        "convert_number: num > 0 False after processing",
+        "convert_number: not word_groups False"
+      ],
+      "covered_paths": [
+        "convert_number: path with negative number, process hundred, word_groups not empty and num=0"
+      ]
+    },
+    {
+      "id": "TC016",
+      "description": "Test convert_number with number 123 to cover recursion and tens",
+      "input": {
+        "num": 123,
+        "system": "short"
+      },
+      "expected_output": "one hundred twenty-three",
+      "covered_branches": [
+        "convert_number: num > NumberingSystem.max_value(system) False",
+        "convert_number: digit_group > 0 True for hundred",
+        "convert_number: digit_group >= 100 False",
+        "convert_number: num > 0 True after processing hundred",
+        "convert_number: not word_groups False"
+      ],
+      "covered_paths": [
+        "convert_number: path with hundred part and remaining tens"
+      ]
+    },
+    {
+      "id": "TC017",
+      "description": "Test convert_number with large number in short system",
+      "input": {
+        "num": 123456789012345,
+        "system": "short"
+      },
+      "expected_output": "one hundred twenty-three trillion four hundred fifty-six billion seven hundred eighty-nine million twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "convert_number: digit_group > 0 True for multiple powers",
+        "convert_number: digit_group >= 100 True for some parts",
+        "convert_number: recursion calls"
+      ],
+      "covered_paths": [
+        "convert_number: path with multiple digit groups, some requiring recursion"
+      ]
+    },
+    {
+      "id": "TC018",
+      "description": "Test convert_number with large number in long system",
+      "input": {
+        "num": 123456789012345,
+        "system": "long"
+      },
+      "expected_output": "one hundred twenty-three thousand four hundred fifty-six milliard seven hundred eighty-nine million twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "convert_number: system long",
+        "convert_number: digit_group > 0 True for powers in LONG"
+      ],
+      "covered_paths": [
+        "convert_number: path for long system with specific powers"
+      ]
+    },
+    {
+      "id": "TC019",
+      "description": "Test convert_number with number in indian system",
+      "input": {
+        "num": 123456789012345,
+        "system": "indian"
+      },
+      "expected_output": "one crore crore twenty-three lakh crore forty-five thousand six hundred seventy-eight crore ninety lakh twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "convert_number: system indian",
+        "convert_number: digit_group > 0 True for powers in INDIAN"
+      ],
+      "covered_paths": [
+        "convert_number: path for indian system with specific powers"
+      ]
+    },
+    {
+      "id": "TC020",
+      "description": "Test convert_number with max value for short system",
+      "input": {
+        "num": 999999999999999999,
+        "system": "short"
+      },
+      "expected_output": "nine hundred ninety-nine quadrillion nine hundred ninety-nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine",
+      "covered_branches": [
+        "convert_number: num > NumberingSystem.max_value(system) False",
+        "convert_number: digit_group > 0 True for all powers",
+        "convert_number: digit_group >= 100 True for some"
+      ],
+      "covered_paths": [
+        "convert_number: path with maximum number in short system"
+      ]
+    },
+    {
+      "id": "TC021",
+      "description": "Test convert_number with number exceeding max value for short system",
+      "input": {
+        "num": 1000000000000000000,
+        "system": "short"
+      },
+      "expected_output": "Input number is too large",
+      "covered_branches": [
+        "convert_number: num > NumberingSystem.max_value(system) True"
+      ],
+      "covered_paths": [
+        "convert_number: path with num too large"
+      ]
+    },
+    {
+      "id": "TC022",
+      "description": "Test convert_number with number exceeding max value for long system",
+      "input": {
+        "num": 1000000000000000000000,
+        "system": "long"
+      },
+      "expected_output": "Input number is too large",
+      "covered_branches": [
+        "convert_number: num > NumberingSystem.max_value(system) True"
+      ],
+      "covered_paths": [
+        "convert_number: path with num too large for long"
+      ]
+    },
+    {
+      "id": "TC023",
+      "description": "Test convert_number with number exceeding max value for indian system",
+      "input": {
+        "num": 10000000000000000000,
+        "system": "indian"
+      },
+      "expected_output": "Input number is too large",
+      "covered_branches": [
+        "convert_number: num > NumberingSystem.max_value(system) True"
+      ],
+      "covered_paths": [
+        "convert_number: path with num too large for indian"
+      ]
+    },
+    {
+      "id": "TC024",
+      "description": "Test convert_number with number where digit_group >= 100 requiring recursion",
+      "input": {
+        "num": 200000000000000000,
+        "system": "short"
+      },
+      "expected_output": "two hundred quadrillion",
+      "covered_branches": [
+        "convert_number: digit_group > 0 True for quadrillion",
+        "convert_number: digit_group >= 100 True",
+        "convert_number: recursion call for 200"
+      ],
+      "covered_paths": [
+        "convert_number: path with digit_group >= 100 -> recursive convert_number"
+      ]
+    },
+    {
+      "id": "TC025",
+      "description": "Test convert_number with number where some digit_group == 0 in loop",
+      "input": {
+        "num": 1000,
+        "system": "short"
+      },
+      "expected_output": "one thousand",
+      "covered_branches": [
+        "convert_number: digit_group > 0 True for thousand",
+        "convert_number: digit_group > 0 False for hundred",
+        "convert_number: num > 0 False after processing"
+      ],
+      "covered_paths": [
+        "convert_number: path with some powers having digit_group == 0"
+      ]
+    },
+    {
+      "id": "TC_SUP_001",
+      "description": "通过直接运行脚本覆盖 __main__ 块中的代码行（201, 203, 205）和分支（L200 → L201）。",
+      "input": {
+        "run_as_script": true
+      },
+      "expected_output": "convert_number(123456789) = 'one hundred twenty-three million four hundred fifty-six thousand seven hundred eighty-nine'",
+      "covered_branches": [
+        "L200 → L201"
+      ],
+      "covered_paths": [
+        "执行 if __name__ == '__main__' 块"
+      ]
+    },
+    {
+      "id": "TC_SUP_001",
+      "description": "测试 NumberingSystem.max_value 方法传入无效的枚举名时抛出 ValueError。",
+      "input": {
+        "system": "INVALID"
+      },
+      "expected_output": "ValueError: Invalid numbering system",
+      "covered_branches": [
+        "L49 → L51"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value invalid system path"
+      ]
+    },
+    {
+      "id": "TC_SUP_002",
+      "description": "执行脚本主块，覆盖 import doctest、doctest.testmod() 和打印语句。",
+      "input": {},
+      "expected_output": "convert_number(123456789) = 'one hundred twenty-three million four hundred fifty-six thousand seven hundred eighty-nine'",
+      "covered_branches": [
+        "L200 → L201"
+      ],
+      "covered_paths": [
+        "__main__ block execution path"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 91.02564102564102,
+    "branch_coverage": 92.3076923076923,
+    "uncovered_lines": [
+      51,
+      52,
+      201,
+      203,
+      205
+    ],
+    "uncovered_branches": [
+      "L49 → L51",
+      "L200 → L201"
+    ],
+    "test_results": {
+      "total": 27,
+      "passed": 16,
+      "failed": 11,
+      "error": 0
+    }
+  }
+}

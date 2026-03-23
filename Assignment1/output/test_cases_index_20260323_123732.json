@@ -1,0 +1,601 @@
+{
+  "source_file": "index.js",
+  "language": "javascript",
+  "llm_provider": "deepseek-chat",
+  "llm_model": "deepseek-chat",
+  "analysis": null,
+  "test_cases": [
+    {
+      "id": "TC002",
+      "description": "测试dayjs函数传入null日期",
+      "input": {
+        "date": null
+      },
+      "expected_output": "无效的Dayjs对象",
+      "covered_branches": [
+        "parseDate中date === null分支"
+      ],
+      "covered_paths": [
+        "dayjs函数->parseDate->date === null->返回new Date(NaN)"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "测试dayjs函数传入有效日期字符串（非UTC）",
+      "input": {
+        "date": "2023-01-01 12:00:00"
+      },
+      "expected_output": "对应日期的Dayjs对象",
+      "covered_branches": [
+        "字符串匹配REGEX_PARSE成功",
+        "utc为false"
+      ],
+      "covered_paths": [
+        "dayjs函数->parseDate->字符串匹配成功->返回new Date(...)"
+      ]
+    },
+    {
+      "date": "2023-01-01 12:00:00",
+      "c": {
+        "utc": true
+      }
+    },
+    {
+      "id": "TC007",
+      "description": "测试dayjs函数传入无效日期字符串",
+      "input": {
+        "date": "invalid-date"
+      },
+      "expected_output": "无效的Dayjs对象",
+      "covered_branches": [
+        "字符串匹配REGEX_PARSE失败"
+      ],
+      "covered_paths": [
+        "dayjs函数->parseDate->字符串匹配失败->返回new Date(date)"
+      ]
+    },
+    {
+      "id": "TC008",
+      "description": "测试parseLocale传入空preset",
+      "input": {
+        "preset": null
+      },
+      "expected_output": "全局locale 'en'",
+      "covered_branches": [
+        "!preset分支"
+      ],
+      "covered_paths": [
+        "parseLocale->!preset为true->返回L"
+      ]
+    },
+    {
+      "id": "TC009",
+      "description": "测试parseLocale传入已加载的locale字符串",
+      "input": {
+        "preset": "en"
+      },
+      "expected_output": "'en'",
+      "covered_branches": [
+        "Ls[presetLower]存在"
+      ],
+      "covered_paths": [
+        "parseLocale->字符串类型->Ls中存在->返回presetLower"
+      ]
+    },
+    {
+      "preset": "fr",
+      "object": {}
+    },
+    {
+      "id": "TC011",
+      "description": "测试parseLocale传入带连字符的locale字符串",
+      "input": {
+        "preset": "en-US"
+      },
+      "expected_output": "'en'",
+      "covered_branches": [
+        "presetSplit.length > 1"
+      ],
+      "covered_paths": [
+        "parseLocale->字符串类型->分割长度>1->递归调用parseLocale"
+      ]
+    },
+    {
+      "preset": {
+        "name": "zh-cn"
+      }
+    },
+    {
+      "id": "TC013",
+      "description": "测试isValid方法对有效日期返回true",
+      "input": {
+        "date": "2023-01-01"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "toString()不等于INVALID_DATE_STRING"
+      ],
+      "covered_paths": [
+        "isValid->比较日期字符串->返回true"
+      ]
+    },
+    {
+      "id": "TC014",
+      "description": "测试isValid方法对无效日期返回false",
+      "input": {
+        "date": "invalid"
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "toString()等于INVALID_DATE_STRING"
+      ],
+      "covered_paths": [
+        "isValid->比较日期字符串->返回false"
+      ]
+    },
+    {
+      "id": "TC015",
+      "description": "测试isSame方法相同日期",
+      "input": {
+        "date1": "2023-01-01",
+        "date2": "2023-01-01",
+        "units": "day"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "startOf <= other <= endOf"
+      ],
+      "covered_paths": [
+        "isSame->比较日期范围->返回true"
+      ]
+    },
+    {
+      "id": "TC016",
+      "description": "测试isAfter方法日期在前",
+      "input": {
+        "date1": "2023-01-02",
+        "date2": "2023-01-01",
+        "units": "day"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "other < startOf"
+      ],
+      "covered_paths": [
+        "isAfter->比较日期->返回true"
+      ]
+    },
+    {
+      "id": "TC017",
+      "description": "测试isBefore方法日期在后",
+      "input": {
+        "date1": "2023-01-01",
+        "date2": "2023-01-02",
+        "units": "day"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "endOf < other"
+      ],
+      "covered_paths": [
+        "isBefore->比较日期->返回true"
+      ]
+    },
+    {
+      "id": "TC018",
+      "description": "测试startOf方法对年单位",
+      "input": {
+        "date": "2023-06-15",
+        "units": "year"
+      },
+      "expected_output": "2023-01-01的Dayjs对象",
+      "covered_branches": [
+        "unit为C.Y",
+        "isStartOf为true"
+      ],
+      "covered_paths": [
+        "startOf->switch C.Y->instanceFactory(1,0)"
+      ]
+    },
+    {
+      "id": "TC019",
+      "description": "测试endOf方法对年单位",
+      "input": {
+        "date": "2023-06-15",
+        "units": "year"
+      },
+      "expected_output": "2023-12-31的Dayjs对象",
+      "covered_branches": [
+        "unit为C.Y",
+        "isStartOf为false"
+      ],
+      "covered_paths": [
+        "endOf->startOf->switch C.Y->instanceFactory(31,11)"
+      ]
+    },
+    {
+      "id": "TC020",
+      "description": "测试startOf方法对周单位（自定义周起始）",
+      "input": {
+        "date": "2023-01-05",
+        "units": "week"
+      },
+      "expected_output": "周起始日的Dayjs对象",
+      "covered_branches": [
+        "unit为C.W",
+        "weekStart逻辑"
+      ],
+      "covered_paths": [
+        "startOf->switch C.W->计算gap->instanceFactory"
+      ]
+    },
+    {
+      "id": "TC021",
+      "description": "测试$set方法设置月份",
+      "input": {
+        "date": "2023-01-15",
+        "units": "month",
+        "int": 5
+      },
+      "expected_output": "2023-06-15的Dayjs对象",
+      "covered_branches": [
+        "unit为C.M"
+      ],
+      "covered_paths": [
+        "$set->unit为C.M->设置月份->调整日期"
+      ]
+    },
+    {
+      "id": "TC022",
+      "description": "测试add方法添加月份",
+      "input": {
+        "date": "2023-01-31",
+        "number": 1,
+        "units": "month"
+      },
+      "expected_output": "2023-02-28的Dayjs对象",
+      "covered_branches": [
+        "unit为C.M"
+      ],
+      "covered_paths": [
+        "add->unit为C.M->set(C.M, $M+number)"
+      ]
+    },
+    {
+      "id": "TC023",
+      "description": "测试add方法添加天数",
+      "input": {
+        "date": "2023-01-31",
+        "number": 1,
+        "units": "day"
+      },
+      "expected_output": "2023-02-01的Dayjs对象",
+      "covered_branches": [
+        "unit为C.D"
+      ],
+      "covered_paths": [
+        "add->unit为C.D->instanceFactorySet"
+      ]
+    },
+    {
+      "id": "TC024",
+      "description": "测试format方法格式化日期",
+      "input": {
+        "date": "2023-01-01 14:30:45",
+        "formatStr": "YYYY-MM-DD HH:mm:ss"
+      },
+      "expected_output": "2023-01-01 14:30:45",
+      "covered_branches": [
+        "format匹配多个token"
+      ],
+      "covered_paths": [
+        "format->正则替换->多个matches case"
+      ]
+    },
+    {
+      "id": "TC025",
+      "description": "测试format方法无效日期",
+      "input": {
+        "date": "invalid",
+        "formatStr": "YYYY-MM-DD"
+      },
+      "expected_output": "Invalid Date",
+      "covered_branches": [
+        "!isValid()分支"
+      ],
+      "covered_paths": [
+        "format->!isValid()->返回locale.invalidDate"
+      ]
+    },
+    {
+      "id": "TC026",
+      "description": "测试diff方法计算月份差",
+      "input": {
+        "date1": "2023-06-01",
+        "date2": "2023-01-01",
+        "units": "month"
+      },
+      "expected_output": 5,
+      "covered_branches": [
+        "unit为C.M"
+      ],
+      "covered_paths": [
+        "diff->switch C.M->getMonth()"
+      ]
+    },
+    {
+      "id": "TC027",
+      "description": "测试diff方法带float参数",
+      "input": {
+        "date1": "2023-06-15",
+        "date2": "2023-01-01",
+        "units": "month",
+        "float": true
+      },
+      "expected_output": 5.5,
+      "covered_branches": [
+        "float为true"
+      ],
+      "covered_paths": [
+        "diff->float为true->返回result"
+      ]
+    },
+    {
+      "id": "TC028",
+      "description": "测试locale方法切换locale",
+      "input": {
+        "date": "2023-01-01",
+        "preset": "fr"
+      },
+      "expected_output": "locale为fr的Dayjs对象",
+      "covered_branches": [
+        "preset存在"
+      ],
+      "covered_paths": [
+        "locale->parseLocale->设置$L"
+      ]
+    },
+    {
+      "id": "TC029",
+      "description": "测试clone方法",
+      "input": {
+        "date": "2023-01-01"
+      },
+      "expected_output": "克隆的Dayjs对象",
+      "covered_branches": [
+        "wrapper调用"
+      ],
+      "covered_paths": [
+        "clone->Utils.w"
+      ]
+    },
+    {
+      "id": "TC030",
+      "description": "测试unix方法",
+      "input": {
+        "timestamp": 1672531200
+      },
+      "expected_output": "2023-01-01的Dayjs对象",
+      "covered_branches": [
+        "dayjs.unix实现"
+      ],
+      "covered_paths": [
+        "dayjs.unix->timestamp*1000->dayjs()"
+      ]
+    },
+    {
+      "id": "TC031",
+      "description": "测试$g方法不带input参数",
+      "input": {
+        "date": "2023-01-01",
+        "get": "$y"
+      },
+      "expected_output": 2023,
+      "covered_branches": [
+        "Utils.u(input)为true"
+      ],
+      "covered_paths": [
+        "$g->Utils.u(input)为true->返回this[get]"
+      ]
+    },
+    {
+      "id": "TC032",
+      "description": "测试$g方法带input参数",
+      "input": {
+        "date": "2023-01-01",
+        "input": 2024,
+        "set": "year"
+      },
+      "expected_output": "2024-01-01的Dayjs对象",
+      "covered_branches": [
+        "Utils.u(input)为false"
+      ],
+      "covered_paths": [
+        "$g->Utils.u(input)为false->返回this.set(set, input)"
+      ]
+    },
+    {
+      "id": "TC033",
+      "description": "测试startOf方法默认单位",
+      "input": {
+        "date": "2023-01-01"
+      },
+      "expected_output": "克隆的Dayjs对象",
+      "covered_branches": [
+        "switch default分支"
+      ],
+      "covered_paths": [
+        "startOf->switch default->返回this.clone()"
+      ]
+    },
+    {
+      "id": "TC034",
+      "description": "测试add方法添加分钟",
+      "input": {
+        "date": "2023-01-01 00:00:00",
+        "number": 30,
+        "units": "minute"
+      },
+      "expected_output": "2023-01-01 00:30:00的Dayjs对象",
+      "covered_branches": [
+        "unit为C.MIN"
+      ],
+      "covered_paths": [
+        "add->unit为C.MIN->计算时间戳->Utils.w"
+      ]
+    },
+    {
+      "id": "TC035",
+      "description": "测试parseLocale的isLocal参数为true",
+      "input": {
+        "preset": "fr",
+        "isLocal": true
+      },
+      "expected_output": "'fr'",
+      "covered_branches": [
+        "isLocal为true时不更新全局L"
+      ],
+      "covered_paths": [
+        "parseLocale->isLocal为true->返回l"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 76.05,
+    "branch_coverage": 63.19,
+    "uncovered_lines": [
+      66,
+      112,
+      180,
+      182,
+      184,
+      226,
+      240,
+      246,
+      259,
+      274,
+      277,
+      281,
+      282,
+      288,
+      292,
+      296,
+      298,
+      300,
+      304,
+      306,
+      308,
+      310,
+      312,
+      316,
+      318,
+      320,
+      322,
+      324,
+      328,
+      332,
+      334,
+      336,
+      338,
+      360,
+      361,
+      366,
+      367,
+      369,
+      370,
+      372,
+      373,
+      375,
+      376,
+      378,
+      379,
+      381,
+      382,
+      384,
+      385,
+      400,
+      416,
+      423,
+      427,
+      449,
+      450,
+      451,
+      453
+    ],
+    "uncovered_branches": [
+      "L36: binary-expr branch-1",
+      "L36: binary-expr branch-2",
+      "L66: if branch-0",
+      "L74: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L77: binary-expr branch-1",
+      "L150: cond-expr branch-0",
+      "L163: cond-expr branch-0",
+      "L164: switch branch-5",
+      "L164: switch branch-6",
+      "L164: switch branch-7",
+      "L169: cond-expr branch-0",
+      "L173: cond-expr branch-0",
+      "L174: cond-expr branch-1",
+      "L196: cond-expr branch-0",
+      "L207: cond-expr branch-0",
+      "L215: if branch-1",
+      "L239: if branch-0",
+      "L245: if branch-0",
+      "L248: binary-expr branch-1",
+      "L267: binary-expr branch-1",
+      "L274: binary-expr branch-0",
+      "L274: binary-expr branch-1",
+      "L274: binary-expr branch-2",
+      "L274: binary-expr branch-3",
+      "L277: binary-expr branch-0",
+      "L277: binary-expr branch-1",
+      "L281: cond-expr branch-0",
+      "L281: cond-expr branch-1",
+      "L282: cond-expr branch-0",
+      "L282: cond-expr branch-1",
+      "L286: switch branch-0",
+      "L286: switch branch-2",
+      "L286: switch branch-4",
+      "L286: switch branch-5",
+      "L286: switch branch-6",
+      "L286: switch branch-8",
+      "L286: switch branch-9",
+      "L286: switch branch-10",
+      "L286: switch branch-11",
+      "L286: switch branch-12",
+      "L286: switch branch-14",
+      "L286: switch branch-15",
+      "L286: switch branch-16",
+      "L286: switch branch-17",
+      "L286: switch branch-18",
+      "L286: switch branch-20",
+      "L286: switch branch-22",
+      "L286: switch branch-23",
+      "L286: switch branch-24",
+      "L341: binary-expr branch-2",
+      "L358: switch branch-0",
+      "L358: switch branch-2",
+      "L358: switch branch-3",
+      "L358: switch branch-4",
+      "L358: switch branch-5",
+      "L358: switch branch-6",
+      "L358: switch branch-7",
+      "L358: switch branch-8",
+      "L400: if branch-0",
+      "L403: if branch-1",
+      "L416: cond-expr branch-0",
+      "L416: cond-expr branch-1",
+      "L449: if branch-0",
+      "L449: if branch-1"
+    ],
+    "test_results": {
+      "total": 32,
+      "passed": 31,
+      "failed": 1,
+      "error": 0
+    }
+  }
+}

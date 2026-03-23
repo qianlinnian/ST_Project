@@ -1,0 +1,541 @@
+{
+  "source_file": "convert_number_to_words.py",
+  "language": "python",
+  "llm_provider": "deepseek-reasoner",
+  "llm_model": "deepseek-reasoner",
+  "analysis": {
+    "functions": [
+      {
+        "name": "convert_small_number",
+        "params": [
+          "num"
+        ],
+        "start_line": 95,
+        "end_line": 134,
+        "decorators": []
+      },
+      {
+        "name": "convert_number",
+        "params": [
+          "num",
+          "system"
+        ],
+        "start_line": 137,
+        "end_line": 197,
+        "decorators": []
+      },
+      {
+        "name": "max_value",
+        "params": [
+          "cls",
+          "system"
+        ],
+        "start_line": 33,
+        "end_line": 53,
+        "decorators": [
+          "Name(id='classmethod', ctx=Load())"
+        ]
+      }
+    ],
+    "branches": [
+      {
+        "type": "if",
+        "line": 200,
+        "condition": "__name__ == '__main__'",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 121,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 123,
+        "condition": "num >= 100",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 126,
+        "condition": "tens == 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 128,
+        "condition": "tens == 1",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 179,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 183,
+        "condition": "num > NumberingSystem.max_value(system)",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "for",
+        "line": 186,
+        "iter": "NumberingSystem[system.upper()].value",
+        "target": "(power, unit)",
+        "has_else": false
+      },
+      {
+        "type": "if",
+        "line": 195,
+        "condition": "num > 0 or not word_groups",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 188,
+        "condition": "digit_group > 0",
+        "has_else": false,
+        "has_elif": false
+      }
+    ],
+    "conditions": [
+      {
+        "line": 195,
+        "operator": "or",
+        "expression": "num > 0 or not word_groups",
+        "sub_conditions": [
+          "num > 0",
+          "not word_groups"
+        ]
+      },
+      {
+        "line": 127,
+        "operator": "or",
+        "expression": "NumberWords.ONES.value[ones] or 'zero'",
+        "sub_conditions": [
+          "NumberWords.ONES.value[ones]",
+          "'zero'"
+        ]
+      }
+    ],
+    "paths": {
+      "convert_small_number": [
+        "L95→L96→L121(T)→L122",
+        "L95→L96→L121(F)"
+      ],
+      "convert_number": [
+        "L137→L140→L177→L179(T)→L180→L181",
+        "L137→L140→L177→L179(F)"
+      ],
+      "max_value": [
+        "L33→L34→L44→L53"
+      ]
+    },
+    "total_lines": 205
+  },
+  "test_cases": [
+    {
+      "id": "TC001",
+      "description": "测试 convert_small_number 负数输入，应引发异常。覆盖分支 L121 条件为 True。",
+      "input": {
+        "num": -1
+      },
+      "expected_output": "ValueError: This function only accepts non-negative integers",
+      "covered_branches": [
+        "L121: num < 0 → True"
+      ],
+      "covered_paths": [
+        "convert_small_number: L95→L96→L121(T)→L122"
+      ]
+    },
+    {
+      "id": "TC002",
+      "description": "测试 convert_small_number 输入大于等于 100，应引发异常。覆盖分支 L123 条件为 True。",
+      "input": {
+        "num": 123
+      },
+      "expected_output": "ValueError: This function only converts numbers less than 100",
+      "covered_branches": [
+        "L121: num < 0 → False",
+        "L123: num >= 100 → True"
+      ],
+      "covered_paths": [
+        "convert_small_number: L95→L96→L121(F)→L123(T)→L124"
+      ]
+    },
+    {
+      "id": "TC003",
+      "description": "测试 convert_small_number 输入为 0，覆盖 tens==0 分支和复合条件 L127（子条件 NumberWords.ONES.value[ones] 为 False）。",
+      "input": {
+        "num": 0
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "L121: num < 0 → False",
+        "L123: num >= 100 → False",
+        "L126: tens == 0 → True"
+      ],
+      "covered_paths": [
+        "convert_small_number: L95→L96→L121(F)→L123(F)→L126(T)→L127"
+      ]
+    },
+    {
+      "id": "TC004",
+      "description": "测试 convert_small_number 个位数输入 5，覆盖 tens==0 分支和复合条件 L127（子条件 NumberWords.ONES.value[ones] 为 True）。",
+      "input": {
+        "num": 5
+      },
+      "expected_output": "five",
+      "covered_branches": [
+        "L121: num < 0 → False",
+        "L123: num >= 100 → False",
+        "L126: tens == 0 → True"
+      ],
+      "covered_paths": [
+        "convert_small_number: L95→L96→L121(F)→L123(F)→L126(T)→L127"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "测试 convert_small_number 十几位输入 15，覆盖 tens==1 分支。",
+      "input": {
+        "num": 15
+      },
+      "expected_output": "fifteen",
+      "covered_branches": [
+        "L121: num < 0 → False",
+        "L123: num >= 100 → False",
+        "L126: tens == 0 → False",
+        "L128: tens == 1 → True"
+      ],
+      "covered_paths": [
+        "convert_small_number: L95→L96→L121(F)→L123(F)→L126(F)→L128(T)→L129"
+      ]
+    },
+    {
+      "id": "TC006",
+      "description": "测试 convert_small_number 几十位输入 20，覆盖 tens 既不为 0 也不为 1 的分支，且个位为 0。",
+      "input": {
+        "num": 20
+      },
+      "expected_output": "twenty",
+      "covered_branches": [
+        "L121: num < 0 → False",
+        "L123: num >= 100 → False",
+        "L126: tens == 0 → False",
+        "L128: tens == 1 → False"
+      ],
+      "covered_paths": [
+        "convert_small_number: L95→L96→L121(F)→L123(F)→L126(F)→L128(F)→L130→L131→L132"
+      ]
+    },
+    {
+      "id": "TC007",
+      "description": "测试 convert_small_number 几十几输入 25，覆盖 tens 既不为 0 也不为 1 的分支，且个位不为 0。",
+      "input": {
+        "num": 25
+      },
+      "expected_output": "twenty-five",
+      "covered_branches": [
+        "L121: num < 0 → False",
+        "L123: num >= 100 → False",
+        "L126: tens == 0 → False",
+        "L128: tens == 1 → False"
+      ],
+      "covered_paths": [
+        "convert_small_number: L95→L96→L121(F)→L123(F)→L126(F)→L128(F)→L130→L131→L132"
+      ]
+    },
+    {
+      "id": "TC008",
+      "description": "测试 convert_number 输入为 0，默认 short 系统。覆盖 num<0 为 False，num>max_value 为 False，循环中所有 digit_group 为 0，复合条件 L195 中 num>0 为 False 且 not word_groups 为 True。",
+      "input": {
+        "num": 0,
+        "system": "short"
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "L179: num < 0 → False",
+        "L183: num > NumberingSystem.max_value(system) → False",
+        "L188: digit_group > 0 → False (for all iterations)",
+        "L195: num > 0 or not word_groups → True (not word_groups subcondition is True)"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(F)→L183(F)→L186(for loop all false)→L195(T)→L196"
+      ]
+    },
+    {
+      "id": "TC009",
+      "description": "测试 convert_number 输入小于 100 的正数 5，默认 short 系统。覆盖循环中所有 digit_group 为 0，复合条件 L195 中 num>0 为 True 且 not word_groups 为 True。",
+      "input": {
+        "num": 5,
+        "system": "short"
+      },
+      "expected_output": "five",
+      "covered_branches": [
+        "L179: num < 0 → False",
+        "L183: num > NumberingSystem.max_value(system) → False",
+        "L188: digit_group > 0 → False (for all iterations)",
+        "L195: num > 0 or not word_groups → True (both num>0 and not word_groups subconditions are True)"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(F)→L183(F)→L186(for loop all false)→L195(T)→L196"
+      ]
+    },
+    {
+      "id": "TC010",
+      "description": "测试 convert_number 输入 100，默认 short 系统。覆盖循环中 digit_group > 0 为 True（对于 hundred），且 digit_group < 100，调用 convert_small_number。最后复合条件 L195 中 num>0 为 False 且 not word_groups 为 False。",
+      "input": {
+        "num": 100,
+        "system": "short"
+      },
+      "expected_output": "one hundred",
+      "covered_branches": [
+        "L179: num < 0 → False",
+        "L183: num > NumberingSystem.max_value(system) → False",
+        "L188: digit_group > 0 → True (for power=2)",
+        "L195: num > 0 or not word_groups → False (both subconditions are False)"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(F)→L183(F)→L186(for loop with one true)→L188(T)→L191→L193→L195(F)"
+      ]
+    },
+    {
+      "id": "TC011",
+      "description": "测试 convert_number 输入负数 -100，默认 short 系统。覆盖 num<0 分支为 True。",
+      "input": {
+        "num": -100,
+        "system": "short"
+      },
+      "expected_output": "negative one hundred",
+      "covered_branches": [
+        "L179: num < 0 → True",
+        "L183: num > NumberingSystem.max_value(system) → False",
+        "L188: digit_group > 0 → True (for power=2)",
+        "L195: num > 0 or not word_groups → False (both subconditions are False)"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(T)→L180→L181→L183(F)→L186(for loop with one true)→L188(T)→L191→L193→L195(F)"
+      ]
+    },
+    {
+      "id": "TC012",
+      "description": "测试 convert_number 输入超过 short 系统最大值 10**18，应引发异常。覆盖 L183 条件为 True。",
+      "input": {
+        "num": 1000000000000000000,
+        "system": "short"
+      },
+      "expected_output": "ValueError: Input number is too large",
+      "covered_branches": [
+        "L179: num < 0 → False",
+        "L183: num > NumberingSystem.max_value(system) → True"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(F)→L183(T)→L184"
+      ]
+    },
+    {
+      "id": "TC013",
+      "description": "测试 convert_number 输入超过 long 系统最大值 10**21，应引发异常。覆盖 L183 条件为 True。",
+      "input": {
+        "num": 1000000000000000000000,
+        "system": "long"
+      },
+      "expected_output": "ValueError: Input number is too large",
+      "covered_branches": [
+        "L179: num < 0 → False",
+        "L183: num > NumberingSystem.max_value(system) → True"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(F)→L183(T)→L184"
+      ]
+    },
+    {
+      "id": "TC014",
+      "description": "测试 convert_number 输入超过 indian 系统最大值 10**19，应引发异常。覆盖 L183 条件为 True。",
+      "input": {
+        "num": 10000000000000000000,
+        "system": "indian"
+      },
+      "expected_output": "ValueError: Input number is too large",
+      "covered_branches": [
+        "L179: num < 0 → False",
+        "L183: num > NumberingSystem.max_value(system) → True"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(F)→L183(T)→L184"
+      ]
+    },
+    {
+      "id": "TC015",
+      "description": "测试 convert_number 复杂数字 123456789，short 系统，覆盖循环中多个 digit_group > 0，且有的 digit_group >= 100 导致递归调用 convert_number。",
+      "input": {
+        "num": 123456789,
+        "system": "short"
+      },
+      "expected_output": "one hundred twenty-three million four hundred fifty-six thousand seven hundred eighty-nine",
+      "covered_branches": [
+        "L179: num < 0 → False",
+        "L183: num > NumberingSystem.max_value(system) → False",
+        "L188: digit_group > 0 → True (for multiple iterations)",
+        "L195: num > 0 or not word_groups → True (num>0 subcondition is True, not word_groups is False)"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(F)→L183(F)→L186(for loop with multiple true and recursion)→L188(T)→L190→L193→L195(T)→L196"
+      ]
+    },
+    {
+      "id": "TC016",
+      "description": "测试 convert_number 复杂数字 123456789012345，long 系统，覆盖 long 系统特定单位和递归。",
+      "input": {
+        "num": 123456789012345,
+        "system": "long"
+      },
+      "expected_output": "one hundred twenty-three thousand four hundred fifty-six milliard seven hundred eighty-nine million twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "L179: num < 0 → False",
+        "L183: num > NumberingSystem.max_value(system) → False",
+        "L188: digit_group > 0 → True (for multiple iterations)",
+        "L195: num > 0 or not word_groups → True (num>0 subcondition is True, not word_groups is False)"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(F)→L183(F)→L186(for loop with multiple true and recursion)→L188(T)→L190→L193→L195(T)→L196"
+      ]
+    },
+    {
+      "id": "TC017",
+      "description": "测试 convert_number 复杂数字 123456789012345，indian 系统，覆盖 indian 系统特定单位和递归。",
+      "input": {
+        "num": 123456789012345,
+        "system": "indian"
+      },
+      "expected_output": "one crore crore twenty-three lakh crore forty-five thousand six hundred seventy-eight crore ninety lakh twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "L179: num < 0 → False",
+        "L183: num > NumberingSystem.max_value(system) → False",
+        "L188: digit_group > 0 → True (for multiple iterations)",
+        "L195: num > 0 or not word_groups → True (num>0 subcondition is True, not word_groups is False)"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(F)→L183(F)→L186(for loop with multiple true and recursion)→L188(T)→L190→L193→L195(T)→L196"
+      ]
+    },
+    {
+      "id": "TC018",
+      "description": "测试 convert_number 使用无效数字系统 'invalid'，应引发 ValueError（来自 max_value 调用）。",
+      "input": {
+        "num": 0,
+        "system": "invalid"
+      },
+      "expected_output": "ValueError: Invalid numbering system",
+      "covered_branches": [],
+      "covered_paths": []
+    },
+    {
+      "id": "TC019",
+      "description": "直接测试 NumberingSystem.max_value('short')，覆盖 SHORT case 分支。",
+      "input": {
+        "system": "short"
+      },
+      "expected_output": 999999999999999999,
+      "covered_branches": [
+        "L44: match cls.SHORT → True"
+      ],
+      "covered_paths": [
+        "max_value: L33→L34→L44→L46→L53"
+      ]
+    },
+    {
+      "id": "TC020",
+      "description": "直接测试 NumberingSystem.max_value('long')，覆盖 LONG case 分支。",
+      "input": {
+        "system": "long"
+      },
+      "expected_output": 999999999999999999999,
+      "covered_branches": [
+        "L44: match cls.LONG → True"
+      ],
+      "covered_paths": [
+        "max_value: L33→L34→L44→L47→L53"
+      ]
+    },
+    {
+      "id": "TC021",
+      "description": "直接测试 NumberingSystem.max_value('indian')，覆盖 INDIAN case 分支。",
+      "input": {
+        "system": "indian"
+      },
+      "expected_output": 9999999999999999999,
+      "covered_branches": [
+        "L44: match cls.INDIAN → True"
+      ],
+      "covered_paths": [
+        "max_value: L33→L34→L44→L48→L53"
+      ]
+    },
+    {
+      "id": "TC022",
+      "description": "直接测试 NumberingSystem.max_value('invalid')，应引发 ValueError（覆盖默认 case 分支）。",
+      "input": {
+        "system": "invalid"
+      },
+      "expected_output": "ValueError: Invalid numbering system",
+      "covered_branches": [
+        "L44: match _ (default) → True"
+      ],
+      "covered_paths": [
+        "max_value: L33→L34→L44→L50→L51"
+      ]
+    },
+    {
+      "id": "TC023",
+      "description": "测试 convert_number 输入 123，short 系统，覆盖循环中 digit_group>0 (hundred)，且最后 num>0，复合条件 L195 中 num>0 为 True 且 not word_groups 为 False。",
+      "input": {
+        "num": 123,
+        "system": "short"
+      },
+      "expected_output": "one hundred twenty-three",
+      "covered_branches": [
+        "L179: num < 0 → False",
+        "L183: num > NumberingSystem.max_value(system) → False",
+        "L188: digit_group > 0 → True (for power=2)",
+        "L195: num > 0 or not word_groups → True (num>0 subcondition is True, not word_groups subcondition is False)"
+      ],
+      "covered_paths": [
+        "convert_number: L137→L140→L177→L179(F)→L183(F)→L186(for loop with one true)→L188(T)→L191→L193→L195(T)→L196"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 91.02564102564102,
+    "branch_coverage": 92.3076923076923,
+    "uncovered_lines": [
+      51,
+      52,
+      201,
+      203,
+      205
+    ],
+    "uncovered_branches": [
+      "L49 → L51",
+      "L200 → L201"
+    ],
+    "test_results": {
+      "total": 23,
+      "passed": 20,
+      "failed": 3,
+      "error": 0
+    }
+  }
+}

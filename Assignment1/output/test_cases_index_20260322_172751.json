@@ -1,0 +1,707 @@
+{
+  "source_file": "index.js",
+  "language": "javascript",
+  "llm_provider": "github",
+  "llm_model": "gpt-4o-mini",
+  "analysis": null,
+  "test_cases": [
+    {
+      "id": "TC001",
+      "description": "测试 parseLocale 函数，传入空值",
+      "input": {
+        "preset": null,
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "if (!preset)",
+        "else"
+      ],
+      "covered_paths": [
+        "parseLocale -> return L"
+      ]
+    },
+    {
+      "id": "TC002",
+      "description": "测试 parseLocale 函数，传入字符串并存在于 Ls",
+      "input": {
+        "preset": "en",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "if (!preset)",
+        "if (typeof preset === 'string')",
+        "if (Ls[presetLower])"
+      ],
+      "covered_paths": [
+        "parseLocale -> return l",
+        "parseLocale -> L = l"
+      ]
+    },
+    {
+      "id": "TC003",
+      "description": "测试 parseLocale 函数，传入字符串并不存在于 Ls",
+      "input": {
+        "preset": "fr",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "if (!preset)",
+        "if (typeof preset === 'string')",
+        "if (Ls[presetLower])",
+        "if (!l && presetSplit.length > 1)"
+      ],
+      "covered_paths": [
+        "parseLocale -> return parseLocale(presetSplit[0])",
+        "parseLocale -> return L"
+      ]
+    },
+    {
+      "date": {
+        "$L": "en"
+      },
+      "c": {}
+    },
+    {
+      "$L": "en"
+    },
+    {
+      "date": "2023-01-01",
+      "c": {}
+    },
+    {
+      "$d": "2023-01-01T00:00:00.000Z"
+    },
+    {
+      "cfg": {
+        "date": null,
+        "utc": false
+      }
+    },
+    {
+      "cfg": {
+        "date": "2023-01-01",
+        "utc": false
+      }
+    },
+    {
+      "$d": "2023-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "TC_SUP_001",
+      "description": "测试 parseLocale 函数，传入字符串类型的 preset，且该 preset 存在于 Ls 中",
+      "input": {
+        "preset": "en",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "L17: if branch-1",
+        "L19: if branch-0"
+      ],
+      "covered_paths": [
+        "L16",
+        "L17",
+        "L19",
+        "L20",
+        "L35"
+      ]
+    },
+    {
+      "id": "TC_SUP_002",
+      "description": "测试 parseLocale 函数，传入字符串类型的 preset，且该 preset 不存在于 Ls 中",
+      "input": {
+        "preset": "fr",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "L17: if branch-1",
+        "L19: if branch-1",
+        "L27: if branch-1"
+      ],
+      "covered_paths": [
+        "L16",
+        "L17",
+        "L19",
+        "L26",
+        "L27",
+        "L28"
+      ]
+    },
+    {
+      "preset": {
+        "name": "fr"
+      },
+      "object": null,
+      "isLocal": false
+    },
+    {
+      "cfg": {
+        "date": null,
+        "utc": false
+      }
+    },
+    {
+      "cfg": {
+        "date": "2023-10-01",
+        "utc": false
+      }
+    },
+    {
+      "id": "TC_SUP_008",
+      "description": "测试 Dayjs 类的 startOf 方法，传入 'month' 单位",
+      "input": {
+        "units": "month",
+        "startOf": true
+      },
+      "expected_output": "Dayjs instance at start of month",
+      "covered_branches": [
+        "L164: switch branch-1"
+      ],
+      "covered_paths": [
+        "L146",
+        "L164"
+      ]
+    },
+    {
+      "id": "TC_SUP_009",
+      "description": "测试 Dayjs 类的 $set 方法，传入 'year' 单位",
+      "input": {
+        "units": "year",
+        "int": 2025
+      },
+      "expected_output": "Dayjs instance with year set to 2025",
+      "covered_branches": [
+        "L209: if branch-1"
+      ],
+      "covered_paths": [
+        "L194",
+        "L209",
+        "L215"
+      ]
+    },
+    {
+      "id": "TC_SUP_001",
+      "description": "测试 parseLocale 函数，输入为字符串且存在于 Ls 中",
+      "input": {
+        "preset": "en",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "L17: if branch-1",
+        "L19: if branch-1"
+      ],
+      "covered_paths": [
+        "L16",
+        "L17",
+        "L18",
+        "L19",
+        "L20",
+        "L35",
+        "L36"
+      ]
+    },
+    {
+      "id": "TC_SUP_002",
+      "description": "测试 parseLocale 函数，输入为字符串且不存在于 Ls 中",
+      "input": {
+        "preset": "fr",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "L17: if branch-1",
+        "L19: if branch-0",
+        "L27: if branch-1"
+      ],
+      "covered_paths": [
+        "L16",
+        "L17",
+        "L18",
+        "L19",
+        "L20",
+        "L26",
+        "L27",
+        "L28"
+      ]
+    },
+    {
+      "preset": {
+        "name": "fr"
+      },
+      "object": {},
+      "isLocal": false
+    },
+    {
+      "cfg": {
+        "date": null,
+        "utc": false
+      }
+    },
+    {
+      "cfg": {
+        "date": "2023-01-01",
+        "utc": false
+      }
+    },
+    {
+      "id": "TC_SUP_006",
+      "description": "测试 Dayjs 类的 isSame 方法",
+      "input": {
+        "that": "2023-01-01",
+        "units": "day"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "L120"
+      ],
+      "covered_paths": [
+        "L119",
+        "L120",
+        "L121"
+      ]
+    },
+    {
+      "id": "TC_SUP_007",
+      "description": "测试 Dayjs 类的 isAfter 方法",
+      "input": {
+        "that": "2022-12-31",
+        "units": "day"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "L125"
+      ],
+      "covered_paths": [
+        "L124",
+        "L125"
+      ]
+    },
+    {
+      "id": "TC_SUP_008",
+      "description": "测试 Dayjs 类的 isBefore 方法",
+      "input": {
+        "that": "2023-01-02",
+        "units": "day"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "L129"
+      ],
+      "covered_paths": [
+        "L128",
+        "L129"
+      ]
+    },
+    {
+      "id": "TC_SUP_009",
+      "description": "测试 Dayjs 类的 $set 方法",
+      "input": {
+        "units": "day",
+        "int": 5
+      },
+      "expected_output": "Dayjs instance with updated date",
+      "covered_branches": [
+        "L195",
+        "L209"
+      ],
+      "covered_paths": [
+        "L194",
+        "L195",
+        "L209",
+        "L215"
+      ]
+    },
+    {
+      "date": "2023-01-01",
+      "c": {}
+    },
+    {
+      "date": "invalid-date",
+      "c": {}
+    },
+    {
+      "id": "TC_SUP_012",
+      "description": "测试 Dayjs 类的 format 方法，输入为无效日期",
+      "input": {},
+      "expected_output": "Invalid Date",
+      "covered_branches": [
+        "L265"
+      ],
+      "covered_paths": [
+        "L262",
+        "L265"
+      ]
+    },
+    {
+      "id": "TC_SUP_013",
+      "description": "测试 Dayjs 类的 format 方法，输入为有效格式",
+      "input": {
+        "formatStr": "YYYY-MM-DD"
+      },
+      "expected_output": "2023-01-01",
+      "covered_branches": [
+        "L265"
+      ],
+      "covered_paths": [
+        "L262",
+        "L265",
+        "L267",
+        "L268"
+      ]
+    },
+    {
+      "id": "TC_SUP_014",
+      "description": "测试 Dayjs 类的 toString 方法",
+      "input": {},
+      "expected_output": "UTC String",
+      "covered_branches": [
+        "L427"
+      ],
+      "covered_paths": [
+        "L426",
+        "L427"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 26.47,
+    "branch_coverage": 18.68,
+    "uncovered_lines": [
+      17,
+      18,
+      19,
+      20,
+      22,
+      23,
+      24,
+      26,
+      27,
+      28,
+      31,
+      32,
+      33,
+      35,
+      36,
+      41,
+      51,
+      65,
+      67,
+      74,
+      112,
+      120,
+      121,
+      125,
+      129,
+      133,
+      134,
+      138,
+      143,
+      147,
+      148,
+      149,
+      150,
+      152,
+      154,
+      155,
+      156,
+      157,
+      162,
+      163,
+      164,
+      166,
+      169,
+      172,
+      173,
+      174,
+      178,
+      180,
+      182,
+      184,
+      186,
+      191,
+      195,
+      196,
+      197,
+      207,
+      209,
+      211,
+      212,
+      213,
+      214,
+      215,
+      217,
+      218,
+      222,
+      226,
+      230,
+      231,
+      232,
+      233,
+      234,
+      236,
+      237,
+      239,
+      240,
+      242,
+      243,
+      245,
+      246,
+      248,
+      254,
+      255,
+      259,
+      263,
+      265,
+      267,
+      268,
+      269,
+      272,
+      273,
+      274,
+      276,
+      277,
+      280,
+      281,
+      282,
+      285,
+      286,
+      288,
+      290,
+      292,
+      294,
+      296,
+      298,
+      300,
+      302,
+      304,
+      306,
+      308,
+      310,
+      312,
+      314,
+      316,
+      318,
+      320,
+      322,
+      324,
+      326,
+      328,
+      330,
+      332,
+      334,
+      336,
+      338,
+      341,
+      347,
+      351,
+      352,
+      353,
+      354,
+      355,
+      358,
+      360,
+      361,
+      363,
+      364,
+      366,
+      367,
+      369,
+      370,
+      372,
+      373,
+      375,
+      376,
+      378,
+      379,
+      381,
+      382,
+      384,
+      385,
+      388,
+      392,
+      396,
+      400,
+      401,
+      402,
+      403,
+      404,
+      408,
+      412,
+      427,
+      444,
+      449,
+      450,
+      451,
+      453,
+      461
+    ],
+    "uncovered_branches": [
+      "L16: if branch-1",
+      "L17: if branch-0",
+      "L17: if branch-1",
+      "L19: if branch-0",
+      "L19: if branch-1",
+      "L22: if branch-0",
+      "L22: if branch-1",
+      "L27: if branch-0",
+      "L27: if branch-1",
+      "L27: binary-expr branch-0",
+      "L27: binary-expr branch-1",
+      "L35: if branch-0",
+      "L35: if branch-1",
+      "L35: binary-expr branch-0",
+      "L35: binary-expr branch-1",
+      "L36: binary-expr branch-0",
+      "L36: binary-expr branch-1",
+      "L36: binary-expr branch-2",
+      "L40: if branch-0",
+      "L65: if branch-0",
+      "L67: if branch-0",
+      "L68: if branch-1",
+      "L73: if branch-0",
+      "L74: binary-expr branch-0",
+      "L74: binary-expr branch-1",
+      "L75: binary-expr branch-0",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-0",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-0",
+      "L75: binary-expr branch-1",
+      "L77: binary-expr branch-1",
+      "L121: binary-expr branch-0",
+      "L121: binary-expr branch-1",
+      "L133: if branch-0",
+      "L133: if branch-1",
+      "L147: cond-expr branch-0",
+      "L147: cond-expr branch-1",
+      "L150: cond-expr branch-0",
+      "L150: cond-expr branch-1",
+      "L152: cond-expr branch-0",
+      "L152: cond-expr branch-1",
+      "L159: cond-expr branch-0",
+      "L159: cond-expr branch-1",
+      "L163: cond-expr branch-0",
+      "L163: cond-expr branch-1",
+      "L164: switch branch-0",
+      "L164: switch branch-1",
+      "L164: switch branch-2",
+      "L164: switch branch-3",
+      "L164: switch branch-4",
+      "L164: switch branch-5",
+      "L164: switch branch-6",
+      "L164: switch branch-7",
+      "L164: switch branch-8",
+      "L166: cond-expr branch-0",
+      "L166: cond-expr branch-1",
+      "L169: cond-expr branch-0",
+      "L169: cond-expr branch-1",
+      "L172: binary-expr branch-0",
+      "L172: binary-expr branch-1",
+      "L173: cond-expr branch-0",
+      "L173: cond-expr branch-1",
+      "L174: cond-expr branch-0",
+      "L174: cond-expr branch-1",
+      "L196: cond-expr branch-0",
+      "L196: cond-expr branch-1",
+      "L207: cond-expr branch-0",
+      "L207: cond-expr branch-1",
+      "L209: if branch-0",
+      "L209: if branch-1",
+      "L209: binary-expr branch-0",
+      "L209: binary-expr branch-1",
+      "L215: if branch-0",
+      "L215: if branch-1",
+      "L236: if branch-0",
+      "L236: if branch-1",
+      "L239: if branch-0",
+      "L239: if branch-1",
+      "L242: if branch-0",
+      "L242: if branch-1",
+      "L245: if branch-0",
+      "L245: if branch-1",
+      "L248: binary-expr branch-0",
+      "L248: binary-expr branch-1",
+      "L265: if branch-0",
+      "L265: if branch-1",
+      "L265: binary-expr branch-0",
+      "L265: binary-expr branch-1",
+      "L267: binary-expr branch-0",
+      "L267: binary-expr branch-1",
+      "L274: binary-expr branch-0",
+      "L274: binary-expr branch-1",
+      "L274: binary-expr branch-2",
+      "L274: binary-expr branch-3",
+      "L277: binary-expr branch-0",
+      "L277: binary-expr branch-1",
+      "L280: binary-expr branch-0",
+      "L280: binary-expr branch-1",
+      "L281: cond-expr branch-0",
+      "L281: cond-expr branch-1",
+      "L282: cond-expr branch-0",
+      "L282: cond-expr branch-1",
+      "L286: switch branch-0",
+      "L286: switch branch-1",
+      "L286: switch branch-2",
+      "L286: switch branch-3",
+      "L286: switch branch-4",
+      "L286: switch branch-5",
+      "L286: switch branch-6",
+      "L286: switch branch-7",
+      "L286: switch branch-8",
+      "L286: switch branch-9",
+      "L286: switch branch-10",
+      "L286: switch branch-11",
+      "L286: switch branch-12",
+      "L286: switch branch-13",
+      "L286: switch branch-14",
+      "L286: switch branch-15",
+      "L286: switch branch-16",
+      "L286: switch branch-17",
+      "L286: switch branch-18",
+      "L286: switch branch-19",
+      "L286: switch branch-20",
+      "L286: switch branch-21",
+      "L286: switch branch-22",
+      "L286: switch branch-23",
+      "L286: switch branch-24",
+      "L341: binary-expr branch-0",
+      "L341: binary-expr branch-1",
+      "L341: binary-expr branch-2",
+      "L358: switch branch-0",
+      "L358: switch branch-1",
+      "L358: switch branch-2",
+      "L358: switch branch-3",
+      "L358: switch branch-4",
+      "L358: switch branch-5",
+      "L358: switch branch-6",
+      "L358: switch branch-7",
+      "L358: switch branch-8",
+      "L388: cond-expr branch-0",
+      "L388: cond-expr branch-1",
+      "L400: if branch-0",
+      "L400: if branch-1",
+      "L403: if branch-0",
+      "L403: if branch-1",
+      "L449: if branch-0",
+      "L449: if branch-1"
+    ],
+    "test_results": {
+      "total": 31,
+      "passed": 0,
+      "failed": 31,
+      "error": 0
+    }
+  }
+}

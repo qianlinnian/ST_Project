@@ -1,0 +1,414 @@
+{
+  "source_file": "index.js",
+  "language": "javascript",
+  "llm_provider": "deepseek-reasoner",
+  "llm_model": "deepseek-reasoner",
+  "analysis": null,
+  "test_cases": [
+    {
+      "date": "2023-05-15 14:30:25.123",
+      "c": {}
+    },
+    {
+      "date": "2023-05-15 14:30:25.123",
+      "c": {
+        "utc": true
+      }
+    },
+    {
+      "date": "invalid-date",
+      "c": {}
+    },
+    {
+      "date": 1684123456789,
+      "c": {}
+    },
+    {
+      "id": "TC009",
+      "description": "测试 parseLocale 函数，输入空字符串，返回当前全局 L",
+      "input": {
+        "preset": "",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "parseLocale 中 !preset 分支"
+      ],
+      "covered_paths": [
+        "parseLocale: !preset -> return L"
+      ]
+    },
+    {
+      "id": "TC010",
+      "description": "测试 parseLocale 函数，输入已加载的语言字符串（小写），不更新对象，且非局部",
+      "input": {
+        "preset": "en",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "typeof preset === 'string' 分支",
+        "Ls[presetLower] 存在",
+        "object 为 falsy"
+      ],
+      "covered_paths": [
+        "parseLocale: 字符串 -> Ls中存在 -> l 被赋值 -> isLocal false -> 更新全局 L -> 返回 l"
+      ]
+    },
+    {
+      "preset": "fr",
+      "object": {
+        "name": "fr"
+      },
+      "isLocal": false
+    },
+    {
+      "id": "TC012",
+      "description": "测试 parseLocale 函数，输入带连字符的语言字符串（如zh-CN），且Ls中无对应项，递归解析",
+      "input": {
+        "preset": "zh-CN",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "zh",
+      "covered_branches": [
+        "typeof preset === 'string' 分支",
+        "Ls[presetLower] 不存在",
+        "object 为 falsy",
+        "presetSplit.length > 1",
+        "递归调用 parseLocale(presetSplit[0])"
+      ],
+      "covered_paths": [
+        "parseLocale: 字符串且包含连字符 -> 未设置l -> 长度>1 -> 递归调用主部分 -> !preset? -> return L (此时为 'en') -> 外层不更新全局L (因为 l 未定义) -> 返回外层 l || (!isLocal && L) -> 最终返回 L ('en')"
+      ]
+    },
+    {
+      "preset": {
+        "name": "ja"
+      },
+      "object": null,
+      "isLocal": false
+    },
+    {
+      "id": "TC014",
+      "description": "测试 parseLocale 函数，输入字符串，但最终未设置 l 且 isLocal 为 true，应返回 L",
+      "input": {
+        "preset": "unknown",
+        "object": null,
+        "isLocal": true
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "typeof preset === 'string' 分支",
+        "Ls[presetLower] 不存在",
+        "object 为 falsy",
+        "presetSplit.length <= 1 (preset为单个单词)",
+        "!l && !isLocal 条件中的 !isLocal 为 false"
+      ],
+      "covered_paths": [
+        "parseLocale: 字符串 -> 未找到 -> 未设置 l -> 未递归 -> !l 为 true -> isLocal true -> 不更新全局 L -> 返回 (!isLocal && L) 即 false || undefined? -> 实际返回 l || (!isLocal && L) -> l 未定义，(!isLocal && L) 为 false (因为 isLocal 为 true)，最终返回 undefined? 但函数逻辑是返回 l || (!isLocal && L)，l 为 undefined，(!isLocal && L) 为 false (因为 L 为 'en' 但 isLocal 为 true，所以表达式为 false)。在 JavaScript 中，false || undefined 返回 undefined。但函数最后有 `return l || (!isLocal && L)`，我们测试的是这个函数本身。预设 unknown，且 isLocal true，l 未定义，(!isLocal && L) 为 false，所以最终返回 false，但类型转换可能。根据代码逻辑，如果 isLocal 为 true，且 l 未定义，应返回 undefined? 实际上 `(!isLocal && L)` 为 `false`。所以 `undefined || false` 返回 `false`。但全局 L 是 'en'。我们期望它返回 `false`，但返回值的类型是？我们需要覆盖这个路径。"
+      ]
+    },
+    {
+      "id": "TC021",
+      "description": "测试 Dayjs.prototype.startOf 方法，units 为 'month'，isStartOf 为 false",
+      "input": {
+        "units": "month",
+        "startOf": false
+      },
+      "expected_output": "一个 Dayjs 对象，日期为该月末日 23:59:59.999",
+      "covered_branches": [
+        "startOf 中 unit === C.M 分支",
+        "isStartOf 为 false"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: C.M -> isStartOf false -> instanceFactory(0, $M + 1)"
+      ]
+    },
+    {
+      "id": "TC022",
+      "description": "测试 Dayjs.prototype.startOf 方法，units 为 'week'，且 $W >= weekStart",
+      "input": {
+        "units": "week"
+      },
+      "expected_output": "一个 Dayjs 对象，日期为当周的第一天 00:00:00.000",
+      "covered_branches": [
+        "startOf 中 unit === C.W 分支",
+        "$W < weekStart 为 false",
+        "isStartOf 为 true (默认)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: C.W -> weekStart=0 -> $W >= weekStart -> gap = $W - weekStart -> instanceFactory($D - gap, $M)"
+      ]
+    },
+    {
+      "id": "TC023",
+      "description": "测试 Dayjs.prototype.startOf 方法，units 为 'day'",
+      "input": {
+        "units": "day"
+      },
+      "expected_output": "一个 Dayjs 对象，日期为当天 00:00:00.000",
+      "covered_branches": [
+        "startOf 中 unit === C.D 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: C.D 或 C.DATE -> instanceFactorySet('setHours', 0)"
+      ]
+    },
+    {
+      "id": "TC024",
+      "description": "测试 Dayjs.prototype.startOf 方法，units 为 'hour'",
+      "input": {
+        "units": "hour"
+      },
+      "expected_output": "一个 Dayjs 对象，日期为该小时 0分0秒0毫秒",
+      "covered_branches": [
+        "startOf 中 unit === C.H 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: C.H -> instanceFactorySet('setMinutes', 1)"
+      ]
+    },
+    {
+      "id": "TC025",
+      "description": "测试 Dayjs.prototype.startOf 方法，units 为 'minute'",
+      "input": {
+        "units": "minute"
+      },
+      "expected_output": "一个 Dayjs 对象，日期为该分钟 0秒0毫秒",
+      "covered_branches": [
+        "startOf 中 unit === C.MIN 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: C.MIN -> instanceFactorySet('setSeconds', 2)"
+      ]
+    },
+    {
+      "id": "TC026",
+      "description": "测试 Dayjs.prototype.startOf 方法，units 为 'second'",
+      "input": {
+        "units": "second"
+      },
+      "expected_output": "一个 Dayjs 对象，日期为该秒 0毫秒",
+      "covered_branches": [
+        "startOf 中 unit === C.S 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: C.S -> instanceFactorySet('setMilliseconds', 3)"
+      ]
+    },
+    {
+      "id": "TC027",
+      "description": "测试 Dayjs.prototype.startOf 方法，units 无效",
+      "input": {
+        "units": "invalid"
+      },
+      "expected_output": "一个克隆的 Dayjs 对象",
+      "covered_branches": [
+        "startOf 中 switch default 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: default -> this.clone()"
+      ]
+    },
+    {
+      "id": "TC028",
+      "description": "测试 Dayjs.prototype.add 方法，添加月份",
+      "input": {
+        "number": 2,
+        "units": "month"
+      },
+      "expected_output": "一个 Dayjs 对象，日期为原日期加2个月",
+      "covered_branches": [
+        "add 中 unit === C.M 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.add: C.M -> this.set(C.M, this.$M + number)"
+      ]
+    },
+    {
+      "id": "TC029",
+      "description": "测试 Dayjs.prototype.add 方法，添加年份",
+      "input": {
+        "number": 1,
+        "units": "year"
+      },
+      "expected_output": "一个 Dayjs 对象，日期为原日期加1年",
+      "covered_branches": [
+        "add 中 unit === C.Y 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.add: C.Y -> this.set(C.Y, this.$y + number)"
+      ]
+    },
+    {
+      "id": "TC030",
+      "description": "测试 Dayjs.prototype.add 方法，添加天数",
+      "input": {
+        "number": 3,
+        "units": "day"
+      },
+      "expected_output": "一个 Dayjs 对象，日期为原日期加3天",
+      "covered_branches": [
+        "add 中 unit === C.D 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.add: C.D -> instanceFactorySet(1) with number = 3"
+      ]
+    },
+    {
+      "id": "TC031",
+      "description": "测试 Dayjs.prototype.add 方法，添加周数",
+      "input": {
+        "number": 2,
+        "units": "week"
+      },
+      "expected_output": "一个 Dayjs 对象，日期为原日期加2周",
+      "covered_branches": [
+        "add 中 unit === C.W 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.add: C.W -> instanceFactorySet(7) with number = 2"
+      ]
+    },
+    {
+      "id": "TC032",
+      "description": "测试 Dayjs.prototype.add 方法，添加小时",
+      "input": {
+        "number": 5,
+        "units": "hour"
+      },
+      "expected_output": "一个 Dayjs 对象，日期为原日期加5小时",
+      "covered_branches": [
+        "add 中 unit === C.H 分支",
+        "step 计算为 C.MILLISECONDS_A_HOUR"
+      ],
+      "covered_paths": [
+        "Dayjs.add: C.H -> step = C.MILLISECONDS_A_HOUR -> nextTimeStamp = this.$d.getTime() + (number * step) -> Utils.w(nextTimeStamp, this)"
+      ]
+    },
+    {
+      "id": "TC033",
+      "description": "测试 Dayjs.prototype.format 方法，无效日期",
+      "input": {
+        "formatStr": "YYYY-MM-DD"
+      },
+      "expected_output": "Invalid Date",
+      "covered_branches": [
+        "format 中 !this.isValid() 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.format: 无效日期 -> 返回 locale.invalidDate 或 C.INVALID_DATE_STRING"
+      ]
+    },
+    {
+      "id": "TC035",
+      "description": "测试 Dayjs.prototype.format 方法，覆盖所有匹配标记 (简化测试，使用一个包含所有标记的格式字符串)",
+      "input": {
+        "formatStr": "YYYY-YY-M-MM-MMM-MMMM-D-DD-d-dd-ddd-dddd-H-HH-h-hh-a-A-m-mm-s-ss-SSS-Z"
+      },
+      "expected_output": "一个符合所有标记的字符串",
+      "covered_branches": [
+        "format 中 switch case 的每个分支 (除 default 外) 和 'Z' 分支"
+      ],
+      "covered_paths": [
+        "Dayjs.format: 遍历每个匹配标记，执行 matches 函数中的各个 case"
+      ]
+    },
+    {
+      "id": "TC039",
+      "description": "测试 dayjs.unix 静态方法",
+      "input": {
+        "timestamp": 1672531200
+      },
+      "expected_output": "一个 Dayjs 对象，日期对应 UTC 时间 2023-01-01 00:00:00",
+      "covered_branches": [
+        "dayjs.unix 函数体"
+      ],
+      "covered_paths": [
+        "dayjs.unix: timestamp * 1e3 -> 调用 dayjs()"
+      ]
+    },
+    {
+      "id": "TC040",
+      "description": "测试原型上通过循环添加的 getter/setter 方法（如 $D, $M 等）- 测试 $D() getter (不传参数)",
+      "input": {
+        "unit": "date"
+      },
+      "expected_output": "当前日期的天数 (this.$D)",
+      "covered_branches": [
+        "proto[g[1]] 函数中 Utils.u(input) 返回 true (因为 input 未定义)",
+        "返回 this[get] (即 this.$D)"
+      ],
+      "covered_paths": [
+        "Dayjs.$D: 无参数 -> this.$g(undefined, '$D', C.DATE) -> Utils.u(input) true -> return this['$D']"
+      ]
+    },
+    {
+      "id": "TC041",
+      "description": "测试原型上通过循环添加的 getter/setter 方法 - 测试 $M() setter (传参数)",
+      "input": {
+        "unit": "month",
+        "value": 5
+      },
+      "expected_output": "一个新的 Dayjs 对象，月份设置为 5 (0-indexed，即6月)",
+      "covered_branches": [
+        "proto[g[1]] 函数中 Utils.u(input) 返回 false",
+        "返回 this.set(set, input)"
+      ],
+      "covered_paths": [
+        "Dayjs.$M: 有参数 -> this.$g(input, '$M', C.M) -> Utils.u(input) false -> return this.set(C.M, input)"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 97.06,
+    "branch_coverage": 85.16,
+    "uncovered_lines": [
+      166,
+      336,
+      338,
+      449,
+      450,
+      451,
+      453
+    ],
+    "uncovered_branches": [
+      "L74: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L77: binary-expr branch-1",
+      "L150: cond-expr branch-0",
+      "L163: cond-expr branch-0",
+      "L164: switch branch-0",
+      "L166: cond-expr branch-0",
+      "L166: cond-expr branch-1",
+      "L169: cond-expr branch-0",
+      "L173: cond-expr branch-0",
+      "L174: cond-expr branch-1",
+      "L196: cond-expr branch-0",
+      "L207: cond-expr branch-0",
+      "L215: if branch-1",
+      "L248: binary-expr branch-1",
+      "L267: binary-expr branch-1",
+      "L274: binary-expr branch-2",
+      "L277: binary-expr branch-1",
+      "L281: cond-expr branch-0",
+      "L286: switch branch-24",
+      "L341: binary-expr branch-2",
+      "L403: if branch-1",
+      "L416: cond-expr branch-0",
+      "L449: if branch-0",
+      "L449: if branch-1"
+    ],
+    "test_results": {
+      "total": 45,
+      "passed": 28,
+      "failed": 17,
+      "error": 0
+    }
+  }
+}

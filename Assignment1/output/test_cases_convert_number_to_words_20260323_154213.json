@@ -1,0 +1,563 @@
+{
+  "source_file": "convert_number_to_words.py",
+  "language": "python",
+  "llm_provider": "deepseek-chat",
+  "llm_model": "deepseek-chat",
+  "analysis": {
+    "functions": [
+      {
+        "name": "convert_small_number",
+        "params": [
+          "num"
+        ],
+        "start_line": 95,
+        "end_line": 134,
+        "decorators": []
+      },
+      {
+        "name": "convert_number",
+        "params": [
+          "num",
+          "system"
+        ],
+        "start_line": 137,
+        "end_line": 197,
+        "decorators": []
+      },
+      {
+        "name": "max_value",
+        "params": [
+          "cls",
+          "system"
+        ],
+        "start_line": 33,
+        "end_line": 53,
+        "decorators": [
+          "Name(id='classmethod', ctx=Load())"
+        ]
+      }
+    ],
+    "branches": [
+      {
+        "type": "if",
+        "line": 200,
+        "condition": "__name__ == '__main__'",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 121,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 123,
+        "condition": "num >= 100",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 126,
+        "condition": "tens == 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 128,
+        "condition": "tens == 1",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 179,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 183,
+        "condition": "num > NumberingSystem.max_value(system)",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "for",
+        "line": 186,
+        "iter": "NumberingSystem[system.upper()].value",
+        "target": "(power, unit)",
+        "has_else": false
+      },
+      {
+        "type": "if",
+        "line": 195,
+        "condition": "num > 0 or not word_groups",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 188,
+        "condition": "digit_group > 0",
+        "has_else": false,
+        "has_elif": false
+      }
+    ],
+    "conditions": [
+      {
+        "line": 195,
+        "operator": "or",
+        "expression": "num > 0 or not word_groups",
+        "sub_conditions": [
+          "num > 0",
+          "not word_groups"
+        ]
+      },
+      {
+        "line": 127,
+        "operator": "or",
+        "expression": "NumberWords.ONES.value[ones] or 'zero'",
+        "sub_conditions": [
+          "NumberWords.ONES.value[ones]",
+          "'zero'"
+        ]
+      }
+    ],
+    "paths": {
+      "convert_small_number": [
+        "L95→L96→L121(T)→L122",
+        "L95→L96→L121(F)"
+      ],
+      "convert_number": [
+        "L137→L140→L177→L179(T)→L180→L181",
+        "L137→L140→L177→L179(F)"
+      ],
+      "max_value": [
+        "L33→L34→L44→L53"
+      ]
+    },
+    "total_lines": 205
+  },
+  "test_cases": [
+    {
+      "id": "TC001",
+      "description": "测试NumberingSystem.max_value方法，有效系统'short'",
+      "input": {
+        "system": "short"
+      },
+      "expected_output": 999999999999999999,
+      "covered_branches": [
+        "NumberingSystem.max_value: match cls.SHORT"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: 有效系统 -> SHORT分支"
+      ]
+    },
+    {
+      "id": "TC002",
+      "description": "测试NumberingSystem.max_value方法，有效系统'long'",
+      "input": {
+        "system": "long"
+      },
+      "expected_output": 999999999999999999999,
+      "covered_branches": [
+        "NumberingSystem.max_value: match cls.LONG"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: 有效系统 -> LONG分支"
+      ]
+    },
+    {
+      "id": "TC003",
+      "description": "测试NumberingSystem.max_value方法，有效系统'indian'",
+      "input": {
+        "system": "indian"
+      },
+      "expected_output": 9999999999999999999,
+      "covered_branches": [
+        "NumberingSystem.max_value: match cls.INDIAN"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: 有效系统 -> INDIAN分支"
+      ]
+    },
+    {
+      "id": "TC004",
+      "description": "测试NumberingSystem.max_value方法，无效系统，触发异常",
+      "input": {
+        "system": "invalid"
+      },
+      "expected_output": null,
+      "covered_branches": [
+        "NumberingSystem.max_value: match _ (默认)"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: 无效系统 -> 默认分支 -> 异常"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "测试convert_small_number方法，输入0",
+      "input": {
+        "num": 0
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "convert_small_number: num >= 100 -> False",
+        "convert_small_number: tens == 0 -> True"
+      ],
+      "covered_paths": [
+        "convert_small_number: 非负且小于100 -> tens为0 -> 返回'zero'"
+      ]
+    },
+    {
+      "id": "TC006",
+      "description": "测试convert_small_number方法，输入个位数5",
+      "input": {
+        "num": 5
+      },
+      "expected_output": "five",
+      "covered_branches": [
+        "convert_small_number: num >= 100 -> False",
+        "convert_small_number: tens == 0 -> True"
+      ],
+      "covered_paths": [
+        "convert_small_number: 非负且小于100 -> tens为0 -> 返回个位单词"
+      ]
+    },
+    {
+      "id": "TC007",
+      "description": "测试convert_small_number方法，输入10",
+      "input": {
+        "num": 10
+      },
+      "expected_output": "ten",
+      "covered_branches": [
+        "convert_small_number: num >= 100 -> False",
+        "convert_small_number: tens == 1 -> True"
+      ],
+      "covered_paths": [
+        "convert_small_number: 非负且小于100 -> tens为1 -> 返回TEENS单词"
+      ]
+    },
+    {
+      "id": "TC008",
+      "description": "测试convert_small_number方法，输入15",
+      "input": {
+        "num": 15
+      },
+      "expected_output": "fifteen",
+      "covered_branches": [
+        "convert_small_number: num >= 100 -> False",
+        "convert_small_number: tens == 1 -> True"
+      ],
+      "covered_paths": [
+        "convert_small_number: 非负且小于100 -> tens为1 -> 返回TEENS单词"
+      ]
+    },
+    {
+      "id": "TC009",
+      "description": "测试convert_small_number方法，输入20",
+      "input": {
+        "num": 20
+      },
+      "expected_output": "twenty",
+      "covered_branches": [
+        "convert_small_number: num >= 100 -> False",
+        "convert_small_number: tens == 0 -> False",
+        "convert_small_number: tens == 1 -> False"
+      ],
+      "covered_paths": [
+        "convert_small_number: 非负且小于100 -> tens>1且ones为0 -> 返回TENS单词"
+      ]
+    },
+    {
+      "id": "TC010",
+      "description": "测试convert_small_number方法，输入25",
+      "input": {
+        "num": 25
+      },
+      "expected_output": "twenty-five",
+      "covered_branches": [
+        "convert_small_number: num >= 100 -> False",
+        "convert_small_number: tens == 0 -> False",
+        "convert_small_number: tens == 1 -> False"
+      ],
+      "covered_paths": [
+        "convert_small_number: 非负且小于100 -> tens>1且ones不为0 -> 返回TENS-ONES单词"
+      ]
+    },
+    {
+      "id": "TC011",
+      "description": "测试convert_small_number方法，输入负数，触发异常",
+      "input": {
+        "num": -1
+      },
+      "expected_output": null,
+      "covered_branches": [
+        "convert_small_number: num < 0 -> True"
+      ],
+      "covered_paths": [
+        "convert_small_number: 负数 -> 异常"
+      ]
+    },
+    {
+      "id": "TC012",
+      "description": "测试convert_small_number方法，输入大于等于100的数，触发异常",
+      "input": {
+        "num": 100
+      },
+      "expected_output": null,
+      "covered_branches": [
+        "convert_small_number: num >= 100 -> True"
+      ],
+      "covered_paths": [
+        "convert_small_number: 大于等于100 -> 异常"
+      ]
+    },
+    {
+      "id": "TC013",
+      "description": "测试convert_number方法，输入0，默认short系统",
+      "input": {
+        "num": 0,
+        "system": "short"
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "convert_number: num < 0 -> False",
+        "convert_number: num > max_value -> False",
+        "convert_number: for循环体（无匹配）",
+        "convert_number: num > 0 or not word_groups -> True (not word_groups)"
+      ],
+      "covered_paths": [
+        "convert_number: 非负，未超限，short系统，值为0 -> for循环无匹配 -> word_groups为空 -> 调用convert_small_number(0)"
+      ]
+    },
+    {
+      "id": "TC014",
+      "description": "测试convert_number方法，输入1，默认short系统",
+      "input": {
+        "num": 1,
+        "system": "short"
+      },
+      "expected_output": "one",
+      "covered_branches": [
+        "convert_number: num < 0 -> False",
+        "convert_number: num > max_value -> False",
+        "convert_number: for循环体（无匹配）",
+        "convert_number: num > 0 or not word_groups -> True (num > 0)"
+      ],
+      "covered_paths": [
+        "convert_number: 非负，未超限，short系统，值小于所有单位 -> for循环无匹配 -> word_groups为空 -> 调用convert_small_number(1)"
+      ]
+    },
+    {
+      "id": "TC015",
+      "description": "测试convert_number方法，输入100，默认short系统",
+      "input": {
+        "num": 100,
+        "system": "short"
+      },
+      "expected_output": "one hundred",
+      "covered_branches": [
+        "convert_number: num < 0 -> False",
+        "convert_number: num > max_value -> False",
+        "convert_number: for循环体（匹配hundred）",
+        "convert_number: digit_group > 0 -> True",
+        "convert_number: digit_group >= 100 -> False",
+        "convert_number: num > 0 or not word_groups -> False"
+      ],
+      "covered_paths": [
+        "convert_number: 非负，未超限，short系统，值包含hundred单位 -> for循环匹配hundred -> digit_group=1 -> 调用convert_small_number(1) -> 添加'hundred' -> 剩余num=0 -> 不添加零"
+      ]
+    },
+    {
+      "id": "TC016",
+      "description": "测试convert_number方法，输入-100，默认short系统",
+      "input": {
+        "num": -100,
+        "system": "short"
+      },
+      "expected_output": "negative one hundred",
+      "covered_branches": [
+        "convert_number: num < 0 -> True",
+        "convert_number: num > max_value -> False",
+        "convert_number: for循环体（匹配hundred）",
+        "convert_number: digit_group > 0 -> True",
+        "convert_number: digit_group >= 100 -> False",
+        "convert_number: num > 0 or not word_groups -> False"
+      ],
+      "covered_paths": [
+        "convert_number: 负数，未超限，short系统 -> 添加'negative' -> 后续处理100"
+      ]
+    },
+    {
+      "id": "TC017",
+      "description": "测试convert_number方法，输入一个中等大小的数，覆盖short系统多个单位",
+      "input": {
+        "num": 1234567,
+        "system": "short"
+      },
+      "expected_output": "one million two hundred thirty-four thousand five hundred sixty-seven",
+      "covered_branches": [
+        "convert_number: num < 0 -> False",
+        "convert_number: num > max_value -> False",
+        "convert_number: for循环体（匹配million, thousand, hundred）",
+        "convert_number: digit_group > 0 -> True",
+        "convert_number: digit_group >= 100 -> False (对于1, 234, 5)",
+        "convert_number: num > 0 or not word_groups -> True (num > 0, 最后剩余67)"
+      ],
+      "covered_paths": [
+        "convert_number: 非负，未超限，short系统，值包含多个单位 -> for循环匹配多个单位 -> 递归/调用convert_small_number处理digit_group -> 最后处理剩余部分"
+      ]
+    },
+    {
+      "id": "TC018",
+      "description": "测试convert_number方法，输入一个需要递归转换digit_group的数（digit_group >= 100）",
+      "input": {
+        "num": 1000000,
+        "system": "short"
+      },
+      "expected_output": "one million",
+      "covered_branches": [
+        "convert_number: num < 0 -> False",
+        "convert_number: num > max_value -> False",
+        "convert_number: for循环体（匹配million）",
+        "convert_number: digit_group > 0 -> True",
+        "convert_number: digit_group >= 100 -> True",
+        "convert_number: num > 0 or not word_groups -> False"
+      ],
+      "covered_paths": [
+        "convert_number: 非负，未超限，short系统，值包含million单位且digit_group=100 -> digit_group>=100 -> 递归调用convert_number(100)"
+      ]
+    },
+    {
+      "id": "TC019",
+      "description": "测试convert_number方法，使用long系统",
+      "input": {
+        "num": 1000000000,
+        "system": "long"
+      },
+      "expected_output": "one milliard",
+      "covered_branches": [
+        "convert_number: num < 0 -> False",
+        "convert_number: num > max_value -> False",
+        "convert_number: for循环体（匹配milliard）",
+        "convert_number: digit_group > 0 -> True",
+        "convert_number: digit_group >= 100 -> False",
+        "convert_number: num > 0 or not word_groups -> False"
+      ],
+      "covered_paths": [
+        "convert_number: 非负，未超限，long系统，值包含milliard单位"
+      ]
+    },
+    {
+      "id": "TC020",
+      "description": "测试convert_number方法，使用indian系统",
+      "input": {
+        "num": 10000000,
+        "system": "indian"
+      },
+      "expected_output": "one crore",
+      "covered_branches": [
+        "convert_number: num < 0 -> False",
+        "convert_number: num > max_value -> False",
+        "convert_number: for循环体（匹配crore）",
+        "convert_number: digit_group > 0 -> True",
+        "convert_number: digit_group >= 100 -> False",
+        "convert_number: num > 0 or not word_groups -> False"
+      ],
+      "covered_paths": [
+        "convert_number: 非负，未超限，indian系统，值包含crore单位"
+      ]
+    },
+    {
+      "id": "TC021",
+      "description": "测试convert_number方法，输入超过short系统最大值，触发异常",
+      "input": {
+        "num": 1000000000000000000,
+        "system": "short"
+      },
+      "expected_output": null,
+      "covered_branches": [
+        "convert_number: num > max_value -> True"
+      ],
+      "covered_paths": [
+        "convert_number: 非负，超过short系统最大值 -> 异常"
+      ]
+    },
+    {
+      "id": "TC022",
+      "description": "测试convert_number方法，输入超过long系统最大值，触发异常",
+      "input": {
+        "num": 1000000000000000000000,
+        "system": "long"
+      },
+      "expected_output": null,
+      "covered_branches": [
+        "convert_number: num > max_value -> True"
+      ],
+      "covered_paths": [
+        "convert_number: 非负，超过long系统最大值 -> 异常"
+      ]
+    },
+    {
+      "id": "TC023",
+      "description": "测试convert_number方法，输入超过indian系统最大值，触发异常",
+      "input": {
+        "num": 10000000000000000000,
+        "system": "indian"
+      },
+      "expected_output": null,
+      "covered_branches": [
+        "convert_number: num > max_value -> True"
+      ],
+      "covered_paths": [
+        "convert_number: 非负，超过indian系统最大值 -> 异常"
+      ]
+    },
+    {
+      "id": "TC024",
+      "description": "测试convert_number方法，输入负数且超过最大值，先处理符号再检查最大值",
+      "input": {
+        "num": -1000000000000000000,
+        "system": "short"
+      },
+      "expected_output": null,
+      "covered_branches": [
+        "convert_number: num < 0 -> True",
+        "convert_number: num > max_value -> True"
+      ],
+      "covered_paths": [
+        "convert_number: 负数，取绝对值后超过short系统最大值 -> 异常"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 91.02564102564102,
+    "branch_coverage": 92.3076923076923,
+    "uncovered_lines": [
+      51,
+      52,
+      201,
+      203,
+      205
+    ],
+    "uncovered_branches": [
+      "L49 → L51",
+      "L200 → L201"
+    ],
+    "test_results": {
+      "total": 24,
+      "passed": 23,
+      "failed": 1,
+      "error": 0
+    }
+  }
+}

@@ -1,0 +1,982 @@
+{
+  "source_file": "convert_number_to_words.py",
+  "language": "python",
+  "llm_provider": "google",
+  "llm_model": "gemini-2.5-flash",
+  "analysis": {
+    "functions": [
+      {
+        "name": "convert_small_number",
+        "params": [
+          "num"
+        ],
+        "start_line": 95,
+        "end_line": 134,
+        "decorators": []
+      },
+      {
+        "name": "convert_number",
+        "params": [
+          "num",
+          "system"
+        ],
+        "start_line": 137,
+        "end_line": 197,
+        "decorators": []
+      },
+      {
+        "name": "max_value",
+        "params": [
+          "cls",
+          "system"
+        ],
+        "start_line": 33,
+        "end_line": 53,
+        "decorators": [
+          "Name(id='classmethod', ctx=Load())"
+        ]
+      }
+    ],
+    "branches": [
+      {
+        "type": "if",
+        "line": 200,
+        "condition": "__name__ == '__main__'",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 121,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 123,
+        "condition": "num >= 100",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 126,
+        "condition": "tens == 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 128,
+        "condition": "tens == 1",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 179,
+        "condition": "num < 0",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 183,
+        "condition": "num > NumberingSystem.max_value(system)",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "for",
+        "line": 186,
+        "iter": "NumberingSystem[system.upper()].value",
+        "target": "(power, unit)",
+        "has_else": false
+      },
+      {
+        "type": "if",
+        "line": 195,
+        "condition": "num > 0 or not word_groups",
+        "has_else": false,
+        "has_elif": false
+      },
+      {
+        "type": "if",
+        "line": 188,
+        "condition": "digit_group > 0",
+        "has_else": false,
+        "has_elif": false
+      }
+    ],
+    "conditions": [
+      {
+        "line": 195,
+        "operator": "or",
+        "expression": "num > 0 or not word_groups",
+        "sub_conditions": [
+          "num > 0",
+          "not word_groups"
+        ]
+      },
+      {
+        "line": 127,
+        "operator": "or",
+        "expression": "NumberWords.ONES.value[ones] or 'zero'",
+        "sub_conditions": [
+          "NumberWords.ONES.value[ones]",
+          "'zero'"
+        ]
+      }
+    ],
+    "paths": {
+      "convert_small_number": [
+        "L95→L96→L121(T)→L122",
+        "L95→L96→L121(F)"
+      ],
+      "convert_number": [
+        "L137→L140→L177→L179(T)→L180→L181",
+        "L137→L140→L177→L179(F)"
+      ],
+      "max_value": [
+        "L33→L34→L44→L53"
+      ]
+    },
+    "total_lines": 205
+  },
+  "test_cases": [
+    {
+      "id": "TC001",
+      "description": "测试 NumberingSystem.max_value 方法，使用 'short' 计数系统。",
+      "input": {
+        "system": "short"
+      },
+      "expected_output": 999999999999999999,
+      "covered_branches": [
+        "NumberingSystem.max_value: match system_enum case cls.SHORT (True)"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: system_enum matches cls.SHORT -> max_exp = 18 -> return 10^18 - 1"
+      ]
+    },
+    {
+      "id": "TC002",
+      "description": "测试 NumberingSystem.max_value 方法，使用 'long' 计数系统。",
+      "input": {
+        "system": "long"
+      },
+      "expected_output": 999999999999999999999,
+      "covered_branches": [
+        "NumberingSystem.max_value: match system_enum case cls.LONG (True)"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: system_enum matches cls.LONG -> max_exp = 21 -> return 10^21 - 1"
+      ]
+    },
+    {
+      "id": "TC003",
+      "description": "测试 NumberingSystem.max_value 方法，使用 'indian' 计数系统。",
+      "input": {
+        "system": "indian"
+      },
+      "expected_output": 9999999999999999999,
+      "covered_branches": [
+        "NumberingSystem.max_value: match system_enum case cls.INDIAN (True)"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: system_enum matches cls.INDIAN -> max_exp = 19 -> return 10^19 - 1"
+      ]
+    },
+    {
+      "id": "TC004",
+      "description": "测试 NumberingSystem.max_value 方法，使用无效的计数系统（应抛出 ValueError）。",
+      "input": {
+        "system": "invalid"
+      },
+      "expected_output": "ValueError: Invalid numbering system",
+      "covered_branches": [
+        "NumberingSystem.max_value: match system_enum case _ (True)"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value: system_enum matches _ -> raise ValueError"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "测试 convert_small_number 函数，输入为 0。",
+      "input": {
+        "num": 0
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "convert_small_number: num < 0 (False)",
+        "convert_small_number: num >= 100 (False)",
+        "convert_small_number: tens == 0 (True)",
+        "convert_small_number: NumberWords.ONES.value[ones] is falsy (for 'or' condition)"
+      ],
+      "covered_paths": [
+        "convert_small_number: num < 0 (F) -> num >= 100 (F) -> tens == 0 (T) -> return 'zero'"
+      ]
+    },
+    {
+      "id": "TC006",
+      "description": "测试 convert_small_number 函数，输入为个位数（例如 5）。",
+      "input": {
+        "num": 5
+      },
+      "expected_output": "five",
+      "covered_branches": [
+        "convert_small_number: num < 0 (False)",
+        "convert_small_number: num >= 100 (False)",
+        "convert_small_number: tens == 0 (True)",
+        "convert_small_number: NumberWords.ONES.value[ones] is truthy (for 'or' condition)"
+      ],
+      "covered_paths": [
+        "convert_small_number: num < 0 (F) -> num >= 100 (F) -> tens == 0 (T) -> return ONES[ones]"
+      ]
+    },
+    {
+      "id": "TC007",
+      "description": "测试 convert_small_number 函数，输入为 10。",
+      "input": {
+        "num": 10
+      },
+      "expected_output": "ten",
+      "covered_branches": [
+        "convert_small_number: num < 0 (False)",
+        "convert_small_number: num >= 100 (False)",
+        "convert_small_number: tens == 0 (False)",
+        "convert_small_number: tens == 1 (True)"
+      ],
+      "covered_paths": [
+        "convert_small_number: num < 0 (F) -> num >= 100 (F) -> tens == 0 (F) -> tens == 1 (T) -> return TEENS[ones]"
+      ]
+    },
+    {
+      "id": "TC008",
+      "description": "测试 convert_small_number 函数，输入为十几的数字（例如 15）。",
+      "input": {
+        "num": 15
+      },
+      "expected_output": "fifteen",
+      "covered_branches": [
+        "convert_small_number: num < 0 (False)",
+        "convert_small_number: num >= 100 (False)",
+        "convert_small_number: tens == 0 (False)",
+        "convert_small_number: tens == 1 (True)"
+      ],
+      "covered_paths": [
+        "convert_small_number: num < 0 (F) -> num >= 100 (F) -> tens == 0 (F) -> tens == 1 (T) -> return TEENS[ones]"
+      ]
+    },
+    {
+      "id": "TC009",
+      "description": "测试 convert_small_number 函数，输入为整十数（例如 20）。",
+      "input": {
+        "num": 20
+      },
+      "expected_output": "twenty",
+      "covered_branches": [
+        "convert_small_number: num < 0 (False)",
+        "convert_small_number: num >= 100 (False)",
+        "convert_small_number: tens == 0 (False)",
+        "convert_small_number: tens == 1 (False)",
+        "convert_small_number: tens >= 2 (True, implicit else branch)",
+        "convert_small_number: conditional expression 'NumberWords.ONES.value[ones]' is falsy (no hyphen)"
+      ],
+      "covered_paths": [
+        "convert_small_number: num < 0 (F) -> num >= 100 (F) -> tens == 0 (F) -> tens == 1 (F) -> tens >= 2 -> return TENS[tens] + ONES[ones] (no hyphen)"
+      ]
+    },
+    {
+      "id": "TC010",
+      "description": "测试 convert_small_number 函数，输入为两位数（例如 25）。",
+      "input": {
+        "num": 25
+      },
+      "expected_output": "twenty-five",
+      "covered_branches": [
+        "convert_small_number: num < 0 (False)",
+        "convert_small_number: num >= 100 (False)",
+        "convert_small_number: tens == 0 (False)",
+        "convert_small_number: tens == 1 (False)",
+        "convert_small_number: tens >= 2 (True, implicit else branch)",
+        "convert_small_number: conditional expression 'NumberWords.ONES.value[ones]' is truthy (with hyphen)"
+      ],
+      "covered_paths": [
+        "convert_small_number: num < 0 (F) -> num >= 100 (F) -> tens == 0 (F) -> tens == 1 (F) -> tens >= 2 -> return TENS[tens] + '-' + ONES[ones] (with hyphen)"
+      ]
+    },
+    {
+      "id": "TC011",
+      "description": "测试 convert_small_number 函数，输入为最大的两位数（99）。",
+      "input": {
+        "num": 99
+      },
+      "expected_output": "ninety-nine",
+      "covered_branches": [
+        "convert_small_number: num < 0 (False)",
+        "convert_small_number: num >= 100 (False)",
+        "convert_small_number: tens == 0 (False)",
+        "convert_small_number: tens == 1 (False)",
+        "convert_small_number: tens >= 2 (True, implicit else branch)",
+        "convert_small_number: conditional expression 'NumberWords.ONES.value[ones]' is truthy (with hyphen)"
+      ],
+      "covered_paths": [
+        "convert_small_number: num < 0 (F) -> num >= 100 (F) -> tens == 0 (F) -> tens == 1 (F) -> tens >= 2 -> return TENS[tens] + '-' + ONES[ones] (with hyphen)"
+      ]
+    },
+    {
+      "id": "TC012",
+      "description": "测试 convert_small_number 函数，输入为负数（应抛出 ValueError）。",
+      "input": {
+        "num": -1
+      },
+      "expected_output": "ValueError: This function only accepts non-negative integers",
+      "covered_branches": [
+        "convert_small_number: num < 0 (True)"
+      ],
+      "covered_paths": [
+        "convert_small_number: num < 0 (T) -> raise ValueError"
+      ]
+    },
+    {
+      "id": "TC013",
+      "description": "测试 convert_small_number 函数，输入为大于等于 100 的数字（应抛出 ValueError）。",
+      "input": {
+        "num": 100
+      },
+      "expected_output": "ValueError: This function only converts numbers less than 100",
+      "covered_branches": [
+        "convert_small_number: num < 0 (False)",
+        "convert_small_number: num >= 100 (True)"
+      ],
+      "covered_paths": [
+        "convert_small_number: num < 0 (F) -> num >= 100 (T) -> raise ValueError"
+      ]
+    },
+    {
+      "id": "TC014",
+      "description": "测试 convert_number 函数，输入为 0。",
+      "input": {
+        "num": 0,
+        "system": "short"
+      },
+      "expected_output": "zero",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (no digit_group > 0)",
+        "convert_number: num > 0 (False) OR not word_groups (True)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (no groups added) -> num > 0 (F) and not word_groups (T) -> append convert_small_number(0) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC015",
+      "description": "测试 convert_number 函数，输入为 1。",
+      "input": {
+        "num": 1,
+        "system": "short"
+      },
+      "expected_output": "one",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (no digit_group > 0)",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (no groups added) -> num > 0 (T) -> append convert_small_number(1) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC016",
+      "description": "测试 convert_number 函数，输入为 99。",
+      "input": {
+        "num": 99,
+        "system": "short"
+      },
+      "expected_output": "ninety-nine",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (no digit_group > 0)",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (no groups added) -> num > 0 (T) -> append convert_small_number(99) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC017",
+      "description": "测试 convert_number 函数，输入为 100。",
+      "input": {
+        "num": 100,
+        "system": "short"
+      },
+      "expected_output": "one hundred",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (iterates for 'hundred')",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False) for 'hundred' group",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (hundred group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one hundred' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC018",
+      "description": "测试 convert_number 函数，输入为 123。",
+      "input": {
+        "num": 123,
+        "system": "short"
+      },
+      "expected_output": "one hundred twenty-three",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (iterates for 'hundred')",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False) for 'hundred' group",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (hundred group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one hundred' -> num > 0 (T) -> append convert_small_number(23) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC019",
+      "description": "测试 convert_number 函数，输入为 1000。",
+      "input": {
+        "num": 1000,
+        "system": "short"
+      },
+      "expected_output": "one thousand",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (iterates for 'thousand')",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False) for 'thousand' group",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (thousand group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one thousand' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC020",
+      "description": "测试 convert_number 函数，输入为 123456 (包含递归调用)。",
+      "input": {
+        "num": 123456,
+        "system": "short"
+      },
+      "expected_output": "one hundred twenty-three thousand four hundred fifty-six",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (iterates for 'thousand')",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (True) for 'thousand' group (recursive call)",
+        "convert_number: for loop (iterates for 'hundred')",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False) for 'hundred' group",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (thousand group) -> digit_group > 0 (T) -> digit_group >= 100 (T) -> recursive call convert_number(123) -> append 'one hundred twenty-three thousand' -> loop (hundred group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'four hundred' -> num > 0 (T) -> append convert_small_number(56) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC021",
+      "description": "测试 convert_number 函数，输入为 -1 (负数)。",
+      "input": {
+        "num": -1,
+        "system": "short"
+      },
+      "expected_output": "negative one",
+      "covered_branches": [
+        "convert_number: num < 0 (True)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (no digit_group > 0)",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (T) -> append 'negative' -> num becomes 1 -> num > max_value (F) -> loop (no groups added) -> num > 0 (T) -> append convert_small_number(1) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC022",
+      "description": "测试 convert_number 函数，输入为 -100 (负数)。",
+      "input": {
+        "num": -100,
+        "system": "short"
+      },
+      "expected_output": "negative one hundred",
+      "covered_branches": [
+        "convert_number: num < 0 (True)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (iterates for 'hundred')",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False) for 'hundred' group",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (T) -> append 'negative' -> num becomes 100 -> num > max_value (F) -> loop (hundred group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one hundred' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC023",
+      "description": "测试 convert_number 函数，输入为 'short' 系统的最大支持值。",
+      "input": {
+        "num": 999999999999999999,
+        "system": "short"
+      },
+      "expected_output": "nine hundred ninety-nine quadrillion nine hundred ninety-nine trillion nine hundred ninety-nine billion nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (all groups)",
+        "convert_number: digit_group > 0 (True) for all groups",
+        "convert_number: digit_group >= 100 (True) for quadrillion, trillion, billion, million, thousand groups (recursive calls)",
+        "convert_number: digit_group >= 100 (False) for hundred group",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (all groups with max digits) -> num > 0 (T) -> append convert_small_number(99) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC024",
+      "description": "测试 convert_number 函数，输入值超过 'short' 系统的最大支持值（应抛出 ValueError）。",
+      "input": {
+        "num": 1000000000000000000,
+        "system": "short"
+      },
+      "expected_output": "ValueError: Input number is too large",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (True)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (T) -> raise ValueError"
+      ]
+    },
+    {
+      "id": "TC025",
+      "description": "测试 convert_number 函数，输入为 'long' 系统的最大支持值。",
+      "input": {
+        "num": 999999999999999999999,
+        "system": "long"
+      },
+      "expected_output": "nine hundred ninety-nine billiard nine hundred ninety-nine milliard nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (all groups for long system)",
+        "convert_number: digit_group > 0 (True) for all groups",
+        "convert_number: digit_group >= 100 (True) for billiard, milliard, million, thousand groups (recursive calls)",
+        "convert_number: digit_group >= 100 (False) for hundred group",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (all groups for long system with max digits) -> num > 0 (T) -> append convert_small_number(99) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC026",
+      "description": "测试 convert_number 函数，输入值超过 'long' 系统的最大支持值（应抛出 ValueError）。",
+      "input": {
+        "num": 1000000000000000000000,
+        "system": "long"
+      },
+      "expected_output": "ValueError: Input number is too large",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (True)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (T) -> raise ValueError"
+      ]
+    },
+    {
+      "id": "TC027",
+      "description": "测试 convert_number 函数，输入为 'indian' 系统的最大支持值。",
+      "input": {
+        "num": 9999999999999999999,
+        "system": "indian"
+      },
+      "expected_output": "nine crore crore ninety-nine lakh crore ninety-nine crore ninety-nine lakh ninety-nine thousand nine hundred ninety-nine",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (all groups for indian system)",
+        "convert_number: digit_group > 0 (True) for all groups",
+        "convert_number: digit_group >= 100 (True) for crore crore, lakh crore, crore, lakh, thousand groups (recursive calls)",
+        "convert_number: digit_group >= 100 (False) for hundred group",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (all groups for indian system with max digits) -> num > 0 (T) -> append convert_small_number(99) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC028",
+      "description": "测试 convert_number 函数，输入值超过 'indian' 系统的最大支持值（应抛出 ValueError）。",
+      "input": {
+        "num": 10000000000000000000,
+        "system": "indian"
+      },
+      "expected_output": "ValueError: Input number is too large",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (True)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (T) -> raise ValueError"
+      ]
+    },
+    {
+      "id": "TC029",
+      "description": "测试 convert_number 函数，使用 'short' 系统转换大数字（doctest 示例）。",
+      "input": {
+        "num": 123456789012345,
+        "system": "short"
+      },
+      "expected_output": "one hundred twenty-three trillion four hundred fifty-six billion seven hundred eighty-nine million twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (all relevant groups)",
+        "convert_number: digit_group > 0 (True) for all relevant groups",
+        "convert_number: digit_group >= 100 (True) for trillion, billion, million groups",
+        "convert_number: digit_group >= 100 (False) for thousand, hundred groups",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (multiple groups, some recursive, some small) -> num > 0 (T) -> append convert_small_number(45) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC030",
+      "description": "测试 convert_number 函数，使用 'long' 系统转换大数字（doctest 示例）。",
+      "input": {
+        "num": 123456789012345,
+        "system": "long"
+      },
+      "expected_output": "one hundred twenty-three thousand four hundred fifty-six milliard seven hundred eighty-nine million twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (all relevant groups)",
+        "convert_number: digit_group > 0 (True) for all relevant groups",
+        "convert_number: digit_group >= 100 (True) for milliard, million groups",
+        "convert_number: digit_group >= 100 (False) for thousand, hundred groups",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (multiple groups, some recursive, some small) -> num > 0 (T) -> append convert_small_number(45) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC031",
+      "description": "测试 convert_number 函数，使用 'indian' 系统转换大数字（doctest 示例）。",
+      "input": {
+        "num": 123456789012345,
+        "system": "indian"
+      },
+      "expected_output": "one crore crore twenty-three lakh crore forty-five thousand six hundred seventy-eight crore ninety lakh twelve thousand three hundred forty-five",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (all relevant groups)",
+        "convert_number: digit_group > 0 (True) for all relevant groups",
+        "convert_number: digit_group >= 100 (True) for crore crore, lakh crore, crore, lakh, thousand groups",
+        "convert_number: digit_group >= 100 (False) for hundred group",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (multiple groups, some recursive, some small) -> num > 0 (T) -> append convert_small_number(45) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC032",
+      "description": "测试 convert_number 函数，输入为正好一百万 ('short')。",
+      "input": {
+        "num": 1000000,
+        "system": "short"
+      },
+      "expected_output": "one million",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (million group)",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False)",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (million group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one million' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC033",
+      "description": "测试 convert_number 函数，输入为正好十亿 ('short')。",
+      "input": {
+        "num": 1000000000,
+        "system": "short"
+      },
+      "expected_output": "one billion",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (billion group)",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False)",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (billion group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one billion' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC034",
+      "description": "测试 convert_number 函数，输入为正好一万亿 ('short')。",
+      "input": {
+        "num": 1000000000000,
+        "system": "short"
+      },
+      "expected_output": "one trillion",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (trillion group)",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False)",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (trillion group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one trillion' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC035",
+      "description": "测试 convert_number 函数，输入为正好一千万亿 ('short')。",
+      "input": {
+        "num": 1000000000000000,
+        "system": "short"
+      },
+      "expected_output": "one quadrillion",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (quadrillion group)",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False)",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (quadrillion group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one quadrillion' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC036",
+      "description": "测试 convert_number 函数，输入为正好一千兆 ('long')。",
+      "input": {
+        "num": 1000000000000000,
+        "system": "long"
+      },
+      "expected_output": "one billiard",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (billiard group)",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False)",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (billiard group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one billiard' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC037",
+      "description": "测试 convert_number 函数，输入为正好十亿 ('long')。",
+      "input": {
+        "num": 1000000000,
+        "system": "long"
+      },
+      "expected_output": "one milliard",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (milliard group)",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False)",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (milliard group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one milliard' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC038",
+      "description": "测试 convert_number 函数，输入为正好一千万 ('indian')。",
+      "input": {
+        "num": 10000000,
+        "system": "indian"
+      },
+      "expected_output": "one crore",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (crore group)",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False)",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (crore group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one crore' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC039",
+      "description": "测试 convert_number 函数，输入为正好十万 ('indian')。",
+      "input": {
+        "num": 100000,
+        "system": "indian"
+      },
+      "expected_output": "one lakh",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (lakh group)",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False)",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (lakh group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one lakh' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC040",
+      "description": "测试 convert_number 函数，输入为正好一万亿 ('indian')。",
+      "input": {
+        "num": 1000000000000,
+        "system": "indian"
+      },
+      "expected_output": "one lakh crore",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (lakh crore group)",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False)",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (lakh crore group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one lakh crore' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC041",
+      "description": "测试 convert_number 函数，输入为正好一千万亿 ('indian')。",
+      "input": {
+        "num": 100000000000000,
+        "system": "indian"
+      },
+      "expected_output": "one crore crore",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (crore crore group)",
+        "convert_number: digit_group > 0 (True)",
+        "convert_number: digit_group >= 100 (False)",
+        "convert_number: num > 0 (False) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (crore crore group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one crore crore' -> num > 0 (F) and not word_groups (F) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC042",
+      "description": "测试 convert_number 函数，输入数字中间包含零组（例如 1,000,005）。",
+      "input": {
+        "num": 1000005,
+        "system": "short"
+      },
+      "expected_output": "one million five",
+      "covered_branches": [
+        "convert_number: num < 0 (False)",
+        "convert_number: num > NumberingSystem.max_value (False)",
+        "convert_number: for loop (million group)",
+        "convert_number: digit_group > 0 (True) for million",
+        "convert_number: digit_group >= 100 (False) for million",
+        "convert_number: for loop (thousand group)",
+        "convert_number: digit_group > 0 (False) for thousand",
+        "convert_number: for loop (hundred group)",
+        "convert_number: digit_group > 0 (False) for hundred",
+        "convert_number: num > 0 (True) OR not word_groups (False)"
+      ],
+      "covered_paths": [
+        "convert_number: num < 0 (F) -> num > max_value (F) -> loop (million group) -> digit_group > 0 (T) -> digit_group >= 100 (F) -> append 'one million' -> loop (thousand group) -> digit_group > 0 (F) -> loop (hundred group) -> digit_group > 0 (F) -> num > 0 (T) -> append convert_small_number(5) -> join word_groups"
+      ]
+    },
+    {
+      "id": "TC_SUP_001",
+      "description": "测试 NumberingSystem.max_value 方法，传入一个无效的数字系统名称，以覆盖默认的 case 分支并触发 ValueError。",
+      "input": {
+        "system": "invalid_system"
+      },
+      "expected_output": "ValueError: Invalid numbering system",
+      "covered_branches": [
+        "L49 → L51"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value -> case _: -> raise ValueError"
+      ]
+    },
+    {
+      "id": "TC_SUP_001",
+      "description": "测试 NumberingSystem.max_value 函数，传入一个无效的编号系统名称，以覆盖默认的 `case _` 分支并抛出 ValueError。",
+      "input": {
+        "system": "nonexistent"
+      },
+      "expected_output": "raise ValueError(\"Invalid numbering system\")",
+      "covered_branches": [
+        "L49 → L51"
+      ],
+      "covered_paths": [
+        "NumberingSystem.max_value -> invalid system input -> case _ -> raise ValueError"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 91.02564102564102,
+    "branch_coverage": 92.3076923076923,
+    "uncovered_lines": [
+      51,
+      52,
+      201,
+      203,
+      205
+    ],
+    "uncovered_branches": [
+      "L49 → L51",
+      "L200 → L201"
+    ],
+    "test_results": {
+      "total": 43,
+      "passed": 39,
+      "failed": 4,
+      "error": 0
+    },
+    "test_output": "============================= test session starts =============================\nplatform win32 -- Python 3.10.20, pytest-9.0.2, pluggy-1.6.0 -- D:\\anaconda3\\envs\\st\\python.exe\ncachedir: .pytest_cache\nrootdir: d:\\course_content\\ST\\ST_Project\\Assignment1\\output\nplugins: anyio-4.12.1\ncollecting ... collected 43 items\n\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc001 PASSED [  2%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc002 PASSED [  4%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc003 PASSED [  6%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc004 FAILED [  9%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc005 PASSED [ 11%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc006 PASSED [ 13%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc007 PASSED [ 16%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc008 PASSED [ 18%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc009 PASSED [ 20%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc010 PASSED [ 23%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc011 PASSED [ 25%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc012 PASSED [ 27%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc013 PASSED [ 30%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc014 PASSED [ 32%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc015 PASSED [ 34%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc016 PASSED [ 37%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc017 PASSED [ 39%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc018 PASSED [ 41%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc019 PASSED [ 44%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc020 PASSED [ 46%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc021 PASSED [ 48%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc022 PASSED [ 51%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc023 PASSED [ 53%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc024 PASSED [ 55%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc025 FAILED [ 58%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc026 PASSED [ 60%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc027 FAILED [ 62%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc028 PASSED [ 65%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc029 PASSED [ 67%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc030 PASSED [ 69%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc031 PASSED [ 72%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc032 PASSED [ 74%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc033 PASSED [ 76%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc034 PASSED [ 79%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc035 PASSED [ 81%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc036 PASSED [ 83%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc037 PASSED [ 86%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc038 PASSED [ 88%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc039 PASSED [ 90%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc040 PASSED [ 93%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc041 PASSED [ 95%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc042 PASSED [ 97%]\ntest_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc_sup_001 FAILED [100%]\n\n================================== FAILURES ===================================\n_____________________ TestConvertNumberToWords.test_tc004 _____________________\n\nself = <test_convert_number_to_words_20260322_163435.TestConvertNumberToWords object at 0x000001B5E3DA27D0>\n\n    def test_tc004(self):\n        \"\"\"TC004: 测试 NumberingSystem.max_value 方法，使用无效的计数系统（应抛出 ValueError）。\"\"\"\n        with pytest.raises(ValueError):\n>           NumberingSystem.max_value('invalid')\n\ntest_convert_number_to_words_20260322_163435.py:32: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n..\\targets\\convert_number_to_words.py:44: in max_value\n    match system_enum := cls[system.upper()]:\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n\ncls = <enum 'NumberingSystem'>, name = 'INVALID'\n\n    def __getitem__(cls, name):\n>       return cls._member_map_[name]\nE       KeyError: 'INVALID'\n\nD:\\anaconda3\\envs\\st\\lib\\enum.py:440: KeyError\n_____________________ TestConvertNumberToWords.test_tc025 _____________________\n\nself = <test_convert_number_to_words_20260322_163435.TestConvertNumberToWords object at 0x000001B5E3DA0D00>\n\n    def test_tc025(self):\n        \"\"\"TC025: 测试 convert_number 函数，输入为 'long' 系统的最大支持值。\"\"\"\n        result = convert_number(999999999999999999999, 'long')\n>       assert result == 'nine hundred ninety-nine billiard nine hundred ninety-nine milliard nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine'\nE       AssertionError: assert 'nine hundred...d ninety-nine' == 'nine hundred...d ninety-nine'\nE         \nE         - nine hundred ninety-nine billiard nine hundred ninety-nine milliard nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine\nE         + nine hundred ninety-nine thousand nine hundred ninety-nine billiard nine hundred ninety-nine thousand nine hundred ninety-nine milliard nine hundred ninety-nine million nine hundred ninety-nine thousand nine hundred ninety-nine\nE         ?                         ++++++++++++++++++++++++++++++++++                                  ++++++++++++++++++++++++++++++++++\n\ntest_convert_number_to_words_20260322_163435.py:137: AssertionError\n_____________________ TestConvertNumberToWords.test_tc027 _____________________\n\nself = <test_convert_number_to_words_20260322_163435.TestConvertNumberToWords object at 0x000001B5E3DA0F40>\n\n    def test_tc027(self):\n        \"\"\"TC027: 测试 convert_number 函数，输入为 'indian' 系统的最大支持值。\"\"\"\n        result = convert_number(9999999999999999999, 'indian')\n>       assert result == 'nine crore crore ninety-nine lakh crore ninety-nine crore ninety-nine lakh ninety-nine thousand nine hundred ninety-nine'\nE       AssertionError: assert 'ninety-nine ...d ninety-nine' == 'nine crore c...d ninety-nine'\nE         \nE         - nine crore crore ninety-nine lakh crore ninety-nine crore ninety-nine lakh ninety-nine thousand nine hundred ninety-nine\nE         + ninety-nine thousand nine hundred ninety-nine crore crore ninety-nine lakh crore ninety-nine thousand nine hundred ninety-nine crore ninety-nine lakh ninety-nine thousand nine hundred ninety-nine\n\ntest_convert_number_to_words_20260322_163435.py:147: AssertionError\n__________________ TestConvertNumberToWords.test_tc_sup_001 ___________________\n\nself = <test_convert_number_to_words_20260322_163435.TestConvertNumberToWords object at 0x000001B5E3D26680>\n\n    def test_tc_sup_001(self):\n        \"\"\"TC_SUP_001: 测试 NumberingSystem.max_value 函数，传入一个无效的编号系统名称，以覆盖默认的 `case _` 分支并抛出 ValueError。\"\"\"\n        with pytest.raises(ValueError):\n>           NumberingSystem.max_value('nonexistent')\n\ntest_convert_number_to_words_20260322_163435.py:232: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n..\\targets\\convert_number_to_words.py:44: in max_value\n    match system_enum := cls[system.upper()]:\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _\n\ncls = <enum 'NumberingSystem'>, name = 'NONEXISTENT'\n\n    def __getitem__(cls, name):\n>       return cls._member_map_[name]\nE       KeyError: 'NONEXISTENT'\n\nD:\\anaconda3\\envs\\st\\lib\\enum.py:440: KeyError\n=========================== short test summary info ===========================\nFAILED test_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc004\nFAILED test_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc025\nFAILED test_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc027\nFAILED test_convert_number_to_words_20260322_163435.py::TestConvertNumberToWords::test_tc_sup_001\n======================== 4 failed, 39 passed in 0.46s =========================\n"
+  }
+}
