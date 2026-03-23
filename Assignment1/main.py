@@ -3,20 +3,20 @@
 使用 AST 代码分析 + LLM 大语言模型自动生成白盒测试用例。
 
 用法示例：
-  # 基本用法：用 DeepSeek 分析 Python 文件
-  python main.py --source targets/example.py --llm deepseek
+  # 基本用法：生成 JSON 测试用例
+  python main.py --source targets/example.py --llm deepseek-chat
 
   # 附带需求文档
-  python main.py --source targets/example.py --llm qwen --requirement docs/spec.txt
+  python main.py --source targets/example.py --llm deepseek-chat --requirement docs/spec.txt
+
+  # 使用 LLM 生成测试脚本 + 覆盖率闭环
+  python main.py --source targets/example.py --llm deepseek-chat --script
 
   # 对比多个 LLM 的效果
   python main.py --source targets/example.py --compare
 
-  # 只生成测试用例，不运行覆盖率闭环
-  python main.py --source targets/example.py --llm deepseek --no-coverage
-
   # 设置最大闭环轮次
-  python main.py --source targets/example.py --llm deepseek --max-rounds 5
+  python main.py --source targets/example.py --llm deepseek-chat --script --max-rounds 5
 """
 
 import argparse
@@ -54,10 +54,7 @@ def interactive_mode():
     output = input(f"输出目录 [output]: ").strip()
     output = output or "output"
 
-    no_cov_input = input(f"是否跳过覆盖率闭环？(y/n) [y]: ").strip().lower()
-    no_coverage = no_cov_input != "n"  # 默认跳过
-
-    max_rounds = input(f"最大闭环轮次 [3]: ").strip()
+    max_rounds = input(f"最大闭环轮次（仅 --script 模式有效）[3]: ").strip()
     max_rounds = int(max_rounds) if max_rounds else 3
 
     config = input(f"配置文件路径 [config.yaml]: ").strip()
@@ -66,11 +63,14 @@ def interactive_mode():
     use_ast_input = input(f"是否使用 AST 分析辅助？(y/n) [n]: ").strip().lower()
     use_ast = use_ast_input == "y"
 
+    use_script_input = input(f"是否使用 LLM 直接生成测试脚本？(y/n) [n]: ").strip().lower()
+    use_script = use_script_input == "y"
+
     # 构造与 argparse 兼容的命名空间对象
     args = argparse.Namespace(
         source=source, llm=llm, requirement=requirement,
-        compare=compare, output=output, no_coverage=no_coverage,
-        max_rounds=max_rounds, config=config, ast=use_ast
+        compare=compare, output=output,
+        max_rounds=max_rounds, config=config, ast=use_ast, script=use_script
     )
     return args
 
@@ -101,10 +101,6 @@ def main():
         help="输出目录（默认 ./output）"
     )
     parser.add_argument(
-        "--no-coverage", action="store_true",
-        help="只生成测试用例，不运行覆盖率闭环"
-    )
-    parser.add_argument(
         "--max-rounds", type=int, default=3,
         help="最大闭环轮次（默认 3）"
     )
@@ -115,6 +111,10 @@ def main():
     parser.add_argument(
         "--ast", action="store_true",
         help="使用 AST 分析辅助生成（仅 Python 有效，默认不使用）"
+    )
+    parser.add_argument(
+        "--script", action="store_true",
+        help="使用 LLM 直接生成测试脚本（自适应输出模式，默认不使用）"
     )
 
     args = parser.parse_args()
@@ -147,8 +147,8 @@ def run_single(args) -> dict:
     print(f"需求文档: {args.requirement or '无'}")
     print(f"输出目录: {args.output}")
     print(f"对比模式: {'是' if args.compare else '否'}")
-    print(f"最大闭环轮次: {args.max_rounds}")
-    print(f"闭环: {'关闭' if args.no_coverage else f'开启（最多 {args.max_rounds} 轮）'}")
+    print(f"脚本模式: {'是' if args.script else '否'}")
+    print(f"闭环: {f'开启（最多 {args.max_rounds} 轮）' if args.script else '关闭'}")
     print(f"=" * 60)
 
     start_time = time.time()
@@ -162,8 +162,9 @@ def run_single(args) -> dict:
         max_rounds=args.max_rounds,
         output_dir=args.output,
         use_ast=args.ast,
+        use_script=args.script,
     )
-    result = generator.run(no_coverage=args.no_coverage)
+    result = generator.run(no_coverage=not args.script)
 
     duration = time.time() - start_time
 

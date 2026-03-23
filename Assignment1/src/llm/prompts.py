@@ -128,6 +128,143 @@ def build_general_prompt(source_code: str, language: str,
     return prompt
 
 
+def build_script_prompt(source_code: str, test_cases_json: str,
+                        language: str, source_filename: str) -> str:
+    """
+    构建测试脚本生成 prompt（自适应输出模式）
+    让 LLM 根据 JSON 测试用例 + 源代码直接生成可运行的测试脚本。
+
+    :param source_code: 被测源代码
+    :param test_cases_json: JSON 格式的测试用例字符串
+    :param language: 编程语言（python / javascript）
+    :param source_filename: 被测源文件名
+    :return: prompt 字符串
+    """
+    module_name = source_filename.rsplit(".", 1)[0]
+
+    if language == "javascript":
+        framework_guide = f"""## 测试框架：Jest
+## 导入方式
+```javascript
+const _{module_name}Module = require('../targets/{source_filename}');
+const {module_name} = _{module_name}Module.default || _{module_name}Module;
+```
+## 要求
+- 使用 describe/test/expect 结构
+- 正确使用链式调用（如 {module_name}('2023-01-01').format('YYYY')）
+- 异常测试使用 expect(() => {{ ... }}).toThrow()
+- 请返回完整可运行的 Jest 测试文件代码"""
+        code_block_lang = "javascript"
+    else:
+        framework_guide = f"""## 测试框架：pytest
+## 导入方式
+```python
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'targets'))
+from {module_name} import *
+```
+## 要求
+- 使用 class + test_ 方法结构
+- 异常测试使用 pytest.raises()
+- 请返回完整可运行的 pytest 测试文件代码"""
+        code_block_lang = "python"
+
+    prompt = f"""你是一个测试工程师。请根据以下源代码和 JSON 测试用例，生成一个完整的、可直接运行的测试脚本。
+
+## 被测源代码（{language}）
+```{language}
+{source_code}
+```
+
+## JSON 测试用例
+```json
+{test_cases_json}
+```
+
+{framework_guide}
+
+## 重要
+- 根据每个测试用例的 description 和 input/expected_output 理解测试意图
+- 如果 JSON 中的 expected_output 是描述性文字（如"对应的日期对象"），请根据源代码逻辑推断实际返回值
+- 确保每个测试用例都被转化为可执行的测试方法
+- 确保代码语法正确，所有括号、引号都正确闭合
+- 只返回代码，用 ```{code_block_lang} ``` 包裹，不要包含其他解释文字"""
+
+    return prompt
+
+
+def build_supplement_script_prompt(source_code: str, coverage_report: Dict[str, Any],
+                                   language: str, source_filename: str) -> str:
+    """
+    构建补充测试方法片段 prompt（script 闭环补充时使用）
+    只生成补充的 test 方法代码片段，不包含 import/describe 外壳。
+    由调用方拼接到已有脚本中。
+
+    :param source_code: 被测源代码
+    :param coverage_report: 当前覆盖率报告
+    :param language: 编程语言
+    :param source_filename: 被测源文件名
+    :return: prompt 字符串
+    """
+    module_name = source_filename.rsplit(".", 1)[0]
+
+    # 提取未覆盖行及上下文
+    lines = source_code.splitlines()
+    uncovered = set(coverage_report.get("uncovered_lines", []))
+    relevant_lines = set()
+    for line_no in uncovered:
+        for i in range(max(1, line_no - 3), min(len(lines) + 1, line_no + 4)):
+            relevant_lines.add(i)
+    snippet_lines = []
+    for i in sorted(relevant_lines):
+        marker = " // NOT COVERED" if i in uncovered else ""
+        snippet_lines.append(f"{i:4d} | {lines[i-1]}{marker}")
+    snippet = "\n".join(snippet_lines)
+
+    uncovered_branches = coverage_report.get("uncovered_branches", [])
+    branches_str = "\n".join(f"  - {b}" for b in uncovered_branches) if uncovered_branches else "  none"
+
+    code_block_lang = "javascript" if language == "javascript" else "python"
+
+    if language == "javascript":
+        format_hint = f"""每个测试方法格式如下（注意缩进2空格，函数名用 {module_name}）：
+```javascript
+  test('补充: 测试描述', () => {{
+    const result = {module_name}('2023-01-01').someMethod();
+    expect(result).toBe(expectedValue);
+  }});
+```"""
+    else:
+        format_hint = f"""每个测试方法格式如下（注意缩进8空格）：
+```python
+    def test_sup_001(self):
+        result = some_function(args)
+        assert result == expected_value
+```"""
+
+    prompt = f"""你是一个测试工程师。当前测试的覆盖率不足，请针对未覆盖的代码生成 5-15 个补充测试方法。
+
+## 当前覆盖率
+- 语句覆盖率：{coverage_report.get('statement_coverage', 0):.1f}%
+- 分支覆盖率：{coverage_report.get('branch_coverage', 0):.1f}%
+
+## 未覆盖的代码片段
+```
+{snippet}
+```
+
+## 未覆盖的分支
+{branches_str}
+
+## 要求
+- **只输出测试方法本身**，不要包含 import、require、describe、class 等外壳代码
+- {format_hint}
+- 确保代码语法正确，所有括号和引号正确闭合
+- 只返回代码，用 ```{code_block_lang} ``` 包裹"""
+
+    return prompt
+
+
 def build_supplement_prompt(source_code: str, coverage_report: Dict[str, Any],
                             existing_tests: List[Dict]) -> str:
     """

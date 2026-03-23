@@ -12,7 +12,7 @@ from typing import Optional, Dict, Any, List
 
 from src.analyzers.python_analyzer import PythonAnalyzer
 from src.llm.client import LLMClient
-from src.llm.prompts import build_python_prompt, build_general_prompt, build_supplement_prompt
+from src.llm.prompts import build_python_prompt, build_general_prompt, build_supplement_prompt, build_script_prompt, build_supplement_script_prompt
 from src.coverage.runner import CoverageRunner
 
 
@@ -40,7 +40,7 @@ class TestGenerator:
     def __init__(self, source_path: str, requirement_path: Optional[str] = None,
                  llm_provider: str = "deepseek", config_path: str = "config.yaml",
                  max_rounds: int = 3, output_dir: str = "output",
-                 use_ast: bool = False):
+                 use_ast: bool = False, use_script: bool = False):
         """
         :param source_path: 被测源代码文件路径
         :param requirement_path: 可选，需求文档路径
@@ -48,6 +48,7 @@ class TestGenerator:
         :param config_path: 配置文件路径
         :param max_rounds: 最大闭环轮次
         :param output_dir: 输出目录
+        :param use_script: 是否使用 LLM 直接生成测试脚本（自适应输出模式）
         """
         self.source_path = source_path
         self.requirement_path = requirement_path
@@ -71,6 +72,9 @@ class TestGenerator:
 
         # 是否使用 AST 分析辅助
         self.use_ast = use_ast
+
+        # 是否使用 LLM 直接生成测试脚本（自适应输出模式）
+        self.use_script = use_script
 
         # 初始化 LLM 客户端
         self.llm_client = LLMClient(provider=llm_provider, config_path=config_path)
@@ -425,6 +429,125 @@ describe('{module_name} 白盒测试', () => {{
 
         return "\n".join(lines)
 
+    def _generate_script_via_llm(self, test_cases: List[Dict]) -> str:
+        """
+        使用 LLM 直接生成可运行的测试脚本（自适应输出模式）
+        :param test_cases: JSON 测试用例列表
+        :return: 测试脚本代码字符串
+        """
+        source_filename = os.path.basename(self.source_path)
+        test_cases_json = json.dumps(test_cases, indent=2, ensure_ascii=False)
+
+        print(f"[Script] 调用 LLM 生成测试脚本...")
+        prompt = build_script_prompt(
+            self.source_code, test_cases_json, self.language, source_filename
+        )
+        response = self.llm_client.chat(prompt)
+        script_code = self._parse_script_response(response)
+
+        if not script_code:
+            print(f"[Script] LLM 未能生成有效脚本，回退到模板拼接模式")
+            return self._generate_test_file(test_cases)
+
+        print(f"[Script] 成功生成测试脚本（{len(script_code.splitlines())} 行）")
+        return script_code
+
+    def _generate_supplement_script(self, existing_script: str,
+                                     coverage_report: Dict[str, Any]) -> Optional[str]:
+        """
+        闭环补充：让 LLM 生成补充测试方法片段，拼接到已有脚本中。
+        :param existing_script: 当前测试脚本代码
+        :param coverage_report: 覆盖率报告
+        :return: 拼接后的完整脚本，或 None（失败时）
+        """
+        source_filename = os.path.basename(self.source_path)
+
+        print(f"    覆盖率不足，LLM 生成补充测试方法...")
+        prompt = build_supplement_script_prompt(
+            self.source_code, coverage_report, self.language, source_filename
+        )
+        response = self.llm_client.chat(prompt)
+        fragment = self._parse_script_response(response)
+
+        if not fragment:
+            print(f"    [警告] LLM 未能生成有效补充代码")
+            return None
+
+        # 将片段拼接到已有脚本中
+        if self.language == "javascript":
+            # 在最后一个 }); 前插入补充方法
+            insert_pos = existing_script.rfind('});')
+            if insert_pos > 0:
+                new_script = (existing_script[:insert_pos]
+                              + "\n" + fragment + "\n"
+                              + existing_script[insert_pos:])
+            else:
+                new_script = existing_script + "\n" + fragment
+        else:
+            # Python: 直接追加到文件末尾（同一个 class 内）
+            new_script = existing_script.rstrip() + "\n\n" + fragment + "\n"
+
+        # 语法检查
+        if not self._check_syntax(new_script):
+            return None
+
+        print(f"    补充了 {len(fragment.splitlines())} 行测试代码")
+        return new_script
+
+    def _parse_script_response(self, response: str) -> Optional[str]:
+        """
+        从 LLM 响应中提取代码
+        :param response: LLM 返回的原始文本
+        :return: 提取的代码字符串，或 None
+        """
+        # 匹配 ```python/javascript/js ... ``` 代码块
+        code_match = re.search(
+            r'```(?:python|javascript|js)?\s*\n(.*?)\n```',
+            response, re.DOTALL
+        )
+        if code_match:
+            return code_match.group(1).strip()
+
+        # 没有代码块，检查是否看起来像代码
+        if any(kw in response for kw in ['import ', 'require(', 'describe(', 'def test_', 'test(']):
+            return response.strip()
+
+        return None
+
+    def _check_syntax(self, code: str) -> bool:
+        """
+        检查代码语法是否正确
+        :param code: 代码字符串
+        :return: True 表示语法正确
+        """
+        if self.language == "javascript":
+            import subprocess, tempfile
+            try:
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.js', delete=False, encoding='utf-8') as f:
+                    f.write(code)
+                    tmp_path = f.name
+                result = subprocess.run(
+                    ['node', '--check', tmp_path],
+                    capture_output=True, text=True, timeout=10
+                )
+                os.remove(tmp_path)
+                if result.returncode != 0:
+                    print(f"    [语法检查] JS 语法错误: {result.stderr.strip()[:200]}")
+                    return False
+                return True
+            except Exception as e:
+                print(f"    [语法检查] 检查失败: {e}")
+                return True  # 检查失败时不阻塞
+        elif self.language == "python":
+            import ast as _ast
+            try:
+                _ast.parse(code)
+                return True
+            except SyntaxError as e:
+                print(f"    [语法检查] Python 语法错误: {e}")
+                return False
+        return True
+
     def _save_outputs(self, test_cases: List[Dict], test_code: str,
                       analysis: Optional[Dict] = None,
                       coverage_report: Optional[Dict] = None) -> Dict[str, str]:
@@ -492,7 +615,10 @@ describe('{module_name} 白盒测试', () => {{
         print(f"    生成了 {len(test_cases)} 个测试用例")
 
         # ---- 步骤5：生成测试文件 ----
-        test_code = self._generate_test_file(test_cases)
+        if self.use_script:
+            test_code = self._generate_script_via_llm(test_cases)
+        else:
+            test_code = self._generate_test_file(test_cases)
         coverage_report = None
 
         # ---- 步骤6-7：闭环反馈（覆盖率检测 + 补充生成） ----
@@ -507,6 +633,9 @@ describe('{module_name} 白盒测试', () => {{
                 f.write(test_code)
 
             current_round = 1
+            best_code = test_code
+            best_cov = 0.0
+            best_report = None
             while current_round <= self.max_rounds:
                 print(f"\n[闭环] 第 {current_round}/{self.max_rounds} 轮 - 运行覆盖率测量...")
                 runner = CoverageRunner(self.source_path, temp_test_path, self.language)
@@ -514,10 +643,23 @@ describe('{module_name} 白盒测试', () => {{
 
                 stmt_cov = coverage_report.get("statement_coverage", 0)
                 branch_cov = coverage_report.get("branch_coverage", 0)
+                avg_cov = (stmt_cov + branch_cov) / 2
                 print(f"    语句覆盖率: {stmt_cov:.1f}%  分支覆盖率: {branch_cov:.1f}%")
 
-                # 覆盖率达标（>=95%）或已达最大轮次，结束闭环
-                if stmt_cov >= 95 and branch_cov >= 90:
+                # 记录最佳结果
+                if avg_cov > best_cov:
+                    best_cov = avg_cov
+                    best_code = test_code
+                    best_report = coverage_report
+                elif avg_cov < best_cov:
+                    print(f"    覆盖率下降，回退到最佳版本（均值 {best_cov:.1f}%）")
+                    test_code = best_code
+                    coverage_report = best_report
+                    with open(temp_test_path, "w", encoding="utf-8") as f:
+                        f.write(test_code)
+
+                # 覆盖率达标（>=90%）或已达最大轮次，结束闭环
+                if stmt_cov >= 90 and branch_cov >= 80:
                     print(f"    覆盖率达标，闭环结束。")
                     break
 
@@ -525,22 +667,37 @@ describe('{module_name} 白盒测试', () => {{
                     print(f"    已达最大轮次 {self.max_rounds}，闭环结束。")
                     break
 
-                # 覆盖率不足，构建补充 prompt 再次调用 LLM
-                print(f"    覆盖率不足，生成补充测试用例...")
-                supplement_prompt = build_supplement_prompt(
-                    self.source_code, coverage_report, test_cases
-                )
-                supplement_response = self.llm_client.chat(supplement_prompt)
-                supplement_cases = self._parse_llm_response(supplement_response)
-                print(f"    补充了 {len(supplement_cases)} 个测试用例")
+                # 覆盖率不足，补充生成
+                assert coverage_report is not None
+                if self.use_script:
+                    # script 模式：生成补充片段，拼接到已有脚本
+                    new_code = self._generate_supplement_script(test_code, coverage_report)
+                    if new_code:
+                        test_code = new_code
+                    else:
+                        print(f"    保持当前版本继续下一轮")
+                else:
+                    # 模板模式：生成补充 JSON 用例再拼接
+                    print(f"    覆盖率不足，生成补充测试用例...")
+                    supplement_prompt = build_supplement_prompt(
+                        self.source_code, coverage_report, test_cases
+                    )
+                    supplement_response = self.llm_client.chat(supplement_prompt)
+                    supplement_cases = self._parse_llm_response(supplement_response)
+                    print(f"    补充了 {len(supplement_cases)} 个测试用例")
+                    test_cases.extend(supplement_cases)
+                    test_code = self._generate_test_file(test_cases)
 
-                # 合并测试用例，重新生成测试文件
-                test_cases.extend(supplement_cases)
-                test_code = self._generate_test_file(test_cases)
                 with open(temp_test_path, "w", encoding="utf-8") as f:
                     f.write(test_code)
 
                 current_round += 1
+
+            # 确保最终使用最佳版本
+            final_cov = (coverage_report.get("statement_coverage", 0) + coverage_report.get("branch_coverage", 0)) / 2 if coverage_report else 0
+            if best_report and best_cov > final_cov:
+                test_code = best_code
+                coverage_report = best_report
 
         # ---- 步骤8：保存最终输出 ----
         print(f"\n[保存] 输出文件...")
