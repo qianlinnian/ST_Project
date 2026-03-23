@@ -465,3 +465,7 @@ dayjs.en = Ls[L]
 dayjs.Ls = Ls
 dayjs.p = {}
 export default dayjs
+
+
+// ====================== 测试覆盖率专用导出 ======================
+export { parseDate, parseLocale, L as defaultLocale, Ls as loadedLocales }
