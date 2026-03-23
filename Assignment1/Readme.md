@@ -122,9 +122,10 @@ python main.py --source targets/convert_number_to_words.py --compare
 | `--requirement` | 否 | 需求文档路径 |
 | `--compare` | 否 | 用所有 LLM 运行并输出对比表格 |
 | `--output` | 否 | 输出目录，默认 `./output` |
-| `--no-coverage` | 否 | 只生成测试用例，跳过覆盖率闭环 |
 | `--max-rounds` | 否 | 最大闭环轮次，默认 3 |
 | `--config` | 否 | 配置文件路径，默认 `config.yaml` |
+| `--ast` | 否 | 是否使用 AST 分析（仅 Python） |
+| `--script` | 否 | 是否生成测试脚本（默认 False） |
 
 ---
 
