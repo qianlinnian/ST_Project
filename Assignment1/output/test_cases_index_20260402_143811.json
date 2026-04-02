@@ -1,0 +1,1747 @@
+{
+  "source_file": "index.js",
+  "language": "javascript",
+  "llm_provider": "google",
+  "llm_model": "gemini-2.5-flash",
+  "analysis": null,
+  "test_cases": [
+    {
+      "d": {
+        "$isDayjsObject": true,
+        "constructor": "Dayjs"
+      }
+    },
+    {
+      "d": {
+        "$isDayjsObject": true
+      }
+    },
+    {
+      "d": {
+        "foo": "bar"
+      }
+    },
+    {
+      "id": "TC004",
+      "description": "测试 isDayjs: 输入 null",
+      "input": {
+        "d": null
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "isDayjs: d instanceof Dayjs (false)",
+        "isDayjs: d && d[IS_DAYJS] (false)"
+      ],
+      "covered_paths": [
+        "isDayjs: d instanceof Dayjs (false) || (d && d[IS_DAYJS] (false)) -> false"
+      ]
+    },
+    {
+      "id": "TC005",
+      "description": "测试 isDayjs: 输入 undefined",
+      "input": {
+        "d": null
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "isDayjs: d instanceof Dayjs (false)",
+        "isDayjs: d && d[IS_DAYJS] (false)"
+      ],
+      "covered_paths": [
+        "isDayjs: d instanceof Dayjs (false) || (d && d[IS_DAYJS] (false)) -> false"
+      ]
+    },
+    {
+      "id": "TC006",
+      "description": "测试 parseLocale: preset 为 null (返回全局 L)",
+      "input": {
+        "preset": null,
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "parseLocale: !preset (true)"
+      ],
+      "covered_paths": [
+        "parseLocale: !preset (true) -> return L"
+      ]
+    },
+    {
+      "id": "TC007",
+      "description": "测试 parseLocale: preset 为已加载的字符串 locale (返回该 locale)",
+      "input": {
+        "preset": "en",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "parseLocale: typeof preset === 'string' (true)",
+        "parseLocale: Ls[presetLower] (true)",
+        "parseLocale: object (false)",
+        "parseLocale: !l && presetSplit.length > 1 (false)",
+        "parseLocale: !isLocal && l (true)"
+      ],
+      "covered_paths": [
+        "parseLocale: typeof preset === 'string' (true) -> Ls[presetLower] (true) -> object (false) -> !l && presetSplit.length > 1 (false) -> !isLocal && l (true) -> return l"
+      ]
+    },
+    {
+      "preset": "fr",
+      "object": {
+        "name": "fr",
+        "months": [
+          "Janvier"
+        ]
+      },
+      "isLocal": false
+    },
+    {
+      "id": "TC009",
+      "description": "测试 parseLocale: preset 为带连字符的字符串 locale, 未加载, 无 object (递归调用)",
+      "input": {
+        "preset": "zh-cn",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "parseLocale: typeof preset === 'string' (true)",
+        "parseLocale: Ls[presetLower] (false)",
+        "parseLocale: object (false)",
+        "parseLocale: !l && presetSplit.length > 1 (true)",
+        "parseLocale: parseLocale(presetSplit[0]) (recursive call)",
+        "parseLocale: !preset (false)",
+        "parseLocale: typeof preset === 'string' (true) [recursive]",
+        "parseLocale: Ls[presetLower] (false) [recursive, 'zh']",
+        "parseLocale: object (false) [recursive]",
+        "parseLocale: !l && presetSplit.length > 1 (false) [recursive]",
+        "parseLocale: !isLocal && l (false)",
+        "parseLocale: l || (!isLocal && L) (true)"
+      ],
+      "covered_paths": [
+        "parseLocale: typeof preset === 'string' (true) -> Ls[presetLower] (false) -> object (false) -> !l && presetSplit.length > 1 (true) -> parseLocale('zh') -> (recursive call returns L) -> !isLocal && l (false) -> return (!isLocal && L)"
+      ]
+    },
+    {
+      "id": "TC010",
+      "description": "测试 parseLocale: preset 为未加载的字符串 locale, 无 object, 无连字符 (返回全局 L)",
+      "input": {
+        "preset": "es",
+        "object": null,
+        "isLocal": false
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "parseLocale: typeof preset === 'string' (true)",
+        "parseLocale: Ls[presetLower] (false)",
+        "parseLocale: object (false)",
+        "parseLocale: !l && presetSplit.length > 1 (false)",
+        "parseLocale: !isLocal && l (false)",
+        "parseLocale: l || (!isLocal && L) (true)"
+      ],
+      "covered_paths": [
+        "parseLocale: typeof preset === 'string' (true) -> Ls[presetLower] (false) -> object (false) -> !l && presetSplit.length > 1 (false) -> !isLocal && l (false) -> return (!isLocal && L)"
+      ]
+    },
+    {
+      "preset": {
+        "name": "de",
+        "months": [
+          "Januar"
+        ]
+      },
+      "object": null,
+      "isLocal": false
+    },
+    {
+      "preset": "fr",
+      "object": {
+        "name": "fr",
+        "months": [
+          "Janvier"
+        ]
+      },
+      "isLocal": true
+    },
+    {
+      "$isDayjsObject": true,
+      "cloned": true
+    },
+    {
+      "date": "2023-01-01",
+      "c": null
+    },
+    {
+      "$d": "Date object for 2023-01-01",
+      "$L": "en",
+      "$x": {},
+      "$isDayjsObject": true
+    },
+    {},
+    {
+      "locale": "fr",
+      "x": {
+        "foo": "bar"
+      }
+    },
+    {
+      "$d": "Date object for 2023-01-01",
+      "$L": "fr",
+      "$x": {
+        "foo": "bar"
+      },
+      "$isDayjsObject": true
+    },
+    {
+      "cfg": {
+        "date": null
+      }
+    },
+    {
+      "cfg": {
+        "date": "2023-01-01T00:00:00.000Z"
+      }
+    },
+    {
+      "cfg": {
+        "date": "2023-01-01T12:30:00.000Z"
+      }
+    },
+    {
+      "cfg": {
+        "date": "2023-01-01 12:30:45.123",
+        "utc": true
+      }
+    },
+    {
+      "cfg": {
+        "date": "2023-01-01 12:30:45.123",
+        "utc": false
+      }
+    },
+    {
+      "cfg": {
+        "date": "invalid date string"
+      }
+    },
+    {
+      "cfg": {
+        "date": 1672531200000
+      }
+    },
+    {
+      "cfg": {
+        "date": "2023-01-01"
+      }
+    },
+    {
+      "$L": "en",
+      "$x": {},
+      "$isDayjsObject": true,
+      "$d": "Date object for 2023-01-01"
+    },
+    {},
+    {},
+    {},
+    {
+      "cfg": {
+        "date": "2023-01-01",
+        "locale": "fr"
+      }
+    },
+    {
+      "$L": "fr",
+      "$x": {},
+      "$isDayjsObject": true,
+      "$d": "Date object for 2023-01-01"
+    },
+    {},
+    {},
+    {},
+    {
+      "date": "2023-01-01",
+      "x": {
+        "custom": 1
+      }
+    },
+    {
+      "$L": "en",
+      "$x": {
+        "custom": 1
+      },
+      "$isDayjsObject": true,
+      "$d": "Date object for 2023-01-01"
+    },
+    {},
+    {
+      "id": "TC027",
+      "description": "测试 Dayjs.isValid: 有效日期",
+      "input": {
+        "instance": "dayjs('2023-01-01')"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "Dayjs.isValid: this.$d.toString() === C.INVALID_DATE_STRING (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.isValid: this.$d.toString() !== C.INVALID_DATE_STRING -> return true"
+      ]
+    },
+    {
+      "id": "TC028",
+      "description": "测试 Dayjs.isValid: 无效日期",
+      "input": {
+        "instance": "dayjs(null)"
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "Dayjs.isValid: this.$d.toString() === C.INVALID_DATE_STRING (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.isValid: this.$d.toString() === C.INVALID_DATE_STRING -> return false"
+      ]
+    },
+    {
+      "id": "TC029",
+      "description": "测试 Dayjs.isSame: 相同日期, 相同单位 (年)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "that": "dayjs('2023-06-20')",
+        "units": "year"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "Dayjs.isSame: this.startOf(units) <= other (true)",
+        "Dayjs.isSame: other <= this.endOf(units) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.isSame: (startOf <= other) (true) && (other <= endOf) (true) -> return true"
+      ]
+    },
+    {
+      "id": "TC030",
+      "description": "测试 Dayjs.isSame: 相同日期, 相同单位 (月), 边界值",
+      "input": {
+        "instance": "dayjs('2023-01-01')",
+        "that": "dayjs('2023-01-31')",
+        "units": "month"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "Dayjs.isSame: this.startOf(units) <= other (true)",
+        "Dayjs.isSame: other <= this.endOf(units) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.isSame: (startOf <= other) (true) && (other <= endOf) (true) -> return true"
+      ]
+    },
+    {
+      "id": "TC031",
+      "description": "测试 Dayjs.isSame: 不同日期, 相同单位, 外部 (之前)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "that": "dayjs('2022-12-31')",
+        "units": "year"
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "Dayjs.isSame: this.startOf(units) <= other (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.isSame: (startOf <= other) (false) -> return false"
+      ]
+    },
+    {
+      "id": "TC032",
+      "description": "测试 Dayjs.isSame: 不同日期, 相同单位, 外部 (之后)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "that": "dayjs('2024-01-01')",
+        "units": "year"
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "Dayjs.isSame: this.startOf(units) <= other (true)",
+        "Dayjs.isSame: other <= this.endOf(units) (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.isSame: (startOf <= other) (true) && (other <= endOf) (false) -> return false"
+      ]
+    },
+    {
+      "id": "TC033",
+      "description": "测试 Dayjs.isAfter: this 在 that 之后",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "that": "dayjs('2023-01-14')",
+        "units": "day"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "Dayjs.isAfter: dayjs(that) < this.startOf(units) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.isAfter: dayjs(that) < this.startOf(units) (true) -> return true"
+      ]
+    },
+    {
+      "id": "TC034",
+      "description": "测试 Dayjs.isAfter: this 在 that 之前",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "that": "dayjs('2023-01-16')",
+        "units": "day"
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "Dayjs.isAfter: dayjs(that) < this.startOf(units) (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.isAfter: dayjs(that) < this.startOf(units) (false) -> return false"
+      ]
+    },
+    {
+      "id": "TC035",
+      "description": "测试 Dayjs.isBefore: this 在 that 之前",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "that": "dayjs('2023-01-16')",
+        "units": "day"
+      },
+      "expected_output": true,
+      "covered_branches": [
+        "Dayjs.isBefore: this.endOf(units) < dayjs(that) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.isBefore: this.endOf(units) < dayjs(that) (true) -> return true"
+      ]
+    },
+    {
+      "id": "TC036",
+      "description": "测试 Dayjs.isBefore: this 在 that 之后",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "that": "dayjs('2023-01-14')",
+        "units": "day"
+      },
+      "expected_output": false,
+      "covered_branches": [
+        "Dayjs.isBefore: this.endOf(units) < dayjs(that) (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.isBefore: this.endOf(units) < dayjs(that) (false) -> return false"
+      ]
+    },
+    {
+      "id": "TC038",
+      "description": "测试 Dayjs.$g: 作为 setter",
+      "input": {
+        "instance": "dayjs('2023-01-01')",
+        "input": 2024,
+        "get": "$y",
+        "set": "year"
+      },
+      "expected_output": {
+        "$d": "Date object for 2024-01-01"
+      },
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.$g: Utils.u(input) (false) -> return this.set(set, input)"
+      ]
+    },
+    {
+      "id": "TC039",
+      "description": "测试 Dayjs.unix: 返回 Unix 时间戳",
+      "input": {
+        "instance": "dayjs('1970-01-01T00:00:00.000Z')"
+      },
+      "expected_output": 0,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.unix: Math.floor(this.valueOf() / 1000)"
+      ]
+    },
+    {
+      "id": "TC040",
+      "description": "测试 Dayjs.valueOf: 返回毫秒时间戳",
+      "input": {
+        "instance": "dayjs('1970-01-01T00:00:00.000Z')"
+      },
+      "expected_output": 0,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.valueOf: this.$d.getTime()"
+      ]
+    },
+    {
+      "id": "TC042",
+      "description": "测试 Dayjs.endOf: 'year'",
+      "input": {
+        "instance": "dayjs('2023-06-15')",
+        "units": "year"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-12-31 23:59:59.999"
+      },
+      "covered_branches": [
+        "Dayjs.startOf: !Utils.u(startOf) (true)",
+        "Dayjs.startOf: isStartOf ? ins : ins.endOf(C.D) (false)",
+        "Dayjs.startOf: switch unit (C.Y case)",
+        "Dayjs.startOf: isStartOf ? instanceFactory(1, 0) : instanceFactory(31, 11) (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: startOf false -> isStartOf false -> unit C.Y -> return instanceFactory(31,11)"
+      ]
+    },
+    {
+      "id": "TC044",
+      "description": "测试 Dayjs.endOf: 'month'",
+      "input": {
+        "instance": "dayjs('2023-06-15')",
+        "units": "month"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-06-30 23:59:59.999"
+      },
+      "covered_branches": [
+        "Dayjs.startOf: switch unit (C.M case)",
+        "Dayjs.startOf: isStartOf ? instanceFactory(1, $M) : instanceFactory(0, $M + 1) (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: startOf false -> isStartOf false -> unit C.M -> return instanceFactory(0,$M+1)"
+      ]
+    },
+    {
+      "id": "TC047",
+      "description": "测试 Dayjs.endOf: 'week'",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "units": "week"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-21 23:59:59.999"
+      },
+      "covered_branches": [
+        "Dayjs.startOf: switch unit (C.W case)",
+        "Dayjs.startOf: ($W < weekStart ? $W + 7 : $W) (false)",
+        "Dayjs.startOf: isStartOf ? $D - gap : $D + (6 - gap) (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: startOf false -> isStartOf false -> unit C.W -> $W >= weekStart -> return instanceFactory($D + (6 - gap), $M)"
+      ]
+    },
+    {
+      "id": "TC049",
+      "description": "测试 Dayjs.endOf: 'day'",
+      "input": {
+        "instance": "dayjs('2023-01-15 10:30:45')",
+        "units": "day"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-15 23:59:59.999"
+      },
+      "covered_branches": [
+        "Dayjs.startOf: switch unit (C.D case)",
+        "Dayjs.startOf: isStartOf ? argumentStart : argumentEnd (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: startOf false -> isStartOf false -> unit C.D -> return instanceFactorySet(setHours, 0)"
+      ]
+    },
+    {
+      "id": "TC051",
+      "description": "测试 Dayjs.endOf: 'hour'",
+      "input": {
+        "instance": "dayjs('2023-01-15 10:30:45')",
+        "units": "hour"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-15 10:59:59.999"
+      },
+      "covered_branches": [
+        "Dayjs.startOf: switch unit (C.H case)",
+        "Dayjs.startOf: isStartOf ? argumentStart : argumentEnd (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: startOf false -> isStartOf false -> unit C.H -> return instanceFactorySet(setMinutes, 1)"
+      ]
+    },
+    {
+      "id": "TC053",
+      "description": "测试 Dayjs.endOf: 'minute'",
+      "input": {
+        "instance": "dayjs('2023-01-15 10:30:45')",
+        "units": "minute"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-15 10:30:59.999"
+      },
+      "covered_branches": [
+        "Dayjs.startOf: switch unit (C.MIN case)",
+        "Dayjs.startOf: isStartOf ? argumentStart : argumentEnd (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: startOf false -> isStartOf false -> unit C.MIN -> return instanceFactorySet(setSeconds, 2)"
+      ]
+    },
+    {
+      "id": "TC055",
+      "description": "测试 Dayjs.endOf: 'second'",
+      "input": {
+        "instance": "dayjs('2023-01-15 10:30:45.123')",
+        "units": "second"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-15 10:30:45.999"
+      },
+      "covered_branches": [
+        "Dayjs.startOf: switch unit (C.S case)",
+        "Dayjs.startOf: isStartOf ? argumentStart : argumentEnd (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.startOf: startOf false -> isStartOf false -> unit C.S -> return instanceFactorySet(setMilliseconds, 3)"
+      ]
+    },
+    {
+      "id": "TC057",
+      "description": "测试 Dayjs.$set: 设置 C.D (日期)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "units": "date",
+        "int": 20
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-20"
+      },
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D (true)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (false)",
+        "Dayjs.$set: name (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: unit C.D -> arg = this.$D + (int - this.$W) -> name exists -> this.$d[name](arg)"
+      ]
+    },
+    {
+      "id": "TC058",
+      "description": "测试 Dayjs.$set: 设置 C.M (月份), 正常情况",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "units": "month",
+        "int": 5
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-06-15"
+      },
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D (false)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (true)",
+        "Dayjs.$set: Math.min(this.$D, date.daysInMonth())"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: unit C.M -> unit === C.M || unit === C.Y (true) -> clone().set(C.DATE, 1) -> $d[name](arg) -> init() -> $d = date.set(C.DATE, Math.min(this.$D, date.daysInMonth())).$d"
+      ]
+    },
+    {
+      "id": "TC059",
+      "description": "测试 Dayjs.$set: 设置 C.M (月份), 目标月份天数少于当前日期",
+      "input": {
+        "instance": "dayjs('2023-03-31')",
+        "units": "month",
+        "int": 3
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-04-30"
+      },
+      "covered_branches": [
+        "Dayjs.$set: unit === C.M || unit === C.Y (true)",
+        "Dayjs.$set: Math.min(this.$D, date.daysInMonth()) (this.$D > date.daysInMonth())"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: unit C.M -> unit === C.M || unit === C.Y (true) -> Math.min(this.$D, date.daysInMonth()) (true) -> $d = date.set(C.DATE, min).$d"
+      ]
+    },
+    {
+      "id": "TC060",
+      "description": "测试 Dayjs.$set: 设置 C.Y (年份), 正常情况",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "units": "year",
+        "int": 2024
+      },
+      "expected_output": {
+        "$d": "Date object for 2024-01-15"
+      },
+      "covered_branches": [
+        "Dayjs.$set: unit === C.M || unit === C.Y (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: unit C.Y -> unit === C.M || unit === C.Y (true) -> clone().set(C.DATE, 1) -> $d[name](arg) -> init() -> $d = date.set(C.DATE, Math.min(this.$D, date.daysInMonth())).$d"
+      ]
+    },
+    {
+      "id": "TC061",
+      "description": "测试 Dayjs.$set: 设置 C.Y (年份), 闰年/非闰年边界 (2月29日)",
+      "input": {
+        "instance": "dayjs('2024-02-29')",
+        "units": "year",
+        "int": 2023
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-02-28"
+      },
+      "covered_branches": [
+        "Dayjs.$set: unit === C.M || unit === C.Y (true)",
+        "Dayjs.$set: Math.min(this.$D, date.daysInMonth()) (this.$D > date.daysInMonth())"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: unit C.Y -> unit === C.M || unit === C.Y (true) -> Math.min(this.$D, date.daysInMonth()) (true) -> $d = date.set(C.DATE, min).$d"
+      ]
+    },
+    {
+      "id": "TC062",
+      "description": "测试 Dayjs.$set: 设置 C.H (小时)",
+      "input": {
+        "instance": "dayjs('2023-01-15 10:30:45')",
+        "units": "hour",
+        "int": 14
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-15 14:30:45"
+      },
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D (false)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (false)",
+        "Dayjs.$set: name (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: unit C.H -> name exists -> this.$d[name](arg)"
+      ]
+    },
+    {
+      "id": "TC063",
+      "description": "测试 Dayjs.$set: 设置 C.MS (毫秒)",
+      "input": {
+        "instance": "dayjs('2023-01-15 10:30:45.123')",
+        "units": "millisecond",
+        "int": 456
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-15 10:30:45.456"
+      },
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D (false)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (false)",
+        "Dayjs.$set: name (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: unit C.MS -> name exists -> this.$d[name](arg)"
+      ]
+    },
+    {
+      "id": "TC064",
+      "description": "测试 Dayjs.$set: 设置无效单位 (不应改变日期)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "units": "invalid",
+        "int": 100
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-15"
+      },
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D (false)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (false)",
+        "Dayjs.$set: name (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: unit invalid -> name does not exist -> no change to $d"
+      ]
+    },
+    {
+      "id": "TC065",
+      "description": "测试 Dayjs.set: 设置 C.D (日期)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "string": "date",
+        "int": 20
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-20"
+      },
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.set: return this.clone().$set(string, int)"
+      ]
+    },
+    {
+      "id": "TC066",
+      "description": "测试 Dayjs.get: 获取年份",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "unit": "year"
+      },
+      "expected_output": 2023,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.get: return this[Utils.p(unit)]()"
+      ]
+    },
+    {
+      "id": "TC067",
+      "description": "测试 Dayjs.add: 增加月份 (正数)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "number": 2,
+        "units": "month"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-03-15"
+      },
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: unit C.M -> return this.set(C.M, this.$M + number)"
+      ]
+    },
+    {
+      "id": "TC068",
+      "description": "测试 Dayjs.add: 增加年份 (负数)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "number": -1,
+        "units": "year"
+      },
+      "expected_output": {
+        "$d": "Date object for 2022-01-15"
+      },
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (false)",
+        "Dayjs.add: unit === C.Y (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: unit C.Y -> return this.set(C.Y, this.$y + number)"
+      ]
+    },
+    {
+      "id": "TC069",
+      "description": "测试 Dayjs.add: 增加天数 (正数)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "number": 5,
+        "units": "day"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-20"
+      },
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (false)",
+        "Dayjs.add: unit === C.Y (false)",
+        "Dayjs.add: unit === C.D (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: unit C.D -> return instanceFactorySet(1)"
+      ]
+    },
+    {
+      "id": "TC070",
+      "description": "测试 Dayjs.add: 增加周数 (正数)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "number": 2,
+        "units": "week"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-29"
+      },
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (false)",
+        "Dayjs.add: unit === C.Y (false)",
+        "Dayjs.add: unit === C.D (false)",
+        "Dayjs.add: unit === C.W (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: unit C.W -> return instanceFactorySet(7)"
+      ]
+    },
+    {
+      "id": "TC071",
+      "description": "测试 Dayjs.add: 增加小时 (正数)",
+      "input": {
+        "instance": "dayjs('2023-01-15 10:00:00')",
+        "number": 3,
+        "units": "hour"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-15 13:00:00"
+      },
+      "covered_branches": [
+        "Dayjs.add: unit === C.M (false)",
+        "Dayjs.add: unit === C.Y (false)",
+        "Dayjs.add: unit === C.D (false)",
+        "Dayjs.add: unit === C.W (false)",
+        "Dayjs.add: else (milliseconds calculation)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: unit C.H -> else branch -> calculate nextTimeStamp -> return Utils.w(nextTimeStamp, this)"
+      ]
+    },
+    {
+      "id": "TC072",
+      "description": "测试 Dayjs.add: 增加毫秒 (正数)",
+      "input": {
+        "instance": "dayjs('2023-01-15 10:00:00.000')",
+        "number": 500,
+        "units": "millisecond"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-15 10:00:00.500"
+      },
+      "covered_branches": [
+        "Dayjs.add: else (milliseconds calculation)"
+      ],
+      "covered_paths": [
+        "Dayjs.add: unit C.MS -> else branch -> calculate nextTimeStamp -> return Utils.w(nextTimeStamp, this)"
+      ]
+    },
+    {
+      "id": "TC073",
+      "description": "测试 Dayjs.subtract: 减去天数",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "number": 5,
+        "string": "day"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-10"
+      },
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.subtract: return this.add(number * -1, string)"
+      ]
+    },
+    {
+      "id": "TC074",
+      "description": "测试 Dayjs.format: 无效日期",
+      "input": {
+        "instance": "dayjs(null)",
+        "formatStr": "YYYY-MM-DD"
+      },
+      "expected_output": "Invalid Date",
+      "covered_branches": [
+        "Dayjs.format: !this.isValid() (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: !this.isValid() (true) -> return locale.invalidDate"
+      ]
+    },
+    {
+      "id": "TC076",
+      "description": "测试 Dayjs.format: 包含所有主要格式令牌",
+      "input": {
+        "instance": "dayjs('2023-01-15T10:30:45.123Z')",
+        "formatStr": "YYYY-MM-DD HH:mm:ss.SSS ddd A [Year:]YYYY"
+      },
+      "expected_output": "2023-01-15 10:30:45.123 Sun AM Year:2023",
+      "covered_branches": [
+        "Dayjs.format: switch match (YY, YYYY, M, MM, MMM, MMMM, D, DD, d, dd, ddd, dddd, H, HH, h, hh, a, A, m, mm, s, ss, SSS, Z cases)",
+        "Dayjs.format: meridiem || ((hour, minute, isLowercase) => ...) (true, uses locale.meridiem)",
+        "Dayjs.format: $1 || matches(match) || zoneStr.replace(':', '') ($1 true for [Year:])"
+      ],
+      "covered_paths": [
+        "Dayjs.format: isValid -> formatStr provided -> process all tokens including literals"
+      ]
+    },
+    {
+      "id": "TC077",
+      "description": "测试 Dayjs.format: AM/PM 格式 (h, hh, a, A)",
+      "input": {
+        "instance": "dayjs('2023-01-15T01:05:00.000Z')",
+        "formatStr": "h hh a A"
+      },
+      "expected_output": "1 01 am AM",
+      "covered_branches": [
+        "Dayjs.format: switch match (h, hh, a, A cases)",
+        "Dayjs.format: meridiemFunc (hour < 12 ? 'AM' : 'PM') (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: process h, hh, a, A tokens with hour < 12"
+      ]
+    },
+    {
+      "id": "TC078",
+      "description": "测试 Dayjs.format: PM 格式 (h, hh, a, A)",
+      "input": {
+        "instance": "dayjs('2023-01-15T13:05:00.000Z')",
+        "formatStr": "h hh a A"
+      },
+      "expected_output": "1 01 pm PM",
+      "covered_branches": [
+        "Dayjs.format: switch match (h, hh, a, A cases)",
+        "Dayjs.format: meridiemFunc (hour < 12 ? 'AM' : 'PM') (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: process h, hh, a, A tokens with hour >= 12"
+      ]
+    },
+    {
+      "id": "TC079",
+      "description": "测试 Dayjs.utcOffset: 返回 UTC 偏移量",
+      "input": {
+        "instance": "dayjs('2023-01-01')"
+      },
+      "expected_output": -480,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.utcOffset: -Math.round(this.$d.getTimezoneOffset() / 15) * 15"
+      ]
+    },
+    {
+      "id": "TC080",
+      "description": "测试 Dayjs.diff: 差异年份, float 为 true",
+      "input": {
+        "instance": "dayjs('2024-01-01')",
+        "input": "2023-01-01",
+        "units": "year",
+        "float": true
+      },
+      "expected_output": 1,
+      "covered_branches": [
+        "Dayjs.diff: switch unit (C.Y case)",
+        "Dayjs.diff: float ? result : Utils.a(result) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: unit C.Y -> calculate getMonth() / 12 -> float true -> return result"
+      ]
+    },
+    {
+      "id": "TC081",
+      "description": "测试 Dayjs.diff: 差异月份, float 为 false",
+      "input": {
+        "instance": "dayjs('2023-03-15')",
+        "input": "2023-01-15",
+        "units": "month",
+        "float": false
+      },
+      "expected_output": 2,
+      "covered_branches": [
+        "Dayjs.diff: switch unit (C.M case)",
+        "Dayjs.diff: float ? result : Utils.a(result) (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: unit C.M -> calculate getMonth() -> float false -> return Utils.a(result)"
+      ]
+    },
+    {
+      "id": "TC082",
+      "description": "测试 Dayjs.diff: 差异季度, float 为 true",
+      "input": {
+        "instance": "dayjs('2023-07-01')",
+        "input": "2023-01-01",
+        "units": "quarter",
+        "float": true
+      },
+      "expected_output": 2,
+      "covered_branches": [
+        "Dayjs.diff: switch unit (C.Q case)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: unit C.Q -> calculate getMonth() / 3 -> float true -> return result"
+      ]
+    },
+    {
+      "id": "TC083",
+      "description": "测试 Dayjs.diff: 差异周, float 为 true",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "input": "2023-01-01",
+        "units": "week",
+        "float": true
+      },
+      "expected_output": 2,
+      "covered_branches": [
+        "Dayjs.diff: switch unit (C.W case)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: unit C.W -> calculate (diff - zoneDelta) / C.MILLISECONDS_A_WEEK -> float true -> return result"
+      ]
+    },
+    {
+      "id": "TC084",
+      "description": "测试 Dayjs.diff: 差异天, float 为 false",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "input": "2023-01-10",
+        "units": "day",
+        "float": false
+      },
+      "expected_output": 5,
+      "covered_branches": [
+        "Dayjs.diff: switch unit (C.D case)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: unit C.D -> calculate (diff - zoneDelta) / C.MILLISECONDS_A_DAY -> float false -> return Utils.a(result)"
+      ]
+    },
+    {
+      "id": "TC085",
+      "description": "测试 Dayjs.diff: 差异小时, float 为 true",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:00:00')",
+        "input": "2023-01-01 08:00:00",
+        "units": "hour",
+        "float": true
+      },
+      "expected_output": 2,
+      "covered_branches": [
+        "Dayjs.diff: switch unit (C.H case)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: unit C.H -> calculate diff / C.MILLISECONDS_A_HOUR -> float true -> return result"
+      ]
+    },
+    {
+      "id": "TC086",
+      "description": "测试 Dayjs.diff: 差异分钟, float 为 false",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:30:00')",
+        "input": "2023-01-01 10:20:00",
+        "units": "minute",
+        "float": false
+      },
+      "expected_output": 10,
+      "covered_branches": [
+        "Dayjs.diff: switch unit (C.MIN case)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: unit C.MIN -> calculate diff / C.MILLISECONDS_A_MINUTE -> float false -> return Utils.a(result)"
+      ]
+    },
+    {
+      "id": "TC087",
+      "description": "测试 Dayjs.diff: 差异秒, float 为 true",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:00:30')",
+        "input": "2023-01-01 10:00:10",
+        "units": "second",
+        "float": true
+      },
+      "expected_output": 20,
+      "covered_branches": [
+        "Dayjs.diff: switch unit (C.S case)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: unit C.S -> calculate diff / C.MILLISECONDS_A_SECOND -> float true -> return result"
+      ]
+    },
+    {
+      "id": "TC088",
+      "description": "测试 Dayjs.diff: 差异毫秒 (默认单位), float 为 false",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:00:00.500')",
+        "input": "2023-01-01 10:00:00.100",
+        "units": "millisecond",
+        "float": false
+      },
+      "expected_output": 400,
+      "covered_branches": [
+        "Dayjs.diff: switch unit (default case)"
+      ],
+      "covered_paths": [
+        "Dayjs.diff: unit default -> result = diff -> float false -> return Utils.a(result)"
+      ]
+    },
+    {
+      "id": "TC089",
+      "description": "测试 Dayjs.daysInMonth: 返回月份天数",
+      "input": {
+        "instance": "dayjs('2023-02-15')"
+      },
+      "expected_output": 28,
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.daysInMonth: return this.endOf(C.M).$D"
+      ]
+    },
+    {
+      "id": "TC090",
+      "description": "测试 Dayjs.$locale: 返回当前 locale 对象",
+      "input": {
+        "instance": "dayjs('2023-01-01')"
+      },
+      "expected_output": {
+        "name": "en"
+      },
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.$locale: return Ls[this.$L]"
+      ]
+    },
+    {
+      "id": "TC091",
+      "description": "测试 Dayjs.locale: 无 preset (getter)",
+      "input": {
+        "instance": "dayjs('2023-01-01')",
+        "preset": null,
+        "object": null
+      },
+      "expected_output": "en",
+      "covered_branches": [
+        "Dayjs.locale: !preset (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.locale: !preset (true) -> return this.$L"
+      ]
+    },
+    {
+      "instance": "dayjs('2023-01-01')",
+      "preset": "fr",
+      "object": {
+        "name": "fr",
+        "months": [
+          "Janvier"
+        ]
+      }
+    },
+    {
+      "$L": "fr"
+    },
+    {
+      "id": "TC093",
+      "description": "测试 Dayjs.locale: 设置已加载的 locale (字符串)",
+      "input": {
+        "instance": "dayjs('2023-01-01')",
+        "preset": "en",
+        "object": null
+      },
+      "expected_output": {
+        "$L": "en"
+      },
+      "covered_branches": [
+        "Dayjs.locale: !preset (false)",
+        "Dayjs.locale: nextLocaleName (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.locale: !preset (false) -> parseLocale returns truthy -> that.$L = nextLocaleName -> return that"
+      ]
+    },
+    {
+      "id": "TC094",
+      "description": "测试 Dayjs.locale: 设置未知 locale (无对象), 不应改变 locale",
+      "input": {
+        "instance": "dayjs('2023-01-01')",
+        "preset": "unknown",
+        "object": null
+      },
+      "expected_output": {
+        "$L": "en"
+      },
+      "covered_branches": [
+        "Dayjs.locale: !preset (false)",
+        "Dayjs.locale: nextLocaleName (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.locale: !preset (false) -> parseLocale returns falsy -> that.$L not updated -> return that"
+      ]
+    },
+    {
+      "id": "TC095",
+      "description": "测试 Dayjs.clone: 克隆实例",
+      "input": {
+        "instance": "dayjs('2023-01-01')"
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-01"
+      },
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.clone: return Utils.w(this.$d, this)"
+      ]
+    },
+    {
+      "id": "TC096",
+      "description": "测试 Dayjs.toDate: 返回原生 Date 对象",
+      "input": {
+        "instance": "dayjs('2023-01-01')"
+      },
+      "expected_output": "Date object for 2023-01-01",
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.toDate: return new Date(this.valueOf())"
+      ]
+    },
+    {
+      "id": "TC097",
+      "description": "测试 Dayjs.toJSON: 有效日期",
+      "input": {
+        "instance": "dayjs('2023-01-01')"
+      },
+      "expected_output": "2023-01-01T00:00:00.000Z",
+      "covered_branches": [
+        "Dayjs.toJSON: this.isValid() ? this.toISOString() : null (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.toJSON: isValid (true) -> return this.toISOString()"
+      ]
+    },
+    {
+      "id": "TC098",
+      "description": "测试 Dayjs.toJSON: 无效日期",
+      "input": {
+        "instance": "dayjs(null)"
+      },
+      "expected_output": null,
+      "covered_branches": [
+        "Dayjs.toJSON: this.isValid() ? this.toISOString() : null (false)"
+      ],
+      "covered_paths": [
+        "Dayjs.toJSON: isValid (false) -> return null"
+      ]
+    },
+    {
+      "id": "TC099",
+      "description": "测试 Dayjs.toISOString: 返回 ISO 8601 字符串",
+      "input": {
+        "instance": "dayjs('2023-01-01T12:30:45.123Z')"
+      },
+      "expected_output": "2023-01-01T12:30:45.123Z",
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.toISOString: return this.$d.toISOString()"
+      ]
+    },
+    {
+      "id": "TC100",
+      "description": "测试 Dayjs.toString: 返回 UTC 字符串",
+      "input": {
+        "instance": "dayjs('2023-01-01T12:30:45.123Z')"
+      },
+      "expected_output": "Sun, 01 Jan 2023 12:30:45 GMT",
+      "covered_branches": [],
+      "covered_paths": [
+        "Dayjs.toString: return this.$d.toUTCString()"
+      ]
+    },
+    {
+      "plugin": "(option, Dayjs, dayjs) => { Dayjs.prototype.foo = () => 'bar'; plugin.$i = false; }",
+      "option": {
+        "test": true
+      }
+    },
+    {
+      "dayjs_instance_foo": "bar",
+      "plugin_installed": true
+    },
+    {
+      "plugin": {
+        "$i": true
+      },
+      "option": {
+        "test": true
+      }
+    },
+    {
+      "plugin_installed": true
+    },
+    {
+      "id": "TC103",
+      "description": "测试 dayjs.unix: 将 Unix 时间戳转换为 Dayjs 实例",
+      "input": {
+        "timestamp": 0
+      },
+      "expected_output": {
+        "$d": "Date object for 1970-01-01T00:00:00.000Z"
+      },
+      "covered_branches": [],
+      "covered_paths": [
+        "dayjs.unix: return dayjs(timestamp * 1e3)"
+      ]
+    },
+    {
+      "cfg": {
+        "date": "2023"
+      }
+    },
+    {
+      "cfg": {
+        "date": "2023-03"
+      }
+    },
+    {
+      "id": "TC106",
+      "description": "测试 Dayjs.$set: 设置 C.W (周), 应该通过 C.D 间接设置",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "units": "week",
+        "int": 1
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-08"
+      },
+      "covered_branches": [
+        "Dayjs.$set: unit === C.D (true)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (false)",
+        "Dayjs.$set: name (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.$set: unit C.W (parsed to C.D) -> arg = this.$D + (int - this.$W) -> name exists -> this.$d[name](arg)"
+      ]
+    },
+    {
+      "id": "TC107",
+      "description": "测试 Dayjs.year() getter",
+      "input": {
+        "instance": "dayjs('2023-01-01')",
+        "method": "year"
+      },
+      "expected_output": 2023,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.year(): calls $g with undefined input -> $g returns this.$y"
+      ]
+    },
+    {
+      "id": "TC108",
+      "description": "测试 Dayjs.year(int) setter",
+      "input": {
+        "instance": "dayjs('2023-01-01')",
+        "method": "year",
+        "value": 2024
+      },
+      "expected_output": {
+        "$d": "Date object for 2024-01-01"
+      },
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (false)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.year(int): calls $g with int -> $g calls this.set('year', int) -> set calls clone().$set -> $set updates year"
+      ]
+    },
+    {
+      "id": "TC109",
+      "description": "测试 Dayjs.month() getter",
+      "input": {
+        "instance": "dayjs('2023-01-01')",
+        "method": "month"
+      },
+      "expected_output": 0,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.month(): calls $g with undefined input -> $g returns this.$M"
+      ]
+    },
+    {
+      "id": "TC110",
+      "description": "测试 Dayjs.month(int) setter",
+      "input": {
+        "instance": "dayjs('2023-01-31')",
+        "method": "month",
+        "value": 1
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-02-28"
+      },
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (false)",
+        "Dayjs.$set: unit === C.M || unit === C.Y (true)",
+        "Dayjs.$set: Math.min(this.$D, date.daysInMonth()) (this.$D > date.daysInMonth())"
+      ],
+      "covered_paths": [
+        "Dayjs.month(int): calls $g with int -> $g calls this.set('month', int) -> set calls clone().$set -> $set updates month, handles day overflow"
+      ]
+    },
+    {
+      "id": "TC111",
+      "description": "测试 Dayjs.date() getter",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "method": "date"
+      },
+      "expected_output": 15,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.date(): calls $g with undefined input -> $g returns this.$D"
+      ]
+    },
+    {
+      "id": "TC112",
+      "description": "测试 Dayjs.date(int) setter",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "method": "date",
+        "value": 20
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-20"
+      },
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (false)",
+        "Dayjs.$set: unit === C.D (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.date(int): calls $g with int -> $g calls this.set('date', int) -> set calls clone().$set -> $set updates date"
+      ]
+    },
+    {
+      "id": "TC113",
+      "description": "测试 Dayjs.day() getter (day of week)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "method": "day"
+      },
+      "expected_output": 0,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.day(): calls $g with undefined input -> $g returns this.$W"
+      ]
+    },
+    {
+      "id": "TC114",
+      "description": "测试 Dayjs.day(int) setter (day of week)",
+      "input": {
+        "instance": "dayjs('2023-01-15')",
+        "method": "day",
+        "value": 1
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-16"
+      },
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (false)",
+        "Dayjs.$set: unit === C.D (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.day(int): calls $g with int -> $g calls this.set('day', int) -> set calls clone().$set -> $set updates day of month based on day of week"
+      ]
+    },
+    {
+      "id": "TC115",
+      "description": "测试 Dayjs.hour() getter",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:00:00')",
+        "method": "hour"
+      },
+      "expected_output": 10,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.hour(): calls $g with undefined input -> $g returns this.$H"
+      ]
+    },
+    {
+      "id": "TC116",
+      "description": "测试 Dayjs.hour(int) setter",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:00:00')",
+        "method": "hour",
+        "value": 14
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-01 14:00:00"
+      },
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (false)",
+        "Dayjs.$set: name (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.hour(int): calls $g with int -> $g calls this.set('hour', int) -> set calls clone().$set -> $set updates hour"
+      ]
+    },
+    {
+      "id": "TC117",
+      "description": "测试 Dayjs.minute() getter",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:30:00')",
+        "method": "minute"
+      },
+      "expected_output": 30,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.minute(): calls $g with undefined input -> $g returns this.$m"
+      ]
+    },
+    {
+      "id": "TC118",
+      "description": "测试 Dayjs.minute(int) setter",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:30:00')",
+        "method": "minute",
+        "value": 45
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-01 10:45:00"
+      },
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (false)",
+        "Dayjs.$set: name (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.minute(int): calls $g with int -> $g calls this.set('minute', int) -> set calls clone().$set -> $set updates minute"
+      ]
+    },
+    {
+      "id": "TC119",
+      "description": "测试 Dayjs.second() getter",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:30:45')",
+        "method": "second"
+      },
+      "expected_output": 45,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.second(): calls $g with undefined input -> $g returns this.$s"
+      ]
+    },
+    {
+      "id": "TC120",
+      "description": "测试 Dayjs.second(int) setter",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:30:45')",
+        "method": "second",
+        "value": 50
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-01 10:30:50"
+      },
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (false)",
+        "Dayjs.$set: name (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.second(int): calls $g with int -> $g calls this.set('second', int) -> set calls clone().$set -> $set updates second"
+      ]
+    },
+    {
+      "id": "TC121",
+      "description": "测试 Dayjs.millisecond() getter",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:30:45.123')",
+        "method": "millisecond"
+      },
+      "expected_output": 123,
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.millisecond(): calls $g with undefined input -> $g returns this.$ms"
+      ]
+    },
+    {
+      "id": "TC122",
+      "description": "测试 Dayjs.millisecond(int) setter",
+      "input": {
+        "instance": "dayjs('2023-01-01 10:30:45.123')",
+        "method": "millisecond",
+        "value": 456
+      },
+      "expected_output": {
+        "$d": "Date object for 2023-01-01 10:30:45.456"
+      },
+      "covered_branches": [
+        "Dayjs.$g: Utils.u(input) (false)",
+        "Dayjs.$set: name (true)"
+      ],
+      "covered_paths": [
+        "Dayjs.millisecond(int): calls $g with int -> $g calls this.set('millisecond', int) -> set calls clone().$set -> $set updates millisecond"
+      ]
+    },
+    {
+      "$d": "Date object for 2023-01-15 00:00:00.000Z"
+    },
+    {
+      "instance": "dayjs('2023-01-15 10:30:45', { utc: true })",
+      "units": "hour",
+      "int": 14
+    },
+    {
+      "$d": "Date object for 2023-01-15 14:30:45Z"
+    },
+    {
+      "id": "TC125",
+      "description": "测试 Dayjs.format: Z (timezone offset) token",
+      "input": {
+        "instance": "dayjs('2023-01-15T10:30:45.123')",
+        "formatStr": "Z"
+      },
+      "expected_output": "-08:00",
+      "covered_branches": [
+        "Dayjs.format: switch match (Z case)"
+      ],
+      "covered_paths": [
+        "Dayjs.format: process Z token -> return zoneStr"
+      ]
+    }
+  ],
+  "coverage": {
+    "statement_coverage": 94.12,
+    "branch_coverage": 86.81,
+    "uncovered_lines": [
+      112,
+      288,
+      292,
+      296,
+      298,
+      300,
+      304,
+      306,
+      310,
+      312,
+      324,
+      328,
+      336,
+      338
+    ],
+    "uncovered_branches": [
+      "L74: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L75: binary-expr branch-1",
+      "L150: cond-expr branch-0",
+      "L163: cond-expr branch-0",
+      "L173: cond-expr branch-0",
+      "L196: cond-expr branch-0",
+      "L274: binary-expr branch-1",
+      "L274: binary-expr branch-2",
+      "L277: binary-expr branch-1",
+      "L286: switch branch-0",
+      "L286: switch branch-2",
+      "L286: switch branch-4",
+      "L286: switch branch-5",
+      "L286: switch branch-6",
+      "L286: switch branch-8",
+      "L286: switch branch-9",
+      "L286: switch branch-11",
+      "L286: switch branch-12",
+      "L286: switch branch-18",
+      "L286: switch branch-20",
+      "L286: switch branch-24",
+      "L341: binary-expr branch-2"
+    ],
+    "test_results": {
+      "total": 126,
+      "passed": 123,
+      "failed": 3,
+      "error": 0
+    }
+  }
+}

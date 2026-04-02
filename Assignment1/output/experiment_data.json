@@ -518,5 +518,18 @@
     "passed": 11,
     "failed": 4,
     "timestamp": "2026-03-23 15:51:47"
+  },
+  {
+    "llm_provider": "google",
+    "llm_model": "gemini-2.5-flash",
+    "source_file": "index.js",
+    "test_count": 130,
+    "duration": 282.176819562912,
+    "rounds": 1,
+    "statement_coverage": 94.12,
+    "branch_coverage": 86.81,
+    "passed": 123,
+    "failed": 3,
+    "timestamp": "2026-04-02 14:38:15"
   }
 ]

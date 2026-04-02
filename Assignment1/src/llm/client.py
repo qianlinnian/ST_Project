@@ -11,8 +11,8 @@ from openai import OpenAI
 from typing import Optional, Union
 
 # 设置代理（用于访问 Google 等需要代理的服务）
-os.environ.setdefault("HTTP_PROXY", "http://127.0.0.1:7894")
-os.environ.setdefault("HTTPS_PROXY", "http://127.0.0.1:7894")
+os.environ.setdefault("HTTP_PROXY", "http://127.0.0.1:8042")
+os.environ.setdefault("HTTPS_PROXY", "http://127.0.0.1:8042")
 
 import google.generativeai as genai
 
@@ -111,5 +111,11 @@ class LLMClient:
                 raise RuntimeError(f"[Google] API 免费额度已用完，请稍后重试或更换模型。详情: https://ai.google.dev/gemini-api/docs/rate-limits")
             elif "NOT_FOUND" in error_msg:
                 raise RuntimeError(f"[Google] 模型 '{self.model}' 不存在，请检查 config.yaml 中的 model 配置")
+            elif "User location is not supported" in error_msg or "FAILED_PRECONDITION" in error_msg:
+                raise RuntimeError(
+                    "[Google] 当前网络出口地区不支持 Gemini API（User location is not supported）。"
+                    "请检查是否经过代理（如 127.0.0.1:8042）导致出口地区受限，"
+                    "或切换到支持地区的网络后重试。"
+                )
             else:
                 raise RuntimeError(f"[Google] API 调用失败: {error_msg}")
