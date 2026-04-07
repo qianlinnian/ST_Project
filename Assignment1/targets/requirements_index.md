@@ -1,116 +1,116 @@
-# 需求文档：index.js（Day.js 核心模块）
+# Requirements Document: index.js (Day.js Core Module)
 
-## 功能概述
-Day.js 是一个轻量级的日期时间处理库，提供类似 Moment.js 的 API。
-本文件是 Day.js 的核心模块，包含日期解析、格式化、比较、计算等核心功能。
+## Overview
+Day.js is a lightweight date and time manipulation library that provides an API similar to Moment.js.
+This file is the core module of Day.js and contains the core functionality for date parsing, formatting, comparison, and calculation.
 
-## 模块组成
+## Module Structure
 
-### 1. 全局状态管理
+### 1. Global State Management
 
-- `L`：全局默认语言（初始值 `"en"`）
-- `Ls`：已加载的语言包对象（键为语言名，值为语言配置）
+- `L`: global default language (initial value: `"en"`)
+- `Ls`: loaded locale objects (keyed by language name, value is the locale configuration)
 
-### 2. 辅助函数
+### 2. Helper Functions
 
 #### isDayjs(d) -> boolean
-判断一个对象是否是 Dayjs 实例。
-- 通过 `instanceof Dayjs` 或 `d.$isDayjsObject` 标记判断
+Determines whether an object is a Dayjs instance.
+- The check is performed via `instanceof Dayjs` or the `d.$isDayjsObject` flag
 
 #### parseLocale(preset, object, isLocal) -> string
-解析并设置语言。
-- `preset` 为字符串时：尝试查找已加载的语言包，支持 "zh-cn" 自动回退到 "zh"
-- `preset` 为对象时：直接注册为语言包
-- `isLocal` 为 false 时会更新全局默认语言
+Parses and sets the locale.
+- When `preset` is a string: tries to find a loaded locale pack, with support for automatic fallback from `"zh-cn"` to `"zh"`
+- When `preset` is an object: registers it directly as a locale pack
+- When `isLocal` is false: updates the global default locale
 
 #### parseDate(cfg) -> Date
-将各种类型的日期输入解析为 JavaScript Date 对象。
-- `null` → `new Date(NaN)`（无效日期）
-- `undefined` → `new Date()`（当前时间）
-- `Date` 对象 → 克隆一份
-- 字符串 → 用正则 `REGEX_PARSE` 匹配 "YYYY-MM-DD HH:mm:ss.SSS" 格式
-  - 支持 UTC 模式和本地模式
-  - 不以 "Z" 结尾的字符串才尝试正则匹配
-- 其他 → 交给 `new Date()` 处理（如时间戳数字）
+Parses various date inputs into a JavaScript Date object.
+- `null` → `new Date(NaN)` (invalid date)
+- `undefined` → `new Date()` (current time)
+- `Date` object → clone it
+- String → use the regular expression `REGEX_PARSE` to match the `"YYYY-MM-DD HH:mm:ss.SSS"` format
+  - Supports both UTC mode and local mode
+  - Only strings that do not end with `"Z"` are matched by the regex
+- Others → passed to `new Date()` (for example, timestamps)
 
-### 3. dayjs(date, c) 工厂函数
-创建 Dayjs 实例的入口函数。
-- 如果 date 已经是 Dayjs 实例，返回其克隆
-- 否则创建新的 Dayjs 实例
+### 3. dayjs(date, c) Factory Function
+The entry function for creating Dayjs instances.
+- If `date` is already a Dayjs instance, return a clone of it
+- Otherwise, create a new Dayjs instance
 
-### 4. Dayjs 类
+### 4. Dayjs Class
 
-#### 构造与初始化
-- `constructor(cfg)`：解析语言设置，调用 parse 初始化
-- `parse(cfg)`：调用 parseDate 解析日期，然后 init
-- `init()`：从 Date 对象提取年、月、日、星期、时、分、秒、毫秒
+#### Construction and Initialization
+- `constructor(cfg)`: parses locale settings and calls parse initialization
+- `parse(cfg)`: parses the date via `parseDate`, then calls `init`
+- `init()`: extracts year, month, day, weekday, hour, minute, second, and millisecond from the Date object
 
-#### 查询方法
-- `isValid()`：判断日期是否有效（通过 toString 是否为 "Invalid Date"）
-- `isSame(that, units)`：判断是否与另一个日期相同（精确到指定单位）
-- `isAfter(that, units)`：判断是否在另一个日期之后
-- `isBefore(that, units)`：判断是否在另一个日期之前
+#### Query Methods
+- `isValid()`: determines whether the date is valid (by checking whether `toString()` is `"Invalid Date"`)
+- `isSame(that, units)`: checks whether it is the same as another date (up to the specified unit)
+- `isAfter(that, units)`: checks whether it is after another date
+- `isBefore(that, units)`: checks whether it is before another date
 
-#### 获取/设置方法
-- `$g(input, get, set)`：通用 getter/setter 代理
-- `get(unit)`：获取指定单位的值（年/月/日/时/分/秒/毫秒）
-- `set(string, int)`：设置指定单位的值（返回新实例）
-- `$set(units, int)`：内部设置方法（直接修改当前实例）
-  - 月份/年份设置时需特殊处理（防止日期溢出，如 1月31日 设置月份为2月时取 min(31, 28)）
+#### Get/Set Methods
+- `$g(input, get, set)`: general getter/setter proxy
+- `get(unit)`: gets the value of the specified unit (year/month/day/hour/minute/second/millisecond)
+- `set(string, int)`: sets the value of the specified unit (returns a new instance)
+- `$set(units, int)`: internal set method (modifies the current instance directly)
+  - Month/year updates require special handling to prevent date overflow (for example, when setting January 31 to February, use `min(31, 28)`)
 
-#### 计算方法
-- `add(number, units)`：日期加法
-  - 月/年：通过 set 设置
-  - 日/周：通过天数计算
-  - 时/分/秒：通过毫秒时间戳计算
-- `subtract(number, string)`：日期减法（内部调用 add 取反）
-- `diff(input, units, float)`：计算两个日期的差值
-  - 支持年/月/季度/周/日/时/分/秒/毫秒单位
-  - `float` 参数控制是否返回浮点数
-  - 考虑时区差异（zoneDelta）
+#### Calculation Methods
+- `add(number, units)`: date addition
+  - Month/year: set via `set`
+  - Day/week: calculated by days
+  - Hour/minute/second: calculated by milliseconds
+- `subtract(number, string)`: date subtraction (internally calls `add` with the sign reversed)
+- `diff(input, units, float)`: calculates the difference between two dates
+  - Supports year/month/quarter/week/day/hour/minute/second/millisecond units
+  - The `float` parameter controls whether a floating-point result is returned
+  - Considers timezone differences (`zoneDelta`)
 
-#### 范围方法
-- `startOf(units)`：获取指定单位的起始时间（如月初、年初、周一）
-  - 周的起始日由语言包的 `weekStart` 配置决定
-- `endOf(arg)`：获取指定单位的结束时间（如月末 23:59:59.999）
-- `daysInMonth()`：获取当月天数
+#### Range Methods
+- `startOf(units)`: gets the start time of a specified unit (for example, start of month, start of year, Monday for week)
+  - The start day of the week is determined by the locale's `weekStart` setting
+- `endOf(arg)`: gets the end time of a specified unit (for example, month end at `23:59:59.999`)
+- `daysInMonth()`: gets the number of days in the current month
 
-#### 格式化方法
-- `format(formatStr)`：按格式字符串输出日期
-  - 支持的格式符：YY, YYYY, M, MM, MMM, MMMM, D, DD, d, dd, ddd, dddd, H, HH, h, hh, a, A, m, mm, s, ss, SSS, Z, ZZ
-  - 无效日期返回 `locale.invalidDate` 或 "Invalid Date"
-  - 方括号内的字符原样输出（转义）
+#### Formatting Methods
+- `format(formatStr)`: outputs the date according to a format string
+  - Supported format tokens: `YY`, `YYYY`, `M`, `MM`, `MMM`, `MMMM`, `D`, `DD`, `d`, `dd`, `ddd`, `dddd`, `H`, `HH`, `h`, `hh`, `a`, `A`, `m`, `mm`, `s`, `ss`, `SSS`, `Z`, `ZZ`
+  - Invalid dates return `locale.invalidDate` or `"Invalid Date"`
+  - Characters inside square brackets are output as-is (escaped)
 
-#### 输出方法
-- `valueOf()`：返回毫秒时间戳
-- `unix()`：返回秒级时间戳
-- `toDate()`：返回原生 Date 对象
-- `toJSON()`：有效日期返回 ISO 字符串，无效返回 null
-- `toISOString()`：返回 ISO 8601 格式字符串
-- `toString()`：返回 UTC 字符串
+#### Output Methods
+- `valueOf()`: returns the millisecond timestamp
+- `unix()`: returns the second-level timestamp
+- `toDate()`: returns a native Date object
+- `toJSON()`: returns an ISO string for valid dates, null for invalid dates
+- `toISOString()`: returns an ISO 8601 string
+- `toString()`: returns a UTC string
 
-#### 语言相关
-- `$locale()`：获取当前实例的语言配置对象
-- `locale(preset, object)`：切换语言（返回新实例）
-- `clone()`：克隆当前实例
+#### Locale-Related Methods
+- `$locale()`: gets the current instance's locale configuration object
+- `locale(preset, object)`: switches locale (returns a new instance)
+- `clone()`: clones the current instance
 
-### 5. 原型方法注册
-通过循环为 Dayjs 原型注册快捷方法：
+### 5. Prototype Method Registration
+Shortcuts are registered on the Dayjs prototype in a loop:
 - `millisecond()`, `second()`, `minute()`, `hour()`, `day()`, `month()`, `year()`, `date()`
-- 这些方法既是 getter（无参数时）也是 setter（有参数时）
+- These methods act as getters when called without arguments and setters when called with arguments
 
-### 6. 静态方法
-- `dayjs.extend(plugin, option)`：注册插件（每个插件只安装一次）
-- `dayjs.locale(preset)`：全局设置语言
-- `dayjs.isDayjs(d)`：判断是否为 Dayjs 实例
-- `dayjs.unix(timestamp)`：从秒级时间戳创建实例
+### 6. Static Methods
+- `dayjs.extend(plugin, option)`: registers a plugin (each plugin is installed only once)
+- `dayjs.locale(preset)`: sets the global locale
+- `dayjs.isDayjs(d)`: checks whether the input is a Dayjs instance
+- `dayjs.unix(timestamp)`: creates an instance from a second-level timestamp
 
-## 边界条件和特殊情况
+## Boundary Conditions and Special Cases
 
-1. **无效日期**：`dayjs(null)` 创建无效日期，`isValid()` 返回 false
-2. **时区处理**：`utcOffset()` 对时区偏移量按 15 分钟取整（修复 FF24 浏览器 bug）
-3. **月末溢出**：设置月份时如果日期溢出（如 31日设为2月），自动取该月最后一天
-4. **周起始日**：`startOf('week')` 依赖语言包配置的 `weekStart`（如中文为周一，英文为周日）
-5. **字符串解析**：以 "Z" 结尾的字符串不走正则匹配，直接交给 `new Date()` 处理
-6. **插件去重**：`extend` 通过 `plugin.$i` 标记防止重复安装
-7. **diff 时区修正**：计算差值时考虑两个日期的时区差异
+1. **Invalid date**: `dayjs(null)` creates an invalid date, and `isValid()` returns false
+2. **Timezone handling**: `utcOffset()` rounds timezone offsets to the nearest 15 minutes (fix for the FF24 browser bug)
+3. **Month-end overflow**: when setting the month and the day overflows (for example, setting February from the 31st), automatically use the last day of that month
+4. **Week start day**: `startOf('week')` depends on the locale's `weekStart` setting (for example, Monday in Chinese, Sunday in English)
+5. **String parsing**: strings ending with `"Z"` do not go through regex matching; they are passed directly to `new Date()`
+6. **Plugin deduplication**: `extend` uses the `plugin.$i` flag to prevent repeated installation
+7. **Timezone correction in diff**: timezone differences between the two dates are considered when calculating the difference

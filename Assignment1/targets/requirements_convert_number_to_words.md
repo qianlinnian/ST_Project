@@ -1,74 +1,74 @@
-# 需求文档：convert_number_to_words.py
+# Requirements Document: convert_number_to_words.py
 
-## 功能概述
-将整数转换为对应的英文单词表示，支持三种数字命名系统（短制、长制、印度制）。
+## Overview
+Convert integers into their corresponding English word representation, supporting three numbering systems (short, long, and Indian).
 
-## 模块组成
+## Module Structure
 
-### 1. NumberingSystem（枚举类）
-定义三种数字命名系统的单位和量级：
+### 1. NumberingSystem (Enum Class)
+Defines the units and magnitudes of the three numbering systems:
 
-| 系统 | 说明 | 最大值 |
-|------|------|--------|
-| SHORT（短制） | 英美常用：thousand, million, billion, trillion, quadrillion | 10^18 - 1 |
-| LONG（长制） | 欧洲部分国家：thousand, million, milliard, billiard | 10^21 - 1 |
-| INDIAN（印度制） | 印度：thousand, lakh, crore, lakh crore, crore crore | 10^19 - 1 |
+| System | Description | Maximum Value |
+|--------|-------------|---------------|
+| SHORT | Commonly used in English-speaking countries: thousand, million, billion, trillion, quadrillion | 10^18 - 1 |
+| LONG | Used in some European countries: thousand, million, milliard, billiard | 10^21 - 1 |
+| INDIAN | Used in India: thousand, lakh, crore, lakh crore, crore crore | 10^19 - 1 |
 
-**方法**：
-- `max_value(system: str) -> int`：返回指定命名系统支持的最大数值
+**Method**:
+- `max_value(system: str) -> int`: returns the maximum supported value for the specified numbering system
 
-### 2. NumberWords（枚举类）
-存储英文数字单词的映射表：
-- `ONES`：0-9 的英文单词（0 映射为空字符串）
-- `TEENS`：10-19 的英文单词
-- `TENS`：20, 30, ..., 90 的英文单词
+### 2. NumberWords (Enum Class)
+Stores the mapping tables for English number words:
+- `ONES`: English words for 0-9 (`0` maps to an empty string)
+- `TEENS`: English words for 10-19
+- `TENS`: English words for 20, 30, ..., 90
 
 ### 3. convert_small_number(num: int) -> str
-将 0-99 的非负整数转换为英文单词。
+Converts a non-negative integer from 0 to 99 into English words.
 
-**输入要求**：
-- 必须是非负整数（num >= 0）
-- 必须小于 100（num < 100）
+**Input requirements**:
+- Must be a non-negative integer (`num >= 0`)
+- Must be less than 100 (`num < 100`)
 
-**转换规则**：
-- 0 → "zero"
-- 1-9 → 直接查 ONES 表（"one", "two", ...）
-- 10-19 → 查 TEENS 表（"ten", "eleven", ...）
-- 20-99 → 组合 TENS 和 ONES，中间用连字符 "-" 连接（如 "twenty-five"）
-- 整十数无连字符（如 "twenty"，不是 "twenty-"）
+**Conversion rules**:
+- `0` → `"zero"`
+- `1-9` → directly look up the ONES table (`"one"`, `"two"`, ...)
+- `10-19` → look up the TEENS table (`"ten"`, `"eleven"`, ...)
+- `20-99` → combine TENS and ONES with a hyphen `"-"` (for example, `"twenty-five"`)
+- Exact tens do not use a trailing hyphen (for example, `"twenty"`, not `"twenty-"`)
 
-**异常**：
-- num < 0 → 抛出 `ValueError("This function only accepts non-negative integers")`
-- num >= 100 → 抛出 `ValueError("This function only converts numbers less than 100")`
+**Exceptions**:
+- `num < 0` → raise `ValueError("This function only accepts non-negative integers")`
+- `num >= 100` → raise `ValueError("This function only converts numbers less than 100")`
 
 ### 4. convert_number(num: int, system: str = "short") -> str
-将任意整数转换为英文单词，支持指定命名系统。
+Converts any integer into English words with support for a specified numbering system.
 
-**输入要求**：
-- num 为整数
-- system 为 "short"（默认）、"long" 或 "indian"
+**Input requirements**:
+- `num` must be an integer
+- `system` must be one of `"short"` (default), `"long"`, or `"indian"`
 
-**转换规则**：
-- 负数 → 前缀 "negative"，然后转换绝对值（如 -100 → "negative one hundred"）
-- 0 → "zero"
-- 超过该系统最大值 → 抛出 `ValueError("Input number is too large")`
-- 按照命名系统中定义的量级从高到低拆分数字，递归转换各部分
-  - 数字组 >= 100 时递归调用 `convert_number`
-  - 数字组 < 100 时调用 `convert_small_number`
-- 各部分用空格连接
+**Conversion rules**:
+- Negative numbers → prefix with `"negative"`, then convert the absolute value (for example, `-100` → `"negative one hundred"`)
+- `0` → `"zero"`
+- Numbers larger than the maximum supported by the selected system → raise `ValueError("Input number is too large")`
+- Split the number from high to low according to the magnitudes defined in the numbering system and recursively convert each part
+  - Digit groups `>= 100` are converted recursively via `convert_number`
+  - Digit groups `< 100` are converted via `convert_small_number`
+- Join the parts with spaces
 
-**输出示例**：
+**Output examples**:
 - `convert_number(0)` → `"zero"`
 - `convert_number(100)` → `"one hundred"`
 - `convert_number(-100)` → `"negative one hundred"`
 - `convert_number(123456789)` → `"one hundred twenty-three million four hundred fifty-six thousand seven hundred eighty-nine"`
 
-## 边界条件和特殊情况
+## Boundary Conditions and Special Cases
 
-1. **零值处理**：输入 0 时，word_groups 为空，走 `num > 0 or not word_groups` 的第二个条件
-2. **负数处理**：先添加 "negative"，再将 num 取绝对值
-3. **最大值边界**：恰好等于 max_value 时应正常转换，max_value + 1 应抛出异常
-4. **递归调用**：digit_group >= 100 时会递归调用 convert_number
-5. **命名系统校验**：传入无效的 system 字符串时，`NumberingSystem[system.upper()]` 会抛出 KeyError
-6. **连字符规则**：21 → "twenty-one"（有连字符），20 → "twenty"（无连字符）
-7. **teens 特殊处理**：10-19 有专用单词，不是 "ten-one" 这种组合形式
+1. **Zero handling**: when the input is `0`, `word_groups` is empty, so the second condition in `num > 0 or not word_groups` is taken
+2. **Negative number handling**: add `"negative"` first, then take the absolute value of `num`
+3. **Maximum-value boundary**: a value exactly equal to `max_value` should convert normally; `max_value + 1` should raise an exception
+4. **Recursive calls**: digit groups `>= 100` trigger recursive calls to `convert_number`
+5. **Numbering system validation**: if an invalid `system` string is passed, `NumberingSystem[system.upper()]` raises a `KeyError`
+6. **Hyphen rule**: `21` → `"twenty-one"` (with hyphen), `20` → `"twenty"` (without hyphen)
+7. **Teens special handling**: `10-19` have dedicated words and are not formed as combinations such as `"ten-one"`
