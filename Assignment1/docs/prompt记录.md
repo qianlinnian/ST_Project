@@ -1,3 +1,93 @@
+## Prompt Design (Report-ready, English)
+
+This section summarizes the exact prompt templates used by the tool in different stages of the workflow. The templates are implemented in `src/llm/prompts.py` and are parameterized by source code, language, requirement text, and coverage feedback.
+
+### 1. Initial Generation Prompt (General, no AST)
+
+**Function:** `build_general_prompt(source_code, language, requirements=None)`
+
+**Purpose:**
+- Used for non-Python targets or cases where AST analysis is not available.
+- Instructs the LLM to first infer structure (functions, branches, loops, exceptions, compound conditions), then generate JSON test cases.
+
+**Coverage goals included in prompt:**
+- Statement coverage
+- Branch coverage (True/False directions)
+- Condition coverage (sub-condition combinations)
+- Path coverage
+
+**Required output format:** strict JSON array only.
+
+### 2. Initial Generation Prompt (Python with AST)
+
+**Function:** `build_python_prompt(source_code, analysis, requirements=None)`
+
+**Purpose:**
+- Used for Python targets when structured AST analysis is available.
+- Injects explicit structural data into the prompt:
+    - Function list
+    - Branch points (if/for/while/try)
+    - Compound boolean conditions
+    - Execution paths
+
+**Why this version matters:**
+- Reduces ambiguity from plain-text code reading.
+- Improves first-round branch/path targeting.
+
+**Required output format:** strict JSON array only.
+
+### 3. Supplement Prompt (Coverage-feedback loop, JSON)
+
+**Function:** `build_supplement_prompt(source_code, coverage_report, existing_tests)`
+
+**Purpose:**
+- Used when initial generated tests do not meet coverage expectations.
+- Sends coverage metrics and uncovered line/branch information back to the LLM.
+- Requests only incremental (non-duplicate) test cases.
+
+**Prompt features:**
+- Uncovered lines and branches are explicitly highlighted.
+- Source code is line-numbered and annotated with uncovered marks.
+
+**Required output format:** strict JSON array only.
+
+### 4. Test Script Generation Prompt (`--script` mode)
+
+**Function:** `build_script_prompt(source_code, test_cases_json, language, source_filename)`
+
+**Purpose:**
+- Converts JSON test cases into executable test scripts by asking the LLM to generate runnable code directly.
+- Solves the expressiveness gap of JSON-only representation for method-chain APIs (e.g., Day.js).
+
+**Language-adaptive behavior:**
+- JavaScript: Jest + `describe/test/expect`, `toThrow()` for exception tests.
+- Python: pytest + class/test methods, `pytest.raises()` for exception tests.
+
+**Required output format:** code only, wrapped in the corresponding language code block.
+
+### 5. Supplement Script Fragment Prompt (`--script` closed loop)
+
+**Function:** `build_supplement_script_prompt(source_code, coverage_report, language, source_filename)`
+
+**Purpose:**
+- Used when script-mode coverage is still insufficient.
+- Requests only additional test method fragments (not full file shell).
+
+**Prompt features:**
+- Includes uncovered code lines with nearby context (±3 lines).
+- Lists uncovered branches.
+- Requires syntax-correct method fragments that can be appended to existing test files.
+
+**Required output format:** code fragment only, wrapped in the corresponding language code block.
+
+### 6. Reporting Notes (can be copied into Method section)
+
+- The report is written in English, while prompt execution language in experiments follows the actual implemented templates.
+- All comparative results are valid under a controlled setting because each model is evaluated with the same prompt family and pipeline.
+- Prompt variants are not ad-hoc text edits; they correspond to explicit workflow stages: initial generation, coverage feedback, script generation, and script supplementation.
+
+---
+
 # ***初始prompt***
     ``` json
     你是一个白盒测试专家。
