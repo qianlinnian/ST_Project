@@ -27,6 +27,13 @@ class PythonAnalyzer:
         self.tree = ast.parse(source_code)       # 将源代码解析为 AST
         self.lines = source_code.splitlines()     # 按行拆分，用于统计总行数
 
+    def _safe_unparse(self, node: ast.AST) -> str:
+        """尽量将 AST 节点反解析为可读字符串。"""
+        try:
+            return ast.unparse(node)
+        except Exception:
+            return ast.dump(node)
+
     def get_functions(self) -> List[Dict[str, Any]]:
         """
         提取所有函数定义
@@ -103,6 +110,23 @@ class PythonAnalyzer:
                     "has_else": len(node.orelse) > 0,                  # 是否有 else（无异常时执行）
                     "has_finally": len(node.finalbody) > 0,            # 是否有 finally
                 })
+            # ---- match/case 模式匹配 ----
+            elif isinstance(node, ast.Match):
+                cases = []
+                for case in node.cases:
+                    cases.append({
+                        "pattern": self._safe_unparse(case.pattern),
+                        "guard": self._safe_unparse(case.guard) if case.guard else None,
+                        "start_line": case.body[0].lineno if case.body else node.lineno,
+                        "end_line": case.body[-1].end_lineno if case.body else node.lineno,
+                    })
+                branches.append({
+                    "type": "match",
+                    "line": node.lineno,
+                    "subject": self._safe_unparse(node.subject),
+                    "case_count": len(node.cases),
+                    "cases": cases,
+                })
         return branches
 
     def get_conditions(self) -> List[Dict[str, Any]]:
@@ -167,6 +191,17 @@ class PythonAnalyzer:
                     self._trace_paths(stmt.orelse, skip_path, paths)
                 else:
                     paths.append(skip_path)
+                return
+            elif isinstance(stmt, ast.Match):
+                # match/case: 为每个 case 分裂一条路径
+                for index, case in enumerate(stmt.cases, 1):
+                    pattern = self._safe_unparse(case.pattern)
+                    guard = f" if {self._safe_unparse(case.guard)}" if case.guard else ""
+                    case_path = f"{current_path}→L{stmt.lineno}(case{index}: {pattern}{guard})"
+                    if case.body:
+                        self._trace_paths(case.body, case_path, paths)
+                    else:
+                        paths.append(case_path)
                 return
             else:
                 # 普通语句，追加到当前路径
