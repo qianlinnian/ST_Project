@@ -12,6 +12,22 @@
 - Python 闭环使用 pytest + coverage.py，JavaScript 闭环使用 Jest + --coverage
 
 ---
+### 项目结构
+
+output/                # 生成的测试用例和报告
+src/                   # 主要代码实现
+  ├── main.py          # 主入口，参数解析和流程控制
+  ├── llm_clients.py   # LLM 后端接口封装
+  ├── ast_parser.py    # Python AST 代码分析工具
+  ├── test_generator.py # 测试用例生成逻辑
+  ├── coverage_tool.py # 覆盖率分析工具接口
+  └── utils.py         # 辅助函数（文件操作、日志等）
+targets/               # 被测项目源代码
+  ├── convert_number_to_words.py # Python 示例项目
+  └── index.js        # JavaScript 示例项目
+config.yaml            # 配置文件，存放 API Key 和模型信息 根据下面的环境配置自行创建
+
+
 
 ### 环境配置
 
@@ -174,13 +190,3 @@ python main.py --source targets/convert_number_to_words.py --compare
 | **泛化性** | 在两个不同类型项目上的效果对比 |
 
 ---
-
-### 项目文档（docs/）
-
-| 文件 | 说明 |
-|------|------|
-| `docs/工作总结.md` | 完整的工作总结：开发时间线、遇到的问题与解决方案、实验结果汇总、关键结论 |
-| `docs/prompt记录.md` | 所有 Prompt 模板的完整内容和设计说明，以及不同配置下的实验对比数据 |
-| `docs/log-days.md` | 开发过程中遇到的关键问题分析（脚本截断、覆盖率回退、准确率下降等）及解决策略 |
-| `docs/log-all.md` | 大部分实验运行的原始终端输出日志，可用于复现和分析闭环过程 |
-| `docs/llm_problem.md` | LLM 生成相关的已知问题记录 |
