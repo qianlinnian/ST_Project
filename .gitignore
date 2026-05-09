@@ -1,3 +1,33 @@
 .github/agents/doc-handler.agent.md
 .vscode/settings.json
 /exercise/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+pytest-cache-files-*/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local environment files
+.env
+.env.*
+!.env.example
+!Assignment2/.env.example
+
+# Streamlit local config
+.streamlit/secrets.toml
+
+# Assignment2 generated exports
+Assignment2/exports/*
+!Assignment2/exports/.gitkeep
+
+# target test object
+simpletodolist/

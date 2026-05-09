@@ -1,0 +1,9 @@
+requirement_id,module,requirement_text
+REQ-TODO-001,Todo Creation,The user shall be able to create a todo item with non-empty text.
+REQ-TODO-002,Todo Creation,The system shall reject creating a todo item when the todo text is empty.
+REQ-TODO-003,Todo Creation,The system shall limit todo text length to 100 characters.
+REQ-TODO-004,Todo Completion,The user shall be able to mark an active todo item as completed.
+REQ-TODO-005,Todo Completion,The user shall be able to mark a completed todo item as active again.
+REQ-TODO-006,Todo Deletion,The user shall be able to delete an existing todo item.
+REQ-TODO-007,Todo Display,The system shall display all todo items in the todo list.
+REQ-TODO-008,Todo Persistence,The system shall keep todo items after page refresh.
