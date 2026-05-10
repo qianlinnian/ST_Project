@@ -16,10 +16,10 @@ def generate_test_cases(
                 "requirement_id": coverage["requirement_id"],
                 "coverage_id": coverage["coverage_id"],
                 "technique": technique,
-                "precondition": "TodoList page is open",
-                "test_data": "To be reviewed by tester",
-                "steps": "Execute the user action described by the coverage item",
-                "expected_result": "System behavior matches the requirement",
+                "precondition": "TodoList page is open and ready constraints are met",
+                "test_data": "Input data based on Equivalence Partitioning / Boundary Value Analysis",
+                "steps": "1. Set preconditions\n2. Execute action mapping to coverage item",
+                "expected_result": "System behavior matches the requirement (Observability)",
                 "priority": "Medium",
             }
         )

@@ -4,7 +4,7 @@ import pandas as pd
 def select_strategies(coverage_items: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for _, row in coverage_items.iterrows():
-        text = row["coverage_item"].lower()
+        text = str(row.get("description", row.get("coverage_item", ""))).lower()
         if "empty" in text or "length" in text:
             technique = "Boundary Value Analysis"
         elif "delete" in text or "completed" in text:

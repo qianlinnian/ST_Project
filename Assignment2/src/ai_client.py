@@ -5,7 +5,6 @@ from typing import Optional
 import requests
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 
@@ -24,8 +23,11 @@ def load_llm_config() -> Optional[LLMConfig]:
 
     return LLMConfig(
         api_key=api_key,
-        base_url=os.getenv("AUTOTESTDESIGN_LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
-        model=os.getenv("AUTOTESTDESIGN_LLM_MODEL", "gpt-4o-mini"),
+        base_url=os.getenv(
+            "AUTOTESTDESIGN_LLM_BASE_URL",
+            "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        ).rstrip("/"),
+        model=os.getenv("AUTOTESTDESIGN_LLM_MODEL", "deepseek-v4-flash"),
         timeout=int(os.getenv("AUTOTESTDESIGN_LLM_TIMEOUT", "30")),
     )
 
@@ -37,7 +39,7 @@ def is_llm_enabled() -> bool:
 def chat_completion(system_prompt: str, user_prompt: str) -> str:
     config = load_llm_config()
     if config is None:
-        raise RuntimeError("LLM API is not configured. Create Assignment2/.env from .env.example.")
+        raise RuntimeError("LLM API is not configured. Please check your .env file.")
 
     response = requests.post(
         f"{config.base_url}/chat/completions",
