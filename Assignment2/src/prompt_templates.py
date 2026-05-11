@@ -1,71 +1,199 @@
-REQUIREMENT_STRUCTURING_SYSTEM = (
-    "You are an expert software testing analyst strictly following ISTQB and ISO/IEC/IEEE 29119-4 standards. "
-    "Your task is to analyze a software requirement and extract key testing information.\n\n"
-    
-    "Extract the following fields accurately and concisely:\n"
-    "- input_fields: All mentioned input parameters, form fields, variables, or user inputs.\n"
-    "- data_ranges: Data constraints, valid/invalid ranges, boundaries, formats, or value restrictions.\n"
-    "- conditions: Business rules, preconditions, logical conditions, dependencies, or state requirements.\n"
-    "- actions: Main operations, behaviors, or actions the system should perform.\n"
-    "- expected_results: Expected outcomes, system responses, postconditions, or success criteria.\n\n"
-    
-    "Return ONLY a valid JSON object with exactly these keys (use empty list [] if no information):\n"
-    "{\n"
-    '  "input_fields": [],\n'
-    '  "data_ranges": [],\n'
-    '  "conditions": [],\n'
-    '  "actions": [],\n'
-    '  "expected_results": []\n'
-    "}\n\n"
-    
-    "Do not add any explanation, comments, or extra text. Output only the clean JSON."
-)
+"""Prompt templates for optional LLM review.
 
+These prompts do not replace B/C's rule-based modules. They are used to
+explain, review, and improve generated artifacts while preserving traceability.
+"""
+
+
+REQUIREMENT_STRUCTURING_SYSTEM = (
+    "You are a software testing analyst following ISTQB Foundation Level and "
+    "ISO/IEC/IEEE 29119-4 terminology. Extract test-design information from a "
+    "single requirement. Return only valid JSON. Do not add markdown."
+)
 
 RISK_EXPLANATION_SYSTEM = (
-    "You are a risk-based testing assistant strictly following ISTQB Foundation Level principles. "
-    "For each requirement, perform risk analysis using only the two core ISTQB dimensions:\n"
-    "- Impact: the potential damage if the requirement fails (business, safety, financial, regulatory, reputation impact)\n"
-    "- Probability: the likelihood that the requirement contains a defect or will fail in operation\n\n"
-    
-    "You must output the following fields:\n"
-    "- impact: float between 0.0 and 1.0\n"
-    "- probability: float between 0.0 and 1.0\n"
-    "- risk_score: float between 0.0 and 1.0\n"
-    "- risk_level: 'High', 'Medium', or 'Low'\n"
-    "- reason: clear and detailed explanation\n\n"
-    
-    "Risk Level thresholds:\n"
-    "- High: risk_score >= 0.70\n"
-    "- Medium: 0.40 <= risk_score < 0.70\n"
-    "- Low: risk_score < 0.40\n\n"
-    
-    "Use strict ISTQB terminology (Impact, Likelihood/Probability, Risk Level, Testing Priority) "
-    "in the reason field. Keep the explanation professional and well-structured."
+    "You are a risk-based testing reviewer. Explain risk scoring using Impact, "
+    "Probability/Likelihood, Risk Score, Risk Level, and Test Priority. Do not "
+    "change requirement_id values."
 )
 
-
 COVERAGE_IMPROVEMENT_SYSTEM = (
-    "You are a test design reviewer. Suggest missing coverage items and justify "
-    "them based on black-box and state-based testing techniques."
+    "You are a test design reviewer. Review coverage items against the provided "
+    "requirements and suggest only missing valid coverage items. Preserve "
+    "requirement_id traceability and use black-box or state-based testing terms."
+)
+
+TEST_STRATEGY_REVIEW_SYSTEM = (
+    "You are a test strategy reviewer. Review whether each coverage item is "
+    "mapped to a suitable ISO/IEC/IEEE 29119-4 black-box or state-based test "
+    "technique. Preserve coverage_id and requirement_id traceability."
+)
+
+TEST_CASE_IMPROVEMENT_SYSTEM = (
+    "You are a test case design reviewer. Improve generated test cases without "
+    "breaking traceability. Do not invent new requirement_id or coverage_id "
+    "values unless explicitly asked to suggest missing cases."
+)
+
+ORACLE_REVIEW_SYSTEM = (
+    "You are a test oracle reviewer. Review expected_result fields for clarity, "
+    "observability, and consistency with the requirement, test data, and selected "
+    "test technique."
+)
+
+SUITE_OPTIMIZATION_REVIEW_SYSTEM = (
+    "You are a test suite optimization reviewer. Review prioritization, "
+    "deduplication, and risk-based ordering. Preserve high-risk coverage and "
+    "explain any recommended minimization."
 )
 
 
 def requirement_structuring_prompt(requirement_text: str) -> str:
-    return f"Requirement:\n{requirement_text}\n\nExtract input fields, data ranges, conditions, and expected actions."
+    return (
+        "Analyze the following requirement and extract the fields used by the "
+        "AutoTestDesign requirement parser.\n\n"
+        f"Requirement:\n{requirement_text}\n\n"
+        "Return exactly this JSON shape:\n"
+        "{\n"
+        '  "input_fields": ["..."],\n'
+        '  "data_ranges": ["..."],\n'
+        '  "conditions": ["..."],\n'
+        '  "actions": ["..."],\n'
+        '  "expected_results": ["..."]\n'
+        "}\n\n"
+        "Rules:\n"
+        "- Use empty lists when a field is not present.\n"
+        "- Keep values short and directly grounded in the requirement text.\n"
+        "- Do not include requirement_id or module unless they appear in the input."
+    )
 
 
 def risk_explanation_prompt(requirement_text: str, risk_score: float, risk_level: str) -> str:
     return (
+        "Explain the risk assessment for the requirement below. The local tool "
+        "has already generated risk_score and risk_level; your role is to explain "
+        "and review them, not to replace the local model.\n\n"
         f"Requirement:\n{requirement_text}\n\n"
-        f"Risk score: {risk_score}\nRisk level: {risk_level}\n\n"
-        "Explain the risk priority briefly."
+        f"risk_score: {risk_score}\n"
+        f"risk_level: {risk_level}\n\n"
+        "Return JSON with this shape:\n"
+        "{\n"
+        '  "impact_rationale": "...",\n'
+        '  "probability_rationale": "...",\n'
+        '  "priority_rationale": "...",\n'
+        '  "review_note": "..."\n'
+        "}"
     )
 
 
 def coverage_improvement_prompt(requirements_summary: str, coverage_summary: str) -> str:
     return (
+        "Review the current coverage items and identify missing valid coverage. "
+        "The tool currently uses these coverage fields: coverage_id, "
+        "requirement_id, description, coverage_type, risk_level, "
+        "related_techniques, tags, notes.\n\n"
         f"Requirements:\n{requirements_summary}\n\n"
         f"Current coverage items:\n{coverage_summary}\n\n"
-        "Suggest missing valid coverage items."
+        "Return JSON with this shape:\n"
+        "{\n"
+        '  "missing_coverage_items": [\n'
+        "    {\n"
+        '      "requirement_id": "...",\n'
+        '      "description": "...",\n'
+        '      "coverage_type": "Functional|Input|Boundary|Condition|Error|State Transition",\n'
+        '      "risk_level": "High|Medium|Low",\n'
+        '      "related_techniques": ["Equivalence Partitioning"],\n'
+        '      "reason": "..."\n'
+        "    }\n"
+        "  ],\n"
+        '  "review_summary": "..."\n'
+        "}\n\n"
+        "Do not duplicate existing coverage_id values. Do not remove existing items."
+    )
+
+
+def test_strategy_review_prompt(coverage_summary: str, strategy_summary: str) -> str:
+    return (
+        "Review whether the selected test strategy is appropriate for each "
+        "coverage item.\n\n"
+        "Available techniques:\n"
+        "- Equivalence Partitioning\n"
+        "- Boundary Value Analysis\n"
+        "- Decision Table Testing\n"
+        "- State Transition Testing\n\n"
+        "Strategy fields used by the tool: coverage_id, requirement_id, "
+        "coverage_type, risk_level, technique, technique_standard, strategy_reason.\n\n"
+        f"Coverage items:\n{coverage_summary}\n\n"
+        f"Selected strategies:\n{strategy_summary}\n\n"
+        "Return JSON with this shape:\n"
+        "{\n"
+        '  "strategy_reviews": [\n'
+        "    {\n"
+        '      "coverage_id": "...",\n'
+        '      "current_technique": "...",\n'
+        '      "recommended_technique": "...",\n'
+        '      "recommendation_reason": "...",\n'
+        '      "change_needed": true\n'
+        "    }\n"
+        "  ]\n"
+        "}"
+    )
+
+
+def test_case_improvement_prompt(test_case_summary: str) -> str:
+    return (
+        "Review generated test cases for clarity, traceability, and executable "
+        "test design quality.\n\n"
+        "Required test case fields: test_case_id, requirement_id, coverage_id, "
+        "technique, technique_standard, precondition, test_data, steps, "
+        "expected_result, priority, risk_score, risk_level, coverage_type, "
+        "automation_candidate, source, design_basis.\n\n"
+        f"Generated test cases:\n{test_case_summary}\n\n"
+        "Return JSON with this shape:\n"
+        "{\n"
+        '  "case_reviews": [\n'
+        "    {\n"
+        '      "test_case_id": "...",\n'
+        '      "issue": "...",\n'
+        '      "suggested_revision": "...",\n'
+        '      "severity": "High|Medium|Low"\n'
+        "    }\n"
+        "  ],\n"
+        '  "review_summary": "..."\n'
+        "}\n\n"
+        "Do not change requirement_id or coverage_id."
+    )
+
+
+def oracle_review_prompt(test_case_summary: str) -> str:
+    return (
+        "Review expected_result values. They must be observable, testable, and "
+        "consistent with the requirement, test_data, and technique.\n\n"
+        f"Test cases:\n{test_case_summary}\n\n"
+        "Return JSON with this shape:\n"
+        "{\n"
+        '  "oracle_reviews": [\n'
+        "    {\n"
+        '      "test_case_id": "...",\n'
+        '      "current_expected_result": "...",\n'
+        '      "improved_expected_result": "...",\n'
+        '      "reason": "..."\n'
+        "    }\n"
+        "  ]\n"
+        "}"
+    )
+
+
+def suite_optimization_review_prompt(test_case_summary: str, optimized_summary: str) -> str:
+    return (
+        "Review whether the optimized suite preserves risk and coverage while "
+        "reducing redundancy.\n\n"
+        f"Original generated test cases:\n{test_case_summary}\n\n"
+        f"Optimized suite:\n{optimized_summary}\n\n"
+        "Return JSON with this shape:\n"
+        "{\n"
+        '  "optimization_review": "...",\n'
+        '  "coverage_risks": ["..."],\n'
+        '  "recommended_changes": ["..."]\n'
+        "}"
     )

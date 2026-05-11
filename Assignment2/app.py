@@ -1,10 +1,16 @@
 import pandas as pd
 import streamlit as st
 
-# A 层入口：app.py 只负责页面、持久化、模型选择和模块结果集成。
 from src.ai_client import available_models, available_provider_names, chat_completion, is_llm_enabled
 from src.coverage_identifier import identify_coverage_items
-from src.exporter import export_csv, export_excel, export_json
+from src.exporter import (
+    build_traceability_matrix,
+    export_csv,
+    export_excel,
+    export_json,
+    export_selenium_pytest_draft,
+    export_test_artifacts,
+)
 from src.performance_tracker import measure_time
 from src.persistence import build_project_state, list_projects, load_project, save_project
 from src.prompt_templates import COVERAGE_IMPROVEMENT_SYSTEM, coverage_improvement_prompt
@@ -21,7 +27,6 @@ st.set_page_config(page_title="AutoTestDesign", layout="wide")
 
 
 def inject_style() -> None:
-    """注入 Streamlit 页面的整体视觉样式。"""
     st.markdown(
         """
         <style>
@@ -156,7 +161,6 @@ def inject_style() -> None:
 
 
 def line_icon(name: str) -> str:
-    """返回内联 SVG 图标，避免在界面中使用 emoji。"""
     icons = {
         "file": '<svg class="line-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/></svg>',
         "risk": '<svg class="line-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 2 20h20L12 3z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
@@ -169,7 +173,6 @@ def line_icon(name: str) -> str:
 
 
 def section_header(title: str, icon: str) -> None:
-    """渲染统一样式的区块标题。"""
     st.markdown(
         f'<div class="section-title">{line_icon(icon)}<span>{title}</span></div>',
         unsafe_allow_html=True,
@@ -177,7 +180,6 @@ def section_header(title: str, icon: str) -> None:
 
 
 def init_state() -> None:
-    """初始化 Streamlit 会话状态，避免页面切换时数据丢失。"""
     if "requirements" not in st.session_state:
         st.session_state.requirements = load_sample_requirements()
     if "selected_provider" not in st.session_state:
@@ -189,11 +191,6 @@ def init_state() -> None:
 
 
 def compute_artifacts() -> dict[str, pd.DataFrame]:
-    """执行从需求到测试设计的当前流水线。
-
-    这里是 A 的页面层和 B/C 功能模块之间的集成点。
-    B 负责需求、风险和覆盖项；C 负责测试策略和测试用例。
-    """
     requirements = st.session_state.requirements
     structuring_time, structured = measure_time(structure_requirements, requirements)
     risk_time, risks = measure_time(analyze_risks, structured)
@@ -202,6 +199,12 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
     generation_time, test_cases = measure_time(generate_test_cases, structured, coverage_items, strategies)
     optimized_cases = optimize_suite(test_cases)
     state_sequences = generate_all_transitions_sequence()
+    traceability = build_traceability_matrix(
+        structured,
+        coverage_items,
+        strategies,
+        optimized_cases,
+    )
     performance = pd.DataFrame(
         [
             {"metric": "requirement_structuring_seconds", "value": round(structuring_time, 4)},
@@ -209,7 +212,6 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
             {"metric": "test_case_generation_seconds", "value": round(generation_time, 4)},
         ]
     )
-    traceability = optimized_cases[["test_case_id", "requirement_id", "coverage_id", "technique"]].copy()
     return {
         "requirements": requirements,
         "structured_requirements": structured,
@@ -225,7 +227,6 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
 
 
 def render_metrics(artifacts: dict[str, pd.DataFrame]) -> None:
-    """在页面顶部展示项目级统计指标。"""
     risk_values = artifacts["risk_analysis"]["risk_level"].value_counts().to_dict()
     st.markdown(
         f"""
@@ -241,7 +242,6 @@ def render_metrics(artifacts: dict[str, pd.DataFrame]) -> None:
 
 
 def requirements_from_text(raw_text: str) -> pd.DataFrame:
-    """把文本框里的多行需求转换成需求表。每一行视为一条需求。"""
     rows = []
     for index, line in enumerate(raw_text.splitlines(), start=1):
         requirement_text = line.strip()
@@ -257,10 +257,13 @@ def requirements_from_text(raw_text: str) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=["requirement_id", "module", "requirement_text"])
 
 
+def render_export_paths(paths: dict[str, object]) -> None:
+    st.code("\n".join(f"{name}: {path}" for name, path in paths.items()))
+
+
 inject_style()
 init_state()
 
-# 侧边栏控制全局工作流状态：当前页面、项目名、模型服务商和模型。
 with st.sidebar:
     st.markdown("### AutoTestDesign")
     page = st.radio(
@@ -297,7 +300,6 @@ with st.sidebar:
 
 artifacts = compute_artifacts()
 
-# 页面顶部展示项目说明和统计指标；这里只展示，不修改项目数据。
 st.markdown(
     """
     <div class="hero">
@@ -311,10 +313,9 @@ st.markdown(
 render_metrics(artifacts)
 
 if page == "Requirement Input":
-    # 可编辑需求输入表。开发阶段默认使用 mock TodoList 需求。
     with st.container():
         section_header("Requirement Input", "file")
-        st.caption("支持 CSV 上传、纯文本输入和表格手动编辑。D/E 正式需求完成前可先使用 mock 数据。")
+        st.caption("Import CSV requirements, paste plain text, or edit the table directly.")
 
         upload_col, text_col = st.columns([1, 1], gap="medium")
         with upload_col:
@@ -353,7 +354,6 @@ if page == "Requirement Input":
         st.session_state.requirements = edited
 
 if page == "Structuring & Risk":
-    # B 负责的输出：结构化需求和风险分析。
     section_header("Requirement Structuring", "file")
     st.dataframe(artifacts["structured_requirements"], width="stretch")
     section_header("Risk Analysis", "risk")
@@ -362,7 +362,6 @@ if page == "Structuring & Risk":
     st.dataframe(artifacts["performance"], width="stretch")
 
 if page == "Coverage & Strategy":
-    # B/C 交接点：B 提供覆盖项，C 选择测试策略。
     section_header("Coverage Items", "map")
     st.dataframe(artifacts["coverage_items"], width="stretch")
     section_header("Coverage Strategy", "map")
@@ -371,7 +370,6 @@ if page == "Coverage & Strategy":
         st.dataframe(artifacts["state_transition_sequences"], width="stretch")
 
 if page == "Test Cases":
-    # C 负责的输出：测试用例。表格可编辑，用于交互式审查。
     section_header("Generated Test Cases", "case")
     edited_cases = st.data_editor(
         artifacts["test_cases"],
@@ -388,7 +386,6 @@ if page == "Test Cases":
         st.dataframe(artifacts["state_transition_sequences"], width="stretch")
 
 if page == "AI Review":
-    # 可选的大模型审查。即使没有配置 API key，本地规则流程也能继续使用。
     section_header("AI Coverage Review", "ai")
     st.write(f"Selected provider: `{st.session_state.selected_provider}`")
     st.write(f"Selected model: `{st.session_state.selected_model}`")
@@ -412,7 +409,6 @@ if page == "AI Review":
                 st.error(f"AI review failed: {exc}")
 
 if page == "Persistence & Export":
-    # 保存/加载用于保留本地项目状态；导出用于生成报告可用的测试工件。
     section_header("Local Project Persistence", "save")
     left, right = st.columns([1, 1], gap="medium")
     with left:
@@ -461,6 +457,24 @@ if page == "Persistence & Export":
                 artifacts,
             )
             path = export_json(state, "test_suite_artifacts.json")
+            st.success(f"Saved to {path}")
+
+    full_export_col, draft_export_col = st.columns([1, 1], gap="medium")
+    with full_export_col:
+        if st.button("Export Full Test Design Artifacts"):
+            paths = export_test_artifacts(
+                structured_requirements=artifacts["structured_requirements"],
+                coverage_items=artifacts["coverage_items"],
+                strategies=artifacts["test_strategies"],
+                test_cases=artifacts["optimized_test_cases"],
+                state_sequences=artifacts["state_transition_sequences"],
+                prefix=st.session_state.project_name,
+            )
+            st.success("Full artifact export completed.")
+            render_export_paths(paths)
+    with draft_export_col:
+        if st.button("Export Selenium/PyTest Draft"):
+            path = export_selenium_pytest_draft(artifacts["optimized_test_cases"])
             st.success(f"Saved to {path}")
 
     st.dataframe(artifacts["performance"], width="stretch")
