@@ -39,7 +39,7 @@
 | 安全性 | 基础数据处理安全 | 本项目使用本地数据，不上传敏感需求 |
 | 可维护性 | 模块化，便于替换算法 | 将 NLP、风险模型、测试生成、导出拆成独立模块 |
 | AI/ML | 使用常见 AI/ML 库 | 推荐使用 `scikit-learn`；如环境允许可使用 `spaCy` |
-| 可选 API | 可接入外部 LLM API | 使用 `.env` 配置 API Key；没有 Key 时回退到本地规则和轻量 ML |
+| 可选 API | 可接入外部 LLM API | 使用 `.env` 配置多 provider API Key；前端可切换 DeepSeek、阿里云等 provider 和模型；没有 Key 时回退到本地规则和轻量 ML |
 | 数据 | 需要 mock 数据集和历史执行结果 | 在 `data/` 中准备需求数据、历史风险数据、测试执行结果样例 |
 | 文档 | 需要架构图和用户手册 | 在后续文档中补充 System Architecture Diagram 和 User Manual |
 
@@ -64,6 +64,8 @@ Assignment2/
     06_Presentation_Outline.md
     07_User_Manual.md
   data/
+    projects/
+      .gitkeep
     mock_todolist_requirements.csv
     mock_historical_results.csv
     sample_test_execution_results.csv
@@ -85,6 +87,7 @@ Assignment2/
     oracle_generator.py
     suite_optimizer.py
     exporter.py
+    persistence.py
     performance_tracker.py
     models.py
   tests/
@@ -101,12 +104,14 @@ Assignment2/
 - `docs/`：项目文档、提示词设计、使用说明。
 - `data/`：示例输入数据、mock 历史结果和测试执行结果。
 - `exports/`：工具运行后导出的测试工件。
+- `data/projects/`：本地保存的项目状态 JSON，例如 `simpletodolist_project.json`。
 - `tests/`：对 AutoTestDesign 内部模块做基础单元测试。
 - `nlp_processor.py`：负责需求分词、关键词提取和结构化字段识别。
 - `ml_risk_model.py`：负责训练或调用风险模型，输出风险分和优先级。
 - `state_modeler.py`：负责 Todo 状态转换建模和测试序列生成。
 - `performance_tracker.py`：负责记录需求分析和测试用例生成耗时。
-- `ai_client.py`：可选 LLM API 调用封装，没有 `.env` 时不影响本地功能。
+- `persistence.py`：负责保存/加载本地项目 JSON。
+- `ai_client.py`：可选 LLM API 调用封装，支持多 provider 和模型切换；没有 `.env` 时不影响本地功能。
 - `prompt_templates.py`：集中保存需求结构化、风险解释、覆盖改进等提示词。
 - `mock_todolist_requirements.csv`：D/E 正式需求完成前的临时开发数据。
 - `sample_todolist_requirements.csv`：D/E 后续提供的正式 TodoList 需求输入文件，当前可以暂时不存在。
@@ -114,7 +119,7 @@ Assignment2/
 
 ## 4. Streamlit 页面设计
 
-建议将工具界面设计成 7 个主要页面或步骤。
+建议将工具界面设计成 6 个主要页面或步骤。
 
 ### 4.1 Requirement Input
 
@@ -239,12 +244,14 @@ Risk Score = Impact * 0.4 + Probability * 0.3 + Complexity * 0.2 + User Visibili
 - 按风险分和覆盖效率对测试用例排序，体现 FR 7.0。
 - 修改后保留 traceability。
 
-### 4.7 Export & Result Analysis
+### 4.7 Persistence, Export & Result Analysis
 
 目标：完成 FR 6.0，并支持后续报告写作。
 
 功能：
 
+- 保存完整项目状态到 `data/projects/`，例如 `simpletodolist_project.json`。
+- 从本地项目 JSON 恢复需求、模型选择和生成结果。
 - 导出需求结构化结果。
 - 导出风险分析报告数据。
 - 导出覆盖项与测试策略映射。
@@ -315,7 +322,7 @@ Concept
 
 - `scikit-learn` 负责轻量 AI/ML 风险预测。
 - 关键词、正则和可编辑表格负责稳定的需求结构化。
-- 可选 LLM API 负责生成解释、补充覆盖建议和改进建议。
+- 可选 LLM API 负责生成解释、补充覆盖建议和改进建议；前端可选择 provider 和模型。
 - `.env.example` 提交到仓库，真实 `.env` 不提交。
 - 规则引擎保证稳定输出。
 - Prompt 用于生成解释、补充覆盖项、优化测试用例。
@@ -419,6 +426,7 @@ A 不负责具体测试算法，主要负责让工具能被使用、能演示、
 - `src/ai_client.py`
 - `src/prompt_templates.py`
 - `src/performance_tracker.py`
+- `src/persistence.py`
 - `docs/01_AutoTestDesign_Tool_README.md`
 - `docs/05_Prompt_Design.md`
 - `docs/07_User_Manual.md`
@@ -568,6 +576,7 @@ C 负责从 B 的覆盖项开始，生成测试策略、测试用例、测试套
 | `src/performance_tracker.py` | A | 记录和展示性能耗时 |
 | `src/ai_client.py` | A | 可选 LLM API 配置和调用封装 |
 | `src/prompt_templates.py` | A | 统一维护 prompt 模板；B/C 提供各自模块的规则和字段要求 |
+| `src/persistence.py` | A | 本地项目 JSON 保存和加载 |
 | `src/requirement_loader.py` | B | 读取 D/E 提供的需求文件或 mock 需求文件 |
 | `src/nlp_processor.py` | B | 轻量 NLP、关键词识别、需求字段抽取 |
 | `src/requirement_parser.py` | B | 输出结构化需求 `Requirement` |

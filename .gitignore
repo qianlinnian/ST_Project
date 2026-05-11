@@ -31,3 +31,6 @@ Assignment2/exports/*
 
 # target test object
 simpletodolist/
+
+# work log
+*log.md

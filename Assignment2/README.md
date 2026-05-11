@@ -36,12 +36,18 @@ Copy-Item .env.example .env
 Then fill in:
 
 ```text
-AUTOTESTDESIGN_LLM_API_KEY=
-AUTOTESTDESIGN_LLM_BASE_URL=
-AUTOTESTDESIGN_LLM_MODEL=
+AUTOTESTDESIGN_LLM_PROVIDERS=deepseek,aliyun
+
+AUTOTESTDESIGN_LLM_DEEPSEEK_API_KEY=
+AUTOTESTDESIGN_LLM_DEEPSEEK_BASE_URL=https://api.deepseek.com
+AUTOTESTDESIGN_LLM_DEEPSEEK_MODELS=deepseek-v4-flash,deepseek-v4-pro,deepseek-chat
+
+AUTOTESTDESIGN_LLM_ALIYUN_API_KEY=
+AUTOTESTDESIGN_LLM_ALIYUN_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+AUTOTESTDESIGN_LLM_ALIYUN_MODELS=qwen-plus,qwen-max,qwen3.5-plus
 ```
 
-The API should be compatible with the `/chat/completions` interface.
+Each provider should expose an OpenAI-compatible `/chat/completions` interface. The Streamlit sidebar lets the tester switch provider and model before running optional AI review.
 
 ## Project Structure
 
