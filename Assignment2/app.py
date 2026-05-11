@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 
+# A 层入口：app.py 只负责页面、持久化、模型选择和模块结果集成。
 from src.ai_client import available_models, available_provider_names, chat_completion, is_llm_enabled
 from src.coverage_identifier import identify_coverage_items
 from src.exporter import export_csv, export_excel, export_json
@@ -18,6 +19,7 @@ st.set_page_config(page_title="AutoTestDesign", layout="wide")
 
 
 def inject_style() -> None:
+    """注入 Streamlit 页面的整体视觉样式。"""
     st.markdown(
         """
         <style>
@@ -159,6 +161,7 @@ def inject_style() -> None:
 
 
 def line_icon(name: str) -> str:
+    """返回内联 SVG 图标，避免在界面中使用 emoji。"""
     icons = {
         "file": '<svg class="line-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/></svg>',
         "risk": '<svg class="line-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 2 20h20L12 3z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
@@ -171,6 +174,7 @@ def line_icon(name: str) -> str:
 
 
 def section_header(title: str, icon: str) -> None:
+    """渲染统一样式的区块标题。"""
     st.markdown(
         f'<div class="section-title">{line_icon(icon)}<span>{title}</span></div>',
         unsafe_allow_html=True,
@@ -178,6 +182,7 @@ def section_header(title: str, icon: str) -> None:
 
 
 def init_state() -> None:
+    """初始化 Streamlit 会话状态，避免页面切换时数据丢失。"""
     if "requirements" not in st.session_state:
         st.session_state.requirements = load_sample_requirements()
     if "selected_model" not in st.session_state:
@@ -189,6 +194,11 @@ def init_state() -> None:
 
 
 def compute_artifacts() -> dict[str, pd.DataFrame]:
+    """执行从需求到测试设计的当前流水线。
+
+    这里是 A 的页面层和 B/C 功能模块之间的集成点。
+    B 负责需求、风险和覆盖项；C 负责测试策略和测试用例。
+    """
     requirements = st.session_state.requirements
     structuring_time, structured = measure_time(structure_requirements, requirements)
     risk_time, risks = measure_time(analyze_risks, structured)
@@ -216,6 +226,7 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
 
 
 def render_metrics(artifacts: dict[str, pd.DataFrame]) -> None:
+    """在页面顶部展示项目级统计指标。"""
     risk_values = artifacts["risk_analysis"]["risk_level"].value_counts().to_dict()
     st.markdown(
         f"""
@@ -230,9 +241,27 @@ def render_metrics(artifacts: dict[str, pd.DataFrame]) -> None:
     )
 
 
+def requirements_from_text(raw_text: str) -> pd.DataFrame:
+    """把文本框里的多行需求转换成需求表。每一行视为一条需求。"""
+    rows = []
+    for index, line in enumerate(raw_text.splitlines(), start=1):
+        requirement_text = line.strip()
+        if not requirement_text:
+            continue
+        rows.append(
+            {
+                "requirement_id": f"REQ-TODO-{index:03d}",
+                "module": "Todo",
+                "requirement_text": requirement_text,
+            }
+        )
+    return pd.DataFrame(rows, columns=["requirement_id", "module", "requirement_text"])
+
+
 inject_style()
 init_state()
 
+# 侧边栏控制全局工作流状态：当前页面、项目名、模型服务商和模型。
 with st.sidebar:
     st.markdown("### AutoTestDesign")
     page = st.radio(
@@ -269,6 +298,7 @@ with st.sidebar:
 
 artifacts = compute_artifacts()
 
+# 页面顶部展示项目说明和统计指标；这里只展示，不修改项目数据。
 st.markdown(
     """
     <div class="hero">
@@ -282,9 +312,39 @@ st.markdown(
 render_metrics(artifacts)
 
 if page == "Requirement Input":
+    # 可编辑需求输入表。开发阶段默认使用 mock TodoList 需求。
     with st.container():
         section_header("Requirement Input", "file")
         st.caption("Use mock requirements until the final TodoList requirements are delivered.")
+
+        upload_col, text_col = st.columns([1, 1], gap="medium")
+        with upload_col:
+            uploaded_file = st.file_uploader("Upload CSV requirements", type=["csv"])
+            if uploaded_file is not None:
+                uploaded_requirements = pd.read_csv(uploaded_file)
+                required_columns = {"requirement_id", "module", "requirement_text"}
+                if required_columns.issubset(uploaded_requirements.columns):
+                    st.session_state.requirements = uploaded_requirements[
+                        ["requirement_id", "module", "requirement_text"]
+                    ].copy()
+                    st.success("CSV requirements loaded.")
+                else:
+                    st.error("CSV must include requirement_id, module, and requirement_text columns.")
+
+        with text_col:
+            raw_requirements = st.text_area(
+                "Paste plain-text requirements",
+                placeholder="One requirement per line.",
+                height=120,
+            )
+            if st.button("Use Text Requirements"):
+                parsed_requirements = requirements_from_text(raw_requirements)
+                if parsed_requirements.empty:
+                    st.warning("Please enter at least one requirement.")
+                else:
+                    st.session_state.requirements = parsed_requirements
+                    st.success("Text requirements converted to table.")
+
         edited = st.data_editor(
             st.session_state.requirements,
             num_rows="dynamic",
@@ -294,6 +354,7 @@ if page == "Requirement Input":
         st.session_state.requirements = edited
 
 if page == "Structuring & Risk":
+    # B 负责的输出：结构化需求和风险分析。
     section_header("Requirement Structuring", "file")
     st.dataframe(artifacts["structured_requirements"], width="stretch")
     section_header("Risk Analysis", "risk")
@@ -302,12 +363,14 @@ if page == "Structuring & Risk":
     st.dataframe(artifacts["performance"], width="stretch")
 
 if page == "Coverage & Strategy":
+    # B/C 交接点：B 提供覆盖项，C 选择测试策略。
     section_header("Coverage Items", "map")
     st.dataframe(artifacts["coverage_items"], width="stretch")
     section_header("Coverage Strategy", "map")
     st.dataframe(artifacts["test_strategies"], width="stretch")
 
 if page == "Test Cases":
+    # C 负责的输出：测试用例。表格可编辑，用于交互式审查。
     section_header("Generated Test Cases", "case")
     edited_cases = st.data_editor(
         artifacts["test_cases"],
@@ -320,6 +383,7 @@ if page == "Test Cases":
     st.dataframe(artifacts["traceability_matrix"], width="stretch")
 
 if page == "AI Review":
+    # 可选的大模型审查。即使没有配置 API key，本地规则流程也能继续使用。
     section_header("AI Coverage Review", "ai")
     st.write(f"Selected provider: `{st.session_state.selected_provider}`")
     st.write(f"Selected model: `{st.session_state.selected_model}`")
@@ -343,6 +407,7 @@ if page == "AI Review":
                 st.error(f"AI review failed: {exc}")
 
 if page == "Persistence & Export":
+    # 保存/加载用于保留本地项目状态；导出用于生成报告可用的测试工件。
     section_header("Local Project Persistence", "save")
     left, right = st.columns([1, 1], gap="medium")
     with left:
