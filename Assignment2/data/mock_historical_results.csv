@@ -1,6 +1,6 @@
-requirement_id,module,requirement_text,impact,probability,complexity,user_visibility,defect_found,risk_level
-HIST-001,Todo Creation,The system shall reject empty todo text.,4,4,2,5,1,High
-HIST-002,Todo Creation,The user shall create a todo with valid text.,3,3,2,5,0,Medium
-HIST-003,Todo Deletion,The user shall delete an existing todo item.,5,3,3,5,1,High
-HIST-004,Todo Persistence,The system shall keep todo items after refresh.,5,4,4,5,1,High
-HIST-005,Todo Display,The system shall display all todo items.,3,2,2,5,0,Low
+requirement_id,module,requirement_text,impact,probability,user_visibility,defect_found,risk_level
+HIST-001,Todo Creation,The system shall reject empty todo text.,4,4,5,1,High
+HIST-002,Todo Creation,The user shall create a todo with valid text.,3,3,5,0,Medium
+HIST-003,Todo Deletion,The user shall delete an existing todo item.,5,3,5,1,High
+HIST-004,Todo Persistence,The system shall keep todo items after refresh.,5,4,5,1,High
+HIST-005,Todo Display,The system shall display all todo items.,3,2,5,0,Low

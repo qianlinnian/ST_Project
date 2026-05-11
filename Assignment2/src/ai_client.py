@@ -6,7 +6,6 @@ from typing import Optional
 import requests
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 

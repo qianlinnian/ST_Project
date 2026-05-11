@@ -11,6 +11,8 @@ from src.prompt_templates import COVERAGE_IMPROVEMENT_SYSTEM, coverage_improveme
 from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import structure_requirements
 from src.risk_analyzer import analyze_risks
+from src.state_modeler import generate_all_transitions_sequence
+from src.suite_optimizer import optimize_suite
 from src.test_case_generator import generate_test_cases
 from src.test_strategy_selector import select_strategies
 
@@ -111,13 +113,6 @@ def inject_style() -> None:
           font-size: 1.25rem;
           font-weight: 620;
         }
-        .section-card {
-          border: 1px solid var(--line);
-          background: rgba(255,255,255,.72);
-          border-radius: 8px;
-          padding: 1rem 1.05rem;
-          margin-bottom: 1rem;
-        }
         .section-title {
           display: flex;
           align-items: center;
@@ -185,10 +180,10 @@ def init_state() -> None:
     """初始化 Streamlit 会话状态，避免页面切换时数据丢失。"""
     if "requirements" not in st.session_state:
         st.session_state.requirements = load_sample_requirements()
-    if "selected_model" not in st.session_state:
-        st.session_state.selected_model = available_models(st.session_state.get("selected_provider", "deepseek"))[0]
     if "selected_provider" not in st.session_state:
         st.session_state.selected_provider = available_provider_names()[0]
+    if "selected_model" not in st.session_state:
+        st.session_state.selected_model = available_models(st.session_state.selected_provider)[0]
     if "project_name" not in st.session_state:
         st.session_state.project_name = "simpletodolist"
 
@@ -205,6 +200,8 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
     coverage_items = identify_coverage_items(structured, risks)
     strategies = select_strategies(coverage_items)
     generation_time, test_cases = measure_time(generate_test_cases, structured, coverage_items, strategies)
+    optimized_cases = optimize_suite(test_cases)
+    state_sequences = generate_all_transitions_sequence()
     performance = pd.DataFrame(
         [
             {"metric": "requirement_structuring_seconds", "value": round(structuring_time, 4)},
@@ -212,7 +209,7 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
             {"metric": "test_case_generation_seconds", "value": round(generation_time, 4)},
         ]
     )
-    traceability = test_cases[["test_case_id", "requirement_id", "coverage_id", "technique"]].copy()
+    traceability = optimized_cases[["test_case_id", "requirement_id", "coverage_id", "technique"]].copy()
     return {
         "requirements": requirements,
         "structured_requirements": structured,
@@ -220,6 +217,8 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
         "coverage_items": coverage_items,
         "test_strategies": strategies,
         "test_cases": test_cases,
+        "optimized_test_cases": optimized_cases,
+        "state_transition_sequences": state_sequences,
         "traceability_matrix": traceability,
         "performance": performance,
     }
@@ -315,7 +314,7 @@ if page == "Requirement Input":
     # 可编辑需求输入表。开发阶段默认使用 mock TodoList 需求。
     with st.container():
         section_header("Requirement Input", "file")
-        st.caption("Use mock requirements until the final TodoList requirements are delivered.")
+        st.caption("支持 CSV 上传、纯文本输入和表格手动编辑。D/E 正式需求完成前可先使用 mock 数据。")
 
         upload_col, text_col = st.columns([1, 1], gap="medium")
         with upload_col:
@@ -368,6 +367,8 @@ if page == "Coverage & Strategy":
     st.dataframe(artifacts["coverage_items"], width="stretch")
     section_header("Coverage Strategy", "map")
     st.dataframe(artifacts["test_strategies"], width="stretch")
+    with st.expander("State transition model sequences"):
+        st.dataframe(artifacts["state_transition_sequences"], width="stretch")
 
 if page == "Test Cases":
     # C 负责的输出：测试用例。表格可编辑，用于交互式审查。
@@ -381,6 +382,10 @@ if page == "Test Cases":
     artifacts["test_cases"] = edited_cases
     section_header("Traceability Matrix", "map")
     st.dataframe(artifacts["traceability_matrix"], width="stretch")
+    with st.expander("Optimized test suite"):
+        st.dataframe(artifacts["optimized_test_cases"], width="stretch")
+    with st.expander("Standalone state transition tests"):
+        st.dataframe(artifacts["state_transition_sequences"], width="stretch")
 
 if page == "AI Review":
     # 可选的大模型审查。即使没有配置 API key，本地规则流程也能继续使用。
@@ -441,7 +446,7 @@ if page == "Persistence & Export":
             st.success(f"Saved to {path}")
     with export_mid:
         if st.button("Export Test Cases Excel"):
-            path = export_excel({"test_cases": artifacts["test_cases"]}, "test_cases.xlsx")
+            path = export_excel({"test_cases": artifacts["optimized_test_cases"]}, "test_cases.xlsx")
             st.success(f"Saved to {path}")
     with export_right:
         if st.button("Export Traceability CSV"):

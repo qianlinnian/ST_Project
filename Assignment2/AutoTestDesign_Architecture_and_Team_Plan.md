@@ -173,7 +173,7 @@ Assignment2/
 建议采用 ML 模型 + 规则评分 fallback。规则评分可以作为解释依据：
 
 ```text
-Risk Score = Impact * 0.4 + Probability * 0.3 + Complexity * 0.2 + User Visibility * 0.1
+Risk Score = Impact * 0.5 + Probability * 0.4
 ```
 
 其中每个维度可按 1 到 5 分打分。
