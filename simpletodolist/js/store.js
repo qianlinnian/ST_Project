@@ -5,6 +5,24 @@
 function Storage(){
 
     dbName = "mylocalstorage"; // by default
+    this.useApi = false;
+    this.apiBaseUrl = window.TODO_API_BASE_URL || "http://127.0.0.1:5000/api";
+
+    this.request = function(method, path, payload){
+        var xhr = new XMLHttpRequest();
+        xhr.open(method, this.apiBaseUrl + path, false);
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.send(payload ? JSON.stringify(payload) : null);
+
+        var body = {};
+        if (xhr.responseText) {
+            body = JSON.parse(xhr.responseText);
+        }
+        if (xhr.status >= 400) {
+            throw new Error(body.error ? body.error.message : "API request failed");
+        }
+        return body.data;
+    }
 
     this.listStores = function(callback){
 
@@ -33,6 +51,11 @@ function Storage(){
 
         this.dbName = name;
 
+        if (this.useApi) {
+            callback.call(this, this.request("GET", "/todos"));
+            return;
+        }
+
         if (!localStorage.getItem(name)) {
             var emptytodoslist = [];
 
@@ -60,6 +83,25 @@ function Storage(){
             return;
         }
 
+        if (this.useApi) {
+            if (typeof query.id !== "undefined") {
+                try {
+                    callback.call(this, [this.request("GET", "/todos/" + query.id)]);
+                } catch (error) {
+                    callback.call(this, []);
+                }
+                return;
+            }
+
+            if (typeof query.completed !== "undefined") {
+                callback.call(this, this.request("GET", "/todos?status=" + (query.completed ? "completed" : "active")));
+                return;
+            }
+
+            callback.call(this, this.request("GET", "/todos"));
+            return;
+        }
+
         // get all the todos
         var todos = JSON.parse(localStorage.getItem(this.dbName));
 
@@ -80,6 +122,10 @@ function Storage(){
      */
     this.findAll = function(callback) {
         callback = callback || function () {};
+        if (this.useApi) {
+            callback.call(this, this.request("GET", "/todos"));
+            return;
+        }
         callback.call(this, JSON.parse(localStorage.getItem(this.dbName)));
     };
 
@@ -92,9 +138,32 @@ function Storage(){
      * @param {number} id An optional param to enter an ID of an item to update
      */
     this.save = function(updateData, callback, id) {
-        var todos = JSON.parse(localStorage.getItem(this.dbName));
-
         callback = callback || function() {};
+
+        if (this.useApi) {
+            if (id) {
+                var updated;
+                if (typeof updateData.completed !== "undefined" && typeof updateData.title === "undefined") {
+                    updated = this.request("PATCH", "/todos/" + id + "/complete", {
+                        completed: updateData.completed
+                    });
+                } else {
+                    updated = this.request("PUT", "/todos/" + id, {
+                        title: updateData.title
+                    });
+                }
+                callback.call(this, [updated]);
+                return;
+            }
+
+            var created = this.request("POST", "/todos", {
+                title: updateData.title
+            });
+            callback.call(this, [created]);
+            return;
+        }
+
+        var todos = JSON.parse(localStorage.getItem(this.dbName));
 
         // If an ID was actually given, find the item and update each property
         if (id) {
@@ -129,6 +198,12 @@ function Storage(){
     this.remove = function(id, callback){
         callback = callback || function() {};
 
+        if (this.useApi) {
+            this.request("DELETE", "/todos/" + id);
+            callback.call(this, this.request("GET", "/todos"));
+            return;
+        }
+
         var todos = JSON.parse(localStorage.getItem(this.dbName));
 
         for (var i = 0; i < todos.length; i++) {
@@ -149,6 +224,11 @@ function Storage(){
      */
     this.drop = function(callback) {
         callback = callback || function() {};
+        if (this.useApi) {
+            this.request("DELETE", "/todos/completed");
+            callback.call(this, this.request("GET", "/todos"));
+            return;
+        }
         var todos = [];
         localStorage.setItem(this.dbName, JSON.stringify(todos));
         callback.call(this, todos);

@@ -17,6 +17,14 @@ The API runs at:
 http://127.0.0.1:5000
 ```
 
+The `todo.html` page is configured to call this backend for Todo Item Management through:
+
+```text
+http://127.0.0.1:5000/api
+```
+
+Start this backend before using `todo.html` in API-backed mode. The list management and admin pages still use the original browser storage behavior.
+
 ## API
 
 ```text

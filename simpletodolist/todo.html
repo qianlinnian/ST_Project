@@ -66,6 +66,8 @@ var filter = params[0] || "";
 var todoListName = params[1] || "eviltester";
 
 var todo = new Todo('todos-' + todoListName);
+todo.storage.useApi = true;
+todo.storage.createStore(todo.app.getTodoStorageName('todos-' + todoListName));
 
 window.app = todo.app;
 
