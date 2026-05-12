@@ -1,0 +1,4 @@
+test_runtime/
+data/test_dbs/
+data/*.db
+data/*.db-journal
