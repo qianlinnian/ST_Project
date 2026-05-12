@@ -5,14 +5,17 @@ from typing import Dict, List
 from src.ai_client import chat_completion
 from src.prompt_templates import REQUIREMENT_STRUCTURING_SYSTEM
 
-
 try:
     import spacy
+
     nlp = spacy.load("en_core_web_sm")
 except (ImportError, OSError):
     nlp = None
 
-def extract_requirement_parts(requirement_text: str, force_llm: bool = False) -> Dict[str, List[str]]:
+
+def extract_requirement_parts(
+    requirement_text: str, force_llm: bool = False
+) -> Dict[str, List[str]]:
     """
     使用规则识别+spacy识别，之后LLM兜底。
     """
@@ -22,7 +25,11 @@ def extract_requirement_parts(requirement_text: str, force_llm: bool = False) ->
     if not force_llm:
         local_result = _spacy_rule_based_structure(requirement_text)
         # 简单检查本地识别是否足够丰富，比如有action和expected_results，若满足则直接返回，无需请求LLM
-        if local_result["actions"] or local_result["conditions"] or local_result["data_ranges"]:
+        if (
+            local_result["actions"]
+            or local_result["conditions"]
+            or local_result["data_ranges"]
+        ):
             return local_result
 
     # LLM 兜底
@@ -61,6 +68,7 @@ Requirement Text:
             print(f"Raw response: {response_text[:300]}...")
         return _spacy_rule_based_structure(requirement_text)
 
+
 def _spacy_rule_based_structure(requirement_text: str) -> Dict[str, List[str]]:
     result = _rule_based_structure(requirement_text)
     if nlp is not None:
@@ -73,6 +81,7 @@ def _spacy_rule_based_structure(requirement_text: str) -> Dict[str, List[str]]:
                     result["input_fields"].append(chunk.text)
     return result
 
+
 def _rule_based_structure(requirement_text: str) -> Dict[str, List[str]]:
     text = requirement_text.lower()
     result = _empty_structure()
@@ -80,7 +89,11 @@ def _rule_based_structure(requirement_text: str) -> Dict[str, List[str]]:
     if any(word in text for word in ["todo", "text", "input", "item"]):
         result["input_fields"].append("Todo text")
 
-    ranges = re.findall(r"(?:\d+\s*(?:-|to|~|–)\s*\d+|\d+\s*(?:characters?|chars?))", requirement_text, flags=re.I)
+    ranges = re.findall(
+        r"(?:\d+\s*(?:-|to|~|–)\s*\d+|\d+\s*(?:characters?|chars?))",
+        requirement_text,
+        flags=re.I,
+    )
     result["data_ranges"].extend(ranges)
 
     condition_keywords = {
@@ -112,7 +125,9 @@ def _rule_based_structure(requirement_text: str) -> Dict[str, List[str]]:
             result["actions"].append(action)
 
     if any(word in text for word in ["reject", "not", "empty"]):
-        result["expected_results"].append("Invalid input is rejected and no invalid Todo is created")
+        result["expected_results"].append(
+            "Invalid input is rejected and no invalid Todo is created"
+        )
     elif any(word in text for word in ["delete", "remove"]):
         result["expected_results"].append("The selected Todo is removed from the list")
     elif any(word in text for word in ["complete", "completed", "toggle"]):
