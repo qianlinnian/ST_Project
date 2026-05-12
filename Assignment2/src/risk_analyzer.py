@@ -3,7 +3,7 @@ from typing import List
 
 from src.ml_risk_model import predict_risk_level, calculate_rules_based_risk_score, MLRiskModel
 from src.models import Requirement, RiskRecord
-
+from src.ai_client import chat_completion
 
 def analyze_risks(structured_requirements: pd.DataFrame) -> pd.DataFrame:
     # Legacy wrapper for Dataframes
@@ -37,10 +37,22 @@ def analyze_requirements_risks(requirements: List[Requirement]) -> List[RiskReco
         
         score = calculate_rules_based_risk_score(impact, probability)
         
-        # Use ML Model to predict risk level, fallbacks to rule-based inside `predict`
+        # Use ML Model to predict risk level
         risk_level = model.predict(impact, probability)
-        
         reason = f"Derived from text keywords (Impact={impact}, Prob={probability})."
+
+        # LLM fallback as final check (if required, doing a quick prediction to override if Low/Medium but seems High)
+        if risk_level in ["Low", "Medium"]:
+            try:
+                system_prompt = "You are a risk analyzer. Simply respond with High, Medium, or Low based on the requirement text. Keep your answer strictly to one of the above 3 words."
+                user_prompt = f"Analyze risk level for requirement: {req.requirement_text}"
+                llm_response = chat_completion(system_prompt, user_prompt).strip()
+                if llm_response in ["High", "Medium", "Low"]:
+                    if llm_response == "High":
+                        risk_level = "High"
+                        reason += " Elevated to High by LLM fallback."
+            except Exception as e:
+                pass
         
         record = RiskRecord(
             requirement_id=req.requirement_id,

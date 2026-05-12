@@ -20,8 +20,11 @@ Main responsibilities:
 
 ```powershell
 pip install -r requirements.txt
+python -m spacy download en_core_web_sm
 streamlit run app.py
 ```
+
+The extra spaCy model download is required because `spacy` itself installs the NLP framework, while `en_core_web_sm` provides the English parsing model used by the local-first requirement structuring flow.
 
 ## Optional LLM API
 

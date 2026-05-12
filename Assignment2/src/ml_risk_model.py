@@ -5,17 +5,6 @@ import joblib
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data"
 
-# def calculate_rules_based_risk_score(impact: float, probability: float) -> float:
-#     # Risk Score = Impact * 0.6 + Probability * 0.4
-#     return impact * 0.6 + probability * 0.4
-
-# def predict_risk_level(score: float) -> str:
-#     if score >= 4.0:
-#         return "High"
-#     if score >= 3.0:
-#         return "Medium"
-#     return "Low"
-
 def calculate_rules_based_risk_score(impact: float, probability: float) -> float:
     """Risk Score = Impact * 0.6 + Probability * 0.4"""
     return impact * 0.6 + probability * 0.4
@@ -41,7 +30,7 @@ class MLRiskModel:
         """
         try:
             from sklearn.ensemble import RandomForestClassifier
-            path = DATA_DIR / "mock_historical_results.csv"
+            path = DATA_DIR / "mock_historical_results_train.csv"
             if not path.exists():
                 return
             df = pd.read_csv(path)

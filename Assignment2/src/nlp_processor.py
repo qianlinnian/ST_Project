@@ -6,14 +6,26 @@ from src.ai_client import chat_completion
 from src.prompt_templates import REQUIREMENT_STRUCTURING_SYSTEM
 
 
-def extract_requirement_parts(requirement_text: str) -> Dict[str, List[str]]:
+try:
+    import spacy
+    nlp = spacy.load("en_core_web_sm")
+except (ImportError, OSError):
+    nlp = None
+
+def extract_requirement_parts(requirement_text: str, force_llm: bool = False) -> Dict[str, List[str]]:
     """
-    使用 LLM 将原始需求文本解析为结构化的测试信息。
-    如果 LLM 未配置或解析失败，回退到本地关键词规则，保证工具可离线运行。
+    使用规则识别+spacy识别，之后LLM兜底。
     """
     if not requirement_text or not requirement_text.strip():
         return _empty_structure()
 
+    if not force_llm:
+        local_result = _spacy_rule_based_structure(requirement_text)
+        # 简单检查本地识别是否足够丰富，比如有action和expected_results，若满足则直接返回，无需请求LLM
+        if local_result["actions"] or local_result["conditions"] or local_result["data_ranges"]:
+            return local_result
+
+    # LLM 兜底
     response_text = ""
     try:
         user_prompt = f"""Requirement ID: [待填充]
@@ -47,8 +59,19 @@ Requirement Text:
         print(f"[Warning] Failed to parse requirement structure: {exc}")
         if response_text:
             print(f"Raw response: {response_text[:300]}...")
-        return _rule_based_structure(requirement_text)
+        return _spacy_rule_based_structure(requirement_text)
 
+def _spacy_rule_based_structure(requirement_text: str) -> Dict[str, List[str]]:
+    result = _rule_based_structure(requirement_text)
+    if nlp is not None:
+        doc = nlp(requirement_text)
+        # 用 spacy 增强输入字段和条件
+        for chunk in doc.noun_chunks:
+            if chunk.text.lower() not in [i.lower() for i in result["input_fields"]]:
+                # Add important nouns
+                if len(chunk.text) > 2:
+                    result["input_fields"].append(chunk.text)
+    return result
 
 def _rule_based_structure(requirement_text: str) -> Dict[str, List[str]]:
     text = requirement_text.lower()

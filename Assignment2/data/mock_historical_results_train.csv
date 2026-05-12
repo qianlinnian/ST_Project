@@ -1,0 +1,401 @@
+requirement_id,module,requirement_text,impact,probability,user_visibility,defect_found,risk_level
+HIST-001,Todo Creation,The system shall reject empty todo text.,4,4,5,1,High
+HIST-002,Todo Creation,The user shall create a todo with valid text.,3,3,5,0,Medium
+HIST-003,Todo Deletion,The user shall delete an existing todo item.,5,3,5,1,High
+HIST-004,Todo Persistence,The system shall keep todo items after refresh.,5,4,5,1,High
+HIST-005,Todo Display,The system shall display all todo items.,3,2,5,0,Low
+HIST-006,Todo Creation,The system shall trim leading and trailing spaces from todo text.,3,3,4,0,Medium
+HIST-007,Todo Creation,The system shall reject todo text longer than the maximum allowed length.,4,3,4,1,High
+HIST-008,Todo Creation,The system shall allow todo text containing numbers and symbols.,2,2,3,0,Low
+HIST-009,Todo Creation,The system shall prevent duplicate todo creation when the add button is clicked repeatedly.,4,4,5,1,High
+HIST-010,Todo Creation,The system shall add a new todo item to the visible list immediately after creation.,4,3,5,0,Medium
+HIST-011,Todo Editing,The user shall edit the text of an existing todo item.,4,3,5,1,High
+HIST-012,Todo Editing,The system shall save edited todo text after confirmation.,4,3,5,0,Medium
+HIST-013,Todo Editing,The system shall cancel todo editing without changing the original text.,3,3,4,0,Medium
+HIST-014,Todo Editing,The system shall reject edited todo text when it is empty.,4,4,5,1,High
+HIST-015,Todo Editing,The system shall preserve todo completion status after editing text.,3,2,4,0,Low
+HIST-016,Todo Deletion,The system shall remove a deleted todo item from the visible list.,5,3,5,1,High
+HIST-017,Todo Deletion,The system shall not delete other todo items when one item is deleted.,5,3,5,1,High
+HIST-018,Todo Deletion,The system shall allow deleting the last remaining todo item.,3,3,4,0,Medium
+HIST-019,Todo Deletion,The system shall update the todo count after deletion.,3,3,4,0,Medium
+HIST-020,Todo Deletion,The system shall handle deletion when the todo list is empty without crashing.,4,2,4,0,Medium
+HIST-021,Todo Completion,The user shall mark an active todo item as completed.,4,3,5,0,Medium
+HIST-022,Todo Completion,The user shall unmark a completed todo item as active.,4,3,5,0,Medium
+HIST-023,Todo Completion,The system shall visually distinguish completed todo items from active todo items.,3,3,5,0,Medium
+HIST-024,Todo Completion,The system shall persist completed status after page refresh.,5,4,5,1,High
+HIST-025,Todo Completion,The system shall update the active item count after completion changes.,3,3,4,0,Medium
+HIST-026,Todo Filtering,The user shall filter todo items by all status.,3,2,5,0,Low
+HIST-027,Todo Filtering,The user shall filter todo items by active status.,3,3,5,0,Medium
+HIST-028,Todo Filtering,The user shall filter todo items by completed status.,3,3,5,0,Medium
+HIST-029,Todo Filtering,The system shall preserve the selected filter after adding a new todo item.,3,2,4,0,Low
+HIST-030,Todo Filtering,The system shall display an empty state when no todo items match the selected filter.,3,2,4,0,Low
+HIST-031,Todo Count,The system shall show the number of active todo items.,3,3,5,0,Medium
+HIST-032,Todo Count,The system shall display singular text when only one active todo item remains.,2,2,3,0,Low
+HIST-033,Todo Count,The system shall display plural text when multiple active todo items remain.,2,2,3,0,Low
+HIST-034,Todo Count,The system shall update the active count after creating a todo item.,3,3,5,0,Medium
+HIST-035,Todo Count,The system shall update the active count after clearing completed todo items.,3,3,5,0,Medium
+HIST-036,Clear Completed,The user shall clear all completed todo items.,4,3,5,1,High
+HIST-037,Clear Completed,The system shall not remove active todo items when clearing completed items.,5,3,5,1,High
+HIST-038,Clear Completed,The clear completed control shall be hidden or disabled when no completed items exist.,2,2,4,0,Low
+HIST-039,Clear Completed,The system shall update local storage after clearing completed todo items.,5,4,5,1,High
+HIST-040,Clear Completed,The system shall update the visible list immediately after clearing completed items.,4,3,5,0,Medium
+HIST-041,Toggle All,The user shall mark all todo items as completed using a single control.,4,3,5,0,Medium
+HIST-042,Toggle All,The user shall mark all todo items as active when all items are completed.,4,3,5,0,Medium
+HIST-043,Toggle All,The system shall update every item's completion status when toggle all is used.,5,3,5,1,High
+HIST-044,Toggle All,The toggle all control shall be disabled or hidden when the list is empty.,2,2,4,0,Low
+HIST-045,Toggle All,The system shall persist toggle all changes after refresh.,5,4,5,1,High
+HIST-046,Todo Persistence,The system shall store todo items in local storage.,5,4,5,1,High
+HIST-047,Todo Persistence,The system shall load todo items from local storage on page startup.,5,4,5,1,High
+HIST-048,Todo Persistence,The system shall handle corrupted local storage data without crashing.,5,3,4,1,High
+HIST-049,Todo Persistence,The system shall update local storage after editing a todo item.,5,4,5,1,High
+HIST-050,Todo Persistence,The system shall update local storage after changing completion status.,5,4,5,1,High
+HIST-051,Todo Display,The system shall display todo items in the order they were created.,3,2,5,0,Low
+HIST-052,Todo Display,The system shall display long todo text without breaking the page layout.,3,3,5,0,Medium
+HIST-053,Todo Display,The system shall correctly display todo text containing special characters.,3,2,4,0,Low
+HIST-054,Todo Display,The system shall escape unsafe HTML content in todo text.,5,3,5,1,High
+HIST-055,Todo Display,The system shall display an empty list when no todo items exist.,2,2,4,0,Low
+HIST-056,Input Validation,The system shall reject todo text containing only whitespace.,4,4,5,1,High
+HIST-057,Input Validation,The system shall accept todo text at the minimum valid length.,3,2,4,0,Low
+HIST-058,Input Validation,The system shall accept todo text at the maximum valid length.,3,3,4,0,Medium
+HIST-059,Input Validation,The system shall reject todo text exceeding the maximum valid length by one character.,4,3,4,1,High
+HIST-060,Input Validation,The system shall prevent script execution from todo input.,5,3,5,1,High
+HIST-061,User Interface,The add todo input field shall be visible on the main page.,3,2,5,0,Low
+HIST-062,User Interface,The add todo button shall be accessible from the main page.,3,2,5,0,Low
+HIST-063,User Interface,The todo list shall remain readable on small screen sizes.,3,3,5,0,Medium
+HIST-064,User Interface,The system shall provide clear visual feedback after a todo item is added.,3,2,5,0,Low
+HIST-065,User Interface,The system shall provide clear visual feedback after a todo item is deleted.,3,2,5,0,Low
+HIST-066,Keyboard Interaction,The user shall create a todo item by pressing the Enter key.,3,3,5,0,Medium
+HIST-067,Keyboard Interaction,The system shall not create a todo item when Enter is pressed on empty input.,4,3,5,1,High
+HIST-068,Keyboard Interaction,The user shall confirm todo editing by pressing the Enter key.,3,3,4,0,Medium
+HIST-069,Keyboard Interaction,The user shall cancel todo editing by pressing the Escape key.,3,2,4,0,Low
+HIST-070,Keyboard Interaction,The system shall keep focus in the input field after adding a todo item.,2,2,3,0,Low
+HIST-071,Accessibility,The todo input field shall have an accessible label.,4,3,4,1,High
+HIST-072,Accessibility,The delete control shall be accessible by keyboard navigation.,4,3,4,1,High
+HIST-073,Accessibility,The completion checkbox shall expose its checked state to assistive technologies.,4,3,4,1,High
+HIST-074,Accessibility,The filter controls shall be reachable using keyboard navigation.,3,3,4,0,Medium
+HIST-075,Accessibility,The system shall maintain sufficient text contrast for todo items.,3,2,4,0,Low
+HIST-076,Error Handling,The system shall not crash when local storage is unavailable.,5,3,4,1,High
+HIST-077,Error Handling,The system shall show a fallback behavior when persistence fails.,4,3,4,1,High
+HIST-078,Error Handling,The system shall ignore invalid todo records loaded from storage.,4,3,3,0,Medium
+HIST-079,Error Handling,The system shall continue working after a failed delete operation.,4,2,4,0,Medium
+HIST-080,Error Handling,The system shall prevent duplicate event handling during rapid user actions.,4,4,5,1,High
+HIST-081,Performance,The system shall render 100 todo items within an acceptable response time.,3,3,4,0,Medium
+HIST-082,Performance,The system shall remain responsive when adding multiple todo items quickly.,4,3,5,0,Medium
+HIST-083,Performance,The system shall update filters without noticeable delay.,3,2,4,0,Low
+HIST-084,Performance,The system shall avoid unnecessary full page reloads during todo operations.,3,3,4,0,Medium
+HIST-085,Performance,The system shall handle frequent local storage updates efficiently.,3,3,3,0,Medium
+HIST-086,Security,The system shall sanitize todo text before rendering it in the page.,5,4,5,1,High
+HIST-087,Security,The system shall prevent stored cross-site scripting through saved todo text.,5,4,5,1,High
+HIST-088,Security,The system shall not expose sensitive browser storage errors to users.,3,2,3,0,Low
+HIST-089,Security,The system shall avoid executing user-provided HTML attributes in todo text.,5,3,5,1,High
+HIST-090,Security,The system shall treat all todo input as untrusted user content.,5,3,5,1,High
+HIST-091,Data Integrity,The system shall assign a unique identifier to each todo item.,5,3,4,1,High
+HIST-092,Data Integrity,The system shall not reuse deleted todo identifiers in the same session.,3,2,3,0,Low
+HIST-093,Data Integrity,The system shall preserve todo item identifiers after refresh.,4,3,3,0,Medium
+HIST-094,Data Integrity,The system shall update only the selected todo item during editing.,5,3,5,1,High
+HIST-095,Data Integrity,The system shall maintain consistent todo data after rapid create and delete actions.,5,4,5,1,High
+HIST-096,Browser Compatibility,The system shall work correctly in Chrome.,3,2,5,0,Low
+HIST-097,Browser Compatibility,The system shall work correctly in Firefox.,3,2,4,0,Low
+HIST-098,Browser Compatibility,The system shall work correctly in Edge.,3,2,4,0,Low
+HIST-099,Browser Compatibility,The system shall support refresh persistence across modern browsers.,4,3,4,0,Medium
+HIST-100,Browser Compatibility,The system shall handle browsers with restricted local storage settings.,4,3,3,1,High
+HIST-101,Todo Creation,The system shall support todo creation after the list has previously been emptied.,3,3,4,0,Medium
+HIST-102,Todo Editing,The system shall reject edited text containing only spaces.,4,4,3,0,Medium
+HIST-103,Todo Deletion,The system shall keep filter state unchanged after a deletion.,3,3,5,0,Medium
+HIST-104,Todo Completion,The system shall toggle completion status for the selected todo item.,4,3,4,0,Medium
+HIST-105,Todo Filtering,The system shall update filtered results immediately after a status change.,4,2,4,0,Medium
+HIST-106,Todo Count,The system shall keep count text visible on small screens.,4,2,3,1,Medium
+HIST-107,Clear Completed,The system shall preserve all active todo items when completed items are cleared.,5,4,5,0,High
+HIST-108,Toggle All,The system shall update every checkbox after toggle all is used.,3,3,5,0,Medium
+HIST-109,Todo Persistence,The system shall preserve todo order after page refresh.,5,4,3,1,High
+HIST-110,Todo Display,The system shall render an empty list state when no todo items exist.,4,3,5,0,Medium
+HIST-111,Input Validation,The system shall preserve valid Unicode characters in todo input.,5,3,4,1,High
+HIST-112,User Interface,The main todo input field shall be visible without scrolling on the initial page.,3,3,3,0,Low
+HIST-113,Keyboard Interaction,The system shall not create a todo item when Enter is pressed on invalid input.,4,2,4,0,Medium
+HIST-114,Accessibility,The system shall not rely on color alone to indicate completion status.,4,2,4,0,Medium
+HIST-115,Error Handling,The system shall show fallback behavior when persistence fails.,4,2,4,1,High
+HIST-116,Performance,The system shall batch frequent local storage writes when appropriate.,5,3,5,1,High
+HIST-117,Security,The system shall prevent event handler injection through todo content.,4,5,5,1,High
+HIST-118,Data Integrity,The system shall update only the selected todo item during editing.,5,4,5,1,High
+HIST-119,Browser Compatibility,The system shall render layout consistently across supported browsers.,2,2,5,0,Low
+HIST-120,Testability,The system shall expose stable selectors for automated todo creation tests.,4,4,3,1,High
+HIST-121,Session Behavior,The system shall initialize an empty list for first-time users.,3,2,4,0,Low
+HIST-122,Todo Creation,The system shall support todo creation after the list has previously been emptied with multiple existing items.,3,3,5,0,Medium
+HIST-123,Todo Editing,The system shall reject edited text containing only spaces during rapid interaction.,4,3,4,0,Medium
+HIST-124,Todo Deletion,The system shall keep filter state unchanged after a deletion when storage already contains todos.,4,3,3,0,Medium
+HIST-125,Todo Completion,The system shall toggle completion status for the selected todo item in an automated test run.,3,3,3,0,Low
+HIST-126,Todo Filtering,The system shall update filtered results immediately after a status change with multiple existing items.,3,3,5,0,Medium
+HIST-127,Todo Count,The system shall keep count text visible on small screens during rapid interaction.,3,3,4,1,Medium
+HIST-128,Clear Completed,The system shall preserve all active todo items when completed items are cleared when storage already contains todos.,4,3,4,0,Medium
+HIST-129,Toggle All,The system shall update every checkbox after toggle all is used in an automated test run.,4,3,5,1,High
+HIST-130,Todo Persistence,The system shall preserve todo order after page refresh with multiple existing items.,4,2,5,0,Medium
+HIST-131,Todo Display,The system shall render an empty list state when no todo items exist during rapid interaction.,3,4,3,0,Medium
+HIST-132,Input Validation,The system shall preserve valid Unicode characters in todo input when storage already contains todos.,4,3,5,0,Medium
+HIST-133,User Interface,The main todo input field shall be visible without scrolling on the initial page in an automated test run.,3,2,5,0,Low
+HIST-134,Keyboard Interaction,The system shall not create a todo item when Enter is pressed on invalid input with multiple existing items.,3,2,3,1,Medium
+HIST-135,Accessibility,The system shall not rely on color alone to indicate completion status during rapid interaction.,3,2,3,0,Low
+HIST-136,Error Handling,The system shall show fallback behavior when persistence fails when storage already contains todos.,3,2,4,0,Low
+HIST-137,Performance,The system shall batch frequent local storage writes when appropriate in an automated test run.,4,2,3,0,Low
+HIST-138,Security,The system shall prevent event handler injection through todo content with multiple existing items.,5,3,5,1,High
+HIST-139,Data Integrity,The system shall update only the selected todo item during editing during rapid interaction.,3,3,4,0,Medium
+HIST-140,Browser Compatibility,The system shall render layout consistently across supported browsers when storage already contains todos.,2,3,5,1,Medium
+HIST-141,Testability,The system shall expose stable selectors for automated todo creation tests in an automated test run.,3,4,4,0,Medium
+HIST-142,Session Behavior,The system shall initialize an empty list for first-time users with multiple existing items.,3,2,4,0,Low
+HIST-143,Todo Creation,The system shall support todo creation after the list has previously been emptied during rapid interaction.,3,4,4,1,High
+HIST-144,Todo Editing,The system shall reject edited text containing only spaces when storage already contains todos.,4,4,5,0,Medium
+HIST-145,Todo Deletion,The system shall keep filter state unchanged after a deletion in an automated test run.,4,3,5,0,Medium
+HIST-146,Todo Completion,The system shall toggle completion status for the selected todo item with multiple existing items.,3,4,4,0,Medium
+HIST-147,Todo Filtering,The system shall update filtered results immediately after a status change during rapid interaction.,3,3,5,0,Medium
+HIST-148,Todo Count,The system shall keep count text visible on small screens when storage already contains todos.,3,2,4,0,Low
+HIST-149,Clear Completed,The system shall preserve all active todo items when completed items are cleared in an automated test run.,5,2,4,1,High
+HIST-150,Toggle All,The system shall update every checkbox after toggle all is used with multiple existing items.,5,4,4,0,Medium
+HIST-151,Todo Persistence,The system shall preserve todo order after page refresh during rapid interaction.,5,2,3,0,Medium
+HIST-152,Todo Display,The system shall render an empty list state when no todo items exist when storage already contains todos.,2,3,4,0,Low
+HIST-153,Input Validation,The system shall preserve valid Unicode characters in todo input in an automated test run.,3,4,5,0,Medium
+HIST-154,User Interface,The main todo input field shall be visible without scrolling on the initial page with multiple existing items.,2,3,4,0,Low
+HIST-155,Keyboard Interaction,The system shall not create a todo item when Enter is pressed on invalid input during rapid interaction.,4,3,5,0,Medium
+HIST-156,Accessibility,The system shall not rely on color alone to indicate completion status when storage already contains todos.,3,4,5,1,High
+HIST-157,Error Handling,The system shall show fallback behavior when persistence fails in an automated test run.,5,3,4,1,High
+HIST-158,Performance,The system shall batch frequent local storage writes when appropriate with multiple existing items.,3,2,5,0,Low
+HIST-159,Security,The system shall prevent event handler injection through todo content during rapid interaction.,5,4,5,0,High
+HIST-160,Data Integrity,The system shall update only the selected todo item during editing when storage already contains todos.,4,4,5,1,High
+HIST-161,Browser Compatibility,The system shall render layout consistently across supported browsers in an automated test run.,3,3,3,0,Low
+HIST-162,Testability,The system shall expose stable selectors for automated todo creation tests with multiple existing items.,4,2,5,0,Medium
+HIST-163,Session Behavior,The system shall initialize an empty list for first-time users during rapid interaction.,3,4,3,0,Medium
+HIST-164,Todo Creation,The system shall support todo creation after the list has previously been emptied when storage already contains todos.,2,3,3,0,Low
+HIST-165,Todo Editing,The system shall reject edited text containing only spaces in an automated test run.,4,3,4,1,High
+HIST-166,Todo Deletion,The system shall keep filter state unchanged after a deletion with multiple existing items.,5,4,4,1,High
+HIST-167,Todo Completion,The system shall toggle completion status for the selected todo item during rapid interaction.,4,2,3,0,Low
+HIST-168,Todo Filtering,The system shall update filtered results immediately after a status change when storage already contains todos.,4,2,4,0,Medium
+HIST-169,Todo Count,The system shall keep count text visible on small screens in an automated test run.,3,2,5,0,Low
+HIST-170,Clear Completed,The system shall preserve all active todo items when completed items are cleared with multiple existing items.,5,5,5,0,High
+HIST-171,Toggle All,The system shall update every checkbox after toggle all is used during rapid interaction.,4,5,5,0,Medium
+HIST-172,Todo Persistence,The system shall preserve todo order after page refresh when storage already contains todos.,5,4,4,0,Medium
+HIST-173,Todo Display,The system shall render an empty list state when no todo items exist in an automated test run.,2,1,4,0,Low
+HIST-174,Input Validation,The system shall preserve valid Unicode characters in todo input with multiple existing items.,4,4,5,1,High
+HIST-175,User Interface,The main todo input field shall be visible without scrolling on the initial page during rapid interaction.,2,2,5,0,Low
+HIST-176,Keyboard Interaction,The system shall not create a todo item when Enter is pressed on invalid input when storage already contains todos.,3,3,5,0,Medium
+HIST-177,Accessibility,The system shall not rely on color alone to indicate completion status in an automated test run.,5,2,5,0,Medium
+HIST-178,Error Handling,The system shall show fallback behavior when persistence fails with multiple existing items.,3,4,4,0,Medium
+HIST-179,Performance,The system shall batch frequent local storage writes when appropriate during rapid interaction.,4,3,4,0,Medium
+HIST-180,Security,The system shall prevent event handler injection through todo content when storage already contains todos.,3,3,5,0,Medium
+HIST-181,Data Integrity,The system shall update only the selected todo item during editing in an automated test run.,5,4,5,1,High
+HIST-182,Browser Compatibility,The system shall render layout consistently across supported browsers with multiple existing items.,4,4,5,0,Medium
+HIST-183,Testability,The system shall expose stable selectors for automated todo creation tests during rapid interaction.,4,3,4,0,Medium
+HIST-184,Session Behavior,The system shall initialize an empty list for first-time users when storage already contains todos.,4,3,3,0,Medium
+HIST-185,Todo Creation,The system shall support todo creation after the list has previously been emptied in an automated test run.,4,4,5,0,Medium
+HIST-186,Todo Editing,The system shall reject edited text containing only spaces with multiple existing items.,4,3,4,0,Medium
+HIST-187,Todo Deletion,The system shall keep filter state unchanged after a deletion during rapid interaction.,5,3,4,1,High
+HIST-188,Todo Completion,The system shall toggle completion status for the selected todo item when storage already contains todos.,4,4,5,0,Medium
+HIST-189,Todo Filtering,The system shall update filtered results immediately after a status change in an automated test run.,4,3,4,0,Medium
+HIST-190,Todo Count,The system shall keep count text visible on small screens with multiple existing items.,3,2,3,1,Medium
+HIST-191,Clear Completed,The system shall preserve all active todo items when completed items are cleared during rapid interaction.,5,4,5,0,High
+HIST-192,Toggle All,The system shall update every checkbox after toggle all is used when storage already contains todos.,5,4,4,1,High
+HIST-193,Todo Persistence,The system shall preserve todo order after page refresh in an automated test run.,5,2,5,0,Medium
+HIST-194,Todo Display,The system shall render an empty list state when no todo items exist with multiple existing items.,3,2,5,0,Low
+HIST-195,Input Validation,The system shall preserve valid Unicode characters in todo input during rapid interaction.,3,3,5,0,Medium
+HIST-196,User Interface,The main todo input field shall be visible without scrolling on the initial page when storage already contains todos.,3,4,5,0,Medium
+HIST-197,Keyboard Interaction,The system shall not create a todo item when Enter is pressed on invalid input in an automated test run.,4,3,4,0,Medium
+HIST-198,Accessibility,The system shall not rely on color alone to indicate completion status with multiple existing items.,3,2,5,0,Low
+HIST-199,Error Handling,The system shall show fallback behavior when persistence fails during rapid interaction.,5,3,5,1,High
+HIST-200,Performance,The system shall batch frequent local storage writes when appropriate when storage already contains todos.,3,2,4,0,Low
+HIST-201,Security,The system shall prevent event handler injection through todo content in an automated test run.,5,2,4,1,High
+HIST-202,Data Integrity,The system shall update only the selected todo item during editing with multiple existing items.,5,2,4,0,Medium
+HIST-203,Browser Compatibility,The system shall render layout consistently across supported browsers during rapid interaction.,2,3,4,0,Low
+HIST-204,Testability,The system shall expose stable selectors for automated todo creation tests when storage already contains todos.,2,4,4,0,Low
+HIST-205,Session Behavior,The system shall initialize an empty list for first-time users in an automated test run.,3,3,5,0,Medium
+HIST-206,Todo Creation,The system shall support todo creation after the list has previously been emptied with multiple existing items.,4,3,5,0,Medium
+HIST-207,Todo Editing,The system shall reject edited text containing only spaces during normal use.,3,3,4,0,Medium
+HIST-208,Todo Deletion,The system shall keep filter state unchanged after a deletion after page refresh.,5,4,5,0,High
+HIST-209,Todo Completion,The system shall toggle completion status for the selected todo item while a filter is selected.,2,3,4,1,Medium
+HIST-210,Todo Filtering,The system shall update filtered results immediately after a status change on small screen devices.,3,4,3,0,Medium
+HIST-211,Todo Count,The system shall keep count text visible on small screens during normal use.,2,2,5,0,Low
+HIST-212,Clear Completed,The system shall preserve all active todo items when completed items are cleared after page refresh.,4,2,3,0,Low
+HIST-213,Toggle All,The system shall update every checkbox after toggle all is used while a filter is selected.,4,2,5,1,High
+HIST-214,Todo Persistence,The system shall preserve todo order after page refresh on small screen devices.,5,3,3,1,High
+HIST-215,Todo Display,The system shall render an empty list state when no todo items exist during normal use.,3,2,5,0,Low
+HIST-216,Input Validation,The system shall preserve valid Unicode characters in todo input after page refresh.,5,3,5,0,High
+HIST-217,User Interface,The main todo input field shall be visible without scrolling on the initial page while a filter is selected.,3,2,4,0,Low
+HIST-218,Keyboard Interaction,The system shall not create a todo item when Enter is pressed on invalid input on small screen devices.,4,4,4,0,Medium
+HIST-219,Accessibility,The system shall not rely on color alone to indicate completion status during normal use.,2,3,5,0,Low
+HIST-220,Error Handling,The system shall show fallback behavior when persistence fails after page refresh.,5,4,4,0,Medium
+HIST-221,Performance,The system shall batch frequent local storage writes when appropriate while a filter is selected.,3,3,4,0,Medium
+HIST-222,Security,The system shall prevent event handler injection through todo content on small screen devices.,3,3,5,0,Medium
+HIST-223,Data Integrity,The system shall update only the selected todo item during editing during normal use.,5,4,5,1,High
+HIST-224,Browser Compatibility,The system shall render layout consistently across supported browsers after page refresh.,3,3,5,0,Medium
+HIST-225,Testability,The system shall expose stable selectors for automated todo creation tests while a filter is selected.,3,4,4,0,Medium
+HIST-226,Session Behavior,The system shall initialize an empty list for first-time users on small screen devices.,4,2,5,0,Medium
+HIST-227,Todo Creation,The system shall support todo creation after the list has previously been emptied during normal use.,4,3,4,0,Medium
+HIST-228,Todo Editing,The system shall reject edited text containing only spaces after page refresh.,3,2,5,0,Low
+HIST-229,Todo Deletion,The system shall keep filter state unchanged after a deletion while a filter is selected.,5,3,3,0,Medium
+HIST-230,Todo Completion,The system shall toggle completion status for the selected todo item on small screen devices.,3,3,4,0,Medium
+HIST-231,Todo Filtering,The system shall update filtered results immediately after a status change during normal use.,4,3,5,1,High
+HIST-232,Todo Count,The system shall keep count text visible on small screens after page refresh.,3,2,5,0,Low
+HIST-233,Clear Completed,The system shall preserve all active todo items when completed items are cleared while a filter is selected.,5,3,5,1,High
+HIST-234,Toggle All,The system shall update every checkbox after toggle all is used on small screen devices.,4,3,4,0,Medium
+HIST-235,Todo Persistence,The system shall preserve todo order after page refresh during normal use.,4,4,5,1,High
+HIST-236,Todo Display,The system shall render an empty list state when no todo items exist after page refresh.,3,2,5,0,Low
+HIST-237,Input Validation,The system shall preserve valid Unicode characters in todo input while a filter is selected.,4,3,4,1,High
+HIST-238,User Interface,The main todo input field shall be visible without scrolling on the initial page on small screen devices.,2,3,3,1,Medium
+HIST-239,Keyboard Interaction,The system shall not create a todo item when Enter is pressed on invalid input during normal use.,4,3,3,0,Medium
+HIST-240,Accessibility,The system shall not rely on color alone to indicate completion status after page refresh.,3,2,4,0,Low
+HIST-241,Error Handling,The system shall show fallback behavior when persistence fails while a filter is selected.,4,2,5,0,Medium
+HIST-242,Performance,The system shall batch frequent local storage writes when appropriate on small screen devices.,3,2,5,1,Medium
+HIST-243,Security,The system shall prevent event handler injection through todo content during normal use.,5,5,3,1,High
+HIST-244,Data Integrity,The system shall update only the selected todo item during editing after page refresh.,5,4,5,1,High
+HIST-245,Browser Compatibility,The system shall render layout consistently across supported browsers while a filter is selected.,2,4,4,0,Low
+HIST-246,Testability,The system shall expose stable selectors for automated todo creation tests on small screen devices.,3,3,5,0,Medium
+HIST-247,Session Behavior,The system shall initialize an empty list for first-time users during normal use.,4,2,3,0,Low
+HIST-248,Todo Creation,The system shall support todo creation after the list has previously been emptied after page refresh.,2,2,4,0,Low
+HIST-249,Todo Editing,The system shall reject edited text containing only spaces while a filter is selected.,2,2,4,0,Low
+HIST-250,Todo Deletion,The system shall keep filter state unchanged after a deletion on small screen devices.,5,5,5,0,High
+HIST-251,Todo Completion,The system shall toggle completion status for the selected todo item during normal use.,4,2,3,0,Low
+HIST-252,Todo Filtering,The system shall update filtered results immediately after a status change after page refresh.,5,4,3,1,High
+HIST-253,Todo Count,The system shall keep count text visible on small screens while a filter is selected.,3,3,5,0,Medium
+HIST-254,Clear Completed,The system shall preserve all active todo items when completed items are cleared on small screen devices.,5,4,5,0,High
+HIST-255,Toggle All,The system shall update every checkbox after toggle all is used during normal use.,4,4,5,0,Medium
+HIST-256,Todo Persistence,The system shall preserve todo order after page refresh after page refresh.,4,2,5,0,Medium
+HIST-257,Todo Display,The system shall render an empty list state when no todo items exist while a filter is selected.,3,1,5,0,Low
+HIST-258,Input Validation,The system shall preserve valid Unicode characters in todo input on small screen devices.,3,4,5,0,Medium
+HIST-259,User Interface,The main todo input field shall be visible without scrolling on the initial page during normal use.,2,2,5,0,Low
+HIST-260,Keyboard Interaction,The system shall not create a todo item when Enter is pressed on invalid input after page refresh.,3,3,4,0,Medium
+HIST-261,Accessibility,The system shall not rely on color alone to indicate completion status while a filter is selected.,3,3,4,0,Medium
+HIST-262,Error Handling,The system shall show fallback behavior when persistence fails on small screen devices.,3,2,4,1,Medium
+HIST-263,Performance,The system shall batch frequent local storage writes when appropriate during normal use.,4,4,3,0,Medium
+HIST-264,Security,The system shall prevent event handler injection through todo content after page refresh.,4,3,4,0,Medium
+HIST-265,Data Integrity,The system shall update only the selected todo item during editing while a filter is selected.,4,2,4,1,High
+HIST-266,Browser Compatibility,The system shall render layout consistently across supported browsers on small screen devices.,3,3,3,0,Low
+HIST-267,Testability,The system shall expose stable selectors for automated todo creation tests during normal use.,4,3,4,1,High
+HIST-268,Session Behavior,The system shall initialize an empty list for first-time users after page refresh.,2,4,5,0,Medium
+HIST-269,Todo Creation,The system shall support todo creation after the list has previously been emptied while a filter is selected.,4,2,5,0,Medium
+HIST-270,Error Handling,The system shall ignore invalid todo records loaded from storage.,5,5,4,0,High
+HIST-271,Toggle All,The system shall update counts after toggle all changes.,5,4,5,1,High
+HIST-272,Security,The system shall sanitize todo text before rendering it in the page.,4,4,4,1,High
+HIST-273,Error Handling,The system shall recover after a failed delete operation.,5,4,5,1,High
+HIST-274,Todo Display,The system shall keep todo controls aligned with their corresponding item.,3,2,4,0,Low
+HIST-275,Todo Completion,The system shall persist completion status after browser refresh.,3,3,5,0,Medium
+HIST-276,Clear Completed,The system shall update active count after clearing completed items.,5,4,4,0,Medium
+HIST-277,Security,The system shall prevent event handler injection through todo content while a filter is selected.,4,2,5,0,Medium
+HIST-278,Data Integrity,The system shall update only the selected todo item during editing on small screen devices.,3,5,3,1,High
+HIST-279,Data Integrity,The system shall keep todo text and completion status associated with the same identifier.,3,4,4,0,Medium
+HIST-280,Toggle All,The system shall mark every todo item as completed when toggle all is activated from a mixed state.,5,4,5,1,High
+HIST-281,Clear Completed,The system shall update persistent storage after clearing completed items.,5,3,5,0,High
+HIST-282,Todo Filtering,The system shall not modify todo data when the filter is changed.,5,4,5,0,High
+HIST-283,Todo Editing,The system shall save edited todo text when focus leaves the edit field.,4,2,3,0,Low
+HIST-284,Todo Creation,The system shall prevent double submission when the create action is triggered rapidly.,4,2,4,0,Medium
+HIST-285,Input Validation,The system shall provide validation feedback without losing typed text.,5,3,4,0,Medium
+HIST-286,Toggle All,The system shall not create new todo items when toggle all is used.,4,5,4,0,Medium
+HIST-287,Todo Filtering,The system shall show a clear empty state for filters with no matching items.,4,4,4,0,Medium
+HIST-288,Input Validation,The system shall reject todo input containing only whitespace.,4,3,5,0,Medium
+HIST-289,Todo Persistence,The system shall update local storage after completion status changes.,4,3,5,0,Medium
+HIST-290,Todo Editing,The system shall trim edited todo text before saving.,4,3,5,0,Medium
+HIST-291,Session Behavior,The system shall not share todo data across unrelated browser profiles.,3,2,5,0,Low
+HIST-292,Session Behavior,The system shall avoid clearing todos when navigating between filter routes.,4,4,5,0,Medium
+HIST-293,Todo Completion,The system shall toggle completion status for the selected todo item while a filter is selected.,3,2,4,0,Low
+HIST-294,Performance,The system shall avoid unnecessary full page reloads during todo operations.,4,3,5,0,Medium
+HIST-295,Todo Count,The system shall keep count text visible on small screens with multiple existing items.,2,2,3,0,Low
+HIST-296,Clear Completed,The system shall preserve all active todo items when completed items are cleared during normal use.,4,3,5,0,Medium
+HIST-297,Input Validation,The system shall reject todo input containing unsupported control characters.,5,3,5,0,High
+HIST-298,Security,The system shall prevent event handler injection through todo content while a filter is selected.,5,4,5,1,High
+HIST-299,Performance,The system shall update filters without noticeable delay.,4,3,5,0,Medium
+HIST-300,Security,The system shall not expose sensitive browser storage errors to users.,3,3,4,1,Medium
+HIST-301,Toggle All,The system shall mark every todo item as completed when toggle all is activated from a mixed state during rapid interaction.,5,4,5,0,High
+HIST-302,Todo Editing,The system shall preserve the original todo text when editing is cancelled.,3,3,5,0,Medium
+HIST-303,Keyboard Interaction,The system shall prevent duplicate keyboard event handling during rapid key presses.,2,4,5,0,Medium
+HIST-304,Todo Persistence,The system shall load saved todo items from local storage on startup.,3,2,5,1,Medium
+HIST-305,Todo Filtering,The system shall preserve the selected filter after page refresh.,3,3,5,0,Medium
+HIST-306,Testability,The system shall keep UI text predictable for assertion checks.,4,3,5,0,Medium
+HIST-307,Data Integrity,The system shall update only the selected todo item during editing in an automated test run.,4,5,3,1,High
+HIST-308,Todo Persistence,The system shall ignore saved records with missing required fields.,5,2,5,0,Medium
+HIST-309,Session Behavior,The system shall retain current todo data within the same browser session.,2,2,5,0,Low
+HIST-310,Security,The system shall avoid executing user-provided HTML attributes in todo text.,5,4,5,1,High
+HIST-311,Security,The system shall prevent event handler injection through todo content while a filter is selected.,5,4,4,0,Medium
+HIST-312,Input Validation,The system shall accept todo input at the maximum valid length.,4,4,4,1,High
+HIST-313,Browser Compatibility,The system shall render layout consistently across supported browsers with multiple existing items.,2,4,5,0,Medium
+HIST-314,Security,The system shall sanitize todo text before rendering it in the page during normal use.,5,2,3,0,Medium
+HIST-315,Todo Filtering,The system shall update filtered results immediately after a status change after page refresh.,2,2,3,0,Low
+HIST-316,Todo Editing,The system shall keep the edited todo item in its original list position.,3,3,4,0,Medium
+HIST-317,Input Validation,The system shall accept todo input at the minimum valid length.,3,4,5,0,Medium
+HIST-318,Todo Persistence,The system shall recover gracefully when local storage contains malformed JSON.,3,3,4,0,Medium
+HIST-319,Todo Display,The system shall show newly created items without requiring page refresh.,2,1,5,1,Medium
+HIST-320,Todo Count,The system shall update active item count after deleting a todo item.,3,3,4,0,Medium
+HIST-321,Todo Count,The system shall use plural wording for zero or multiple active items.,3,1,5,0,Low
+HIST-322,Accessibility,The todo input field shall have a programmatically associated accessible label.,4,2,4,0,Medium
+HIST-323,Clear Completed,The system shall update persistent storage after clearing completed items during rapid interaction.,4,4,4,1,High
+HIST-324,Todo Filtering,The system shall not modify todo data when the filter is changed when storage already contains todos.,4,3,3,1,High
+HIST-325,Todo Persistence,The system shall load saved todo items from local storage on startup in an automated test run.,5,4,5,0,High
+HIST-326,User Interface,The system shall show visual feedback after a todo item is removed.,3,2,5,0,Low
+HIST-327,Todo Persistence,The system shall preserve todo order after page refresh during rapid interaction.,3,3,4,1,Medium
+HIST-328,Input Validation,The system shall accept todo input at the maximum valid length after page refresh.,5,3,3,0,Medium
+HIST-329,Toggle All,The system shall update counts after toggle all changes while a filter is selected.,5,4,5,0,High
+HIST-330,Security,The system shall sanitize todo text before rendering it in the page on small screen devices.,5,4,5,0,High
+HIST-331,Error Handling,The system shall recover after a failed delete operation during normal use.,4,4,4,1,High
+HIST-332,Todo Creation,The system shall support todo creation after the list has previously been emptied after page refresh.,4,3,3,0,Medium
+HIST-333,Todo Creation,The system shall reject todo creation when the input exceeds 1000 characters.,4,3,4,1,High
+HIST-334,Todo Count,The system shall use plural wording for zero or multiple active items in an automated test run.,3,2,3,1,Medium
+HIST-335,Todo Deletion,The system shall ask for no unnecessary page reload after deleting a todo item.,3,2,4,0,Low
+HIST-336,Keyboard Interaction,The system shall not create a todo item when Enter is pressed on invalid input during rapid interaction.,3,3,3,0,Low
+HIST-337,Todo Count,The system shall keep count text visible on small screens after page refresh.,3,2,4,0,Low
+HIST-338,Session Behavior,The system shall recover visible todo data after accidental page refresh.,2,3,4,0,Low
+HIST-339,Todo Filtering,The system shall preserve the selected filter after page refresh in an automated test run.,3,3,4,0,Medium
+HIST-340,Input Validation,The system shall provide validation feedback without losing typed text with multiple existing items.,5,4,5,1,High
+HIST-341,Data Integrity,The system shall update only the selected todo item during editing during rapid interaction.,4,3,3,1,High
+HIST-342,Todo Persistence,The system shall ignore saved records with missing required fields after page refresh.,5,3,4,1,High
+HIST-343,Clear Completed,The system shall remove all completed todo items when clear completed is selected.,4,4,4,0,Medium
+HIST-344,Todo Editing,The system shall preserve the original todo text when editing is cancelled on small screen devices.,4,3,4,0,Medium
+HIST-345,Clear Completed,The system shall handle clearing completed items repeatedly without crashing.,5,2,5,0,Medium
+HIST-346,Todo Completion,The system shall persist completion status after browser refresh after page refresh.,3,4,5,0,Medium
+HIST-347,Todo Editing,The system shall update local storage after edit confirmation.,3,3,5,0,Medium
+HIST-348,Todo Completion,The system shall preserve selected filter after completion status changes.,3,3,5,0,Medium
+HIST-349,Browser Compatibility,The system shall work correctly in Edge.,3,4,4,0,Medium
+HIST-350,Todo Count,The system shall use plural wording for zero or multiple active items after page refresh.,2,2,4,0,Low
+HIST-351,Todo Creation,The system shall create a todo item when valid text is submitted from the main input field.,2,3,3,0,Low
+HIST-352,Todo Count,The system shall update active item count after toggling completion status.,3,3,5,0,Medium
+HIST-353,Todo Display,The system shall show newly created items without requiring page refresh during normal use.,4,3,3,0,Medium
+HIST-354,User Interface,The todo list shall remain readable on mobile screen widths.,2,2,3,1,Medium
+HIST-355,Todo Editing,The system shall prevent editing conflicts during rapid repeated clicks.,5,2,5,1,High
+HIST-356,Error Handling,The system shall continue operating when local storage is unavailable.,5,4,4,0,Medium
+HIST-357,Toggle All,The system shall persist toggle all changes after refresh.,5,2,5,0,Medium
+HIST-358,Clear Completed,The system shall handle clearing completed items repeatedly without crashing after page refresh.,5,3,5,0,High
+HIST-359,Browser Compatibility,The system shall work correctly in Firefox.,2,2,3,0,Low
+HIST-360,Session Behavior,The system shall preserve user changes made before closing the browser tab.,4,2,5,1,High
+HIST-361,Input Validation,The system shall provide validation feedback without losing typed text during normal use.,5,4,5,0,High
+HIST-362,Performance,The system shall update filters without noticeable delay after page refresh.,5,2,5,0,Medium
+HIST-363,Todo Creation,The system shall create only one todo item when Enter and the add button are triggered together.,3,2,5,0,Low
+HIST-364,Todo Completion,The system shall toggle completion status for the selected todo item on small screen devices.,3,2,5,0,Low
+HIST-365,Input Validation,The system shall reject todo input exceeding the maximum length by one character.,5,2,4,0,Medium
+HIST-366,Todo Deletion,The system shall maintain correct active count after deleting a completed item.,4,3,5,0,Medium
+HIST-367,Browser Compatibility,The system shall work correctly in Firefox when storage already contains todos.,3,2,5,0,Low
+HIST-368,Todo Persistence,The system shall recover gracefully when local storage contains malformed JSON in an automated test run.,5,4,4,1,High
+HIST-369,Testability,The system shall keep UI text predictable for assertion checks with multiple existing items.,5,2,5,0,Medium
+HIST-370,Todo Persistence,The system shall update local storage after todo editing.,5,4,4,1,High
+HIST-371,Todo Completion,The system shall support toggling completion status repeatedly without data corruption.,3,2,5,0,Low
+HIST-372,Input Validation,The system shall reject todo input containing only whitespace in an automated test run.,5,4,4,1,High
+HIST-373,Todo Deletion,The system shall update persistent storage after deleting an item.,5,3,4,0,Medium
+HIST-374,Todo Completion,The system shall preserve selected filter after completion status changes during rapid interaction.,4,4,4,0,Medium
+HIST-375,Toggle All,The system shall not create new todo items when toggle all is used when storage already contains todos.,5,3,3,0,Medium
+HIST-376,Data Integrity,The system shall keep todo text and completion status associated with the same identifier in an automated test run.,4,3,3,0,Medium
+HIST-377,Todo Display,The system shall display todo text exactly as saved after sanitization.,3,2,5,0,Low
+HIST-378,Todo Creation,The system shall preserve special punctuation when creating a todo item.,4,3,5,0,Medium
+HIST-379,Todo Editing,The system shall keep the edited todo item in its original list position when storage already contains todos.,3,2,4,0,Low
+HIST-380,Keyboard Interaction,The user shall confirm editing by pressing Enter in the edit field.,3,4,4,1,High
+HIST-381,Input Validation,The system shall reject todo input containing unsupported control characters with multiple existing items.,5,3,3,1,High
+HIST-382,User Interface,The system shall display consistent spacing between todo items.,3,1,5,1,Medium
+HIST-383,Input Validation,The system shall accept todo input at the maximum valid length when storage already contains todos.,5,4,3,0,Medium
+HIST-384,Todo Creation,The system shall create only one todo item when Enter and the add button are triggered together in an automated test run.,5,2,3,0,Medium
+HIST-385,Clear Completed,The system shall remove all completed todo items when clear completed is selected with multiple existing items.,5,3,5,0,High
+HIST-386,Todo Deletion,The system shall update persistent storage after deleting an item during rapid interaction.,5,4,4,0,Medium
+HIST-387,Todo Display,The system shall keep todo controls aligned with their corresponding item when storage already contains todos.,3,2,3,0,Low
+HIST-388,Testability,The system shall expose stable selectors for automated deletion tests.,3,2,3,1,Medium
+HIST-389,Testability,The system shall produce deterministic todo order for repeated test runs.,3,4,4,1,High
+HIST-390,Accessibility,The system shall support screen reader announcement for validation errors.,3,3,5,0,Medium
+HIST-391,Todo Deletion,The system shall update the visible list immediately after deletion.,4,3,4,0,Medium
+HIST-392,Clear Completed,The system shall keep the selected filter after clearing completed items.,4,3,5,0,Medium
+HIST-393,Security,The system shall sanitize todo text before rendering it in the page with multiple existing items.,4,3,5,1,High
+HIST-394,Todo Count,The system shall update active item count after toggling completion status during rapid interaction.,2,3,4,0,Low
+HIST-395,Todo Persistence,The system shall preserve todo order after page refresh when storage already contains todos.,4,3,5,0,Medium
+HIST-396,Keyboard Interaction,The user shall cancel editing by pressing Escape in the edit field.,3,4,5,1,High
+HIST-397,Keyboard Interaction,The system shall allow keyboard navigation to each todo control.,4,3,3,1,High
+HIST-398,Data Integrity,The system shall assign a unique identifier to each todo item.,5,2,3,0,Medium
+HIST-399,Toggle All,The system shall persist toggle all changes after refresh after page refresh.,5,2,4,0,Medium
+HIST-400,Toggle All,The system shall disable toggle all when the list is empty.,5,4,5,1,High
