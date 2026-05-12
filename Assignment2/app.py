@@ -37,6 +37,15 @@ from src.test_strategy_selector import select_strategies
 
 st.set_page_config(page_title="AutoTestDesign", layout="wide")
 
+PAGE_OPTIONS = [
+    "Requirement Input",
+    "Structuring & Risk",
+    "Coverage & Strategy",
+    "Test Cases",
+    "AI Review",
+    "Persistence & Export",
+]
+
 
 def inject_style() -> None:
     st.markdown(
@@ -232,6 +241,27 @@ def init_state() -> None:
         )[0]
     if "project_name" not in st.session_state:
         st.session_state.project_name = "simpletodolist"
+    if "current_page" not in st.session_state:
+        st.session_state.current_page = PAGE_OPTIONS[0]
+    if st.session_state.current_page not in PAGE_OPTIONS:
+        st.session_state.current_page = PAGE_OPTIONS[0]
+
+
+def go_to_page(page_name: str) -> None:
+    st.session_state.current_page = page_name
+
+
+def render_next_step(label: str, target_page: str) -> None:
+    st.divider()
+    _, action_col, _ = st.columns([1, 2, 1])
+    with action_col:
+        st.button(
+            label,
+            type="primary",
+            use_container_width=True,
+            on_click=go_to_page,
+            args=(target_page,),
+        )
 
 
 def compute_artifacts() -> dict[str, pd.DataFrame]:
@@ -324,14 +354,9 @@ with st.sidebar:
     st.markdown("### 🛠️ AutoTestDesign Workflow")
     page = st.radio(
         "Workflow",
-        [
-            "Requirement Input",
-            "Structuring & Risk",
-            "Coverage & Strategy",
-            "Test Cases",
-            "AI Review",
-            "Persistence & Export",
-        ],
+        PAGE_OPTIONS,
+        index=PAGE_OPTIONS.index(st.session_state.current_page),
+        key="current_page",
         label_visibility="collapsed",
     )
     st.divider()
@@ -418,6 +443,10 @@ if page == "Requirement Input":
             key="requirements_editor",
         )
         st.session_state.requirements = edited
+        render_next_step(
+            "Next: Structure Requirements and Analyze Risk",
+            "Structuring & Risk",
+        )
 
 if page == "Structuring & Risk":
     section_header("Requirement Structuring", "file")
@@ -426,6 +455,10 @@ if page == "Structuring & Risk":
     st.dataframe(artifacts["risk_analysis"], width="stretch")
     st.caption("Performance targets are tracked locally for reporting.")
     st.dataframe(artifacts["performance"], width="stretch")
+    render_next_step(
+        "Next: Identify Coverage and Select Strategy",
+        "Coverage & Strategy",
+    )
 
 if page == "Coverage & Strategy":
     section_header("Coverage Items", "map")
@@ -434,6 +467,7 @@ if page == "Coverage & Strategy":
     st.dataframe(artifacts["test_strategies"], width="stretch")
     with st.expander("State transition model sequences"):
         st.dataframe(artifacts["state_transition_sequences"], width="stretch")
+    render_next_step("Next: Generate and Review Test Cases", "Test Cases")
 
 if page == "Test Cases":
     section_header("Generated Test Cases", "case")
@@ -450,6 +484,7 @@ if page == "Test Cases":
         st.dataframe(artifacts["optimized_test_cases"], width="stretch")
     with st.expander("Standalone state transition tests"):
         st.dataframe(artifacts["state_transition_sequences"], width="stretch")
+    render_next_step("Next: Run Optional AI Review", "AI Review")
 
 if page == "AI Review":
     section_header("AI Coverage Review", "ai")
@@ -480,9 +515,13 @@ if page == "AI Review":
                     provider=st.session_state.selected_provider,
                     model=st.session_state.selected_model,
                 )
-                st.text_area("AI suggestions", result, height=300)
+                st.markdown("#### AI suggestions")
+                st.markdown(result)
+                with st.expander("Raw AI response"):
+                    st.text_area("Raw output", result, height=240)
             except Exception as exc:
                 st.error(f"AI review failed: {exc}")
+    render_next_step("Next: Save and Export Artifacts", "Persistence & Export")
 
 if page == "Persistence & Export":
     section_header("Local Project Persistence", "save")
