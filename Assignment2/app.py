@@ -1,7 +1,12 @@
 import pandas as pd
 import streamlit as st
 
-from src.ai_client import available_models, available_provider_names, chat_completion, is_llm_enabled
+from src.ai_client import (
+    available_models,
+    available_provider_names,
+    chat_completion,
+    is_llm_enabled,
+)
 from src.coverage_identifier import identify_coverage_items
 from src.exporter import (
     build_traceability_matrix,
@@ -12,8 +17,16 @@ from src.exporter import (
     export_test_artifacts,
 )
 from src.performance_tracker import measure_time
-from src.persistence import build_project_state, list_projects, load_project, save_project
-from src.prompt_templates import COVERAGE_IMPROVEMENT_SYSTEM, coverage_improvement_prompt
+from src.persistence import (
+    build_project_state,
+    list_projects,
+    load_project,
+    save_project,
+)
+from src.prompt_templates import (
+    COVERAGE_IMPROVEMENT_SYSTEM,
+    coverage_improvement_prompt,
+)
 from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import structure_requirements
 from src.risk_analyzer import analyze_risks
@@ -21,7 +34,6 @@ from src.state_modeler import generate_all_transitions_sequence
 from src.suite_optimizer import optimize_suite
 from src.test_case_generator import generate_test_cases
 from src.test_strategy_selector import select_strategies
-
 
 st.set_page_config(page_title="AutoTestDesign", layout="wide")
 
@@ -31,16 +43,23 @@ def inject_style() -> None:
         """
         <style>
         :root {
-          --surface: #f7f5f0;
-          --panel: #ffffff;
+          --main-bg: #FFFBEB;
+          --panel: #FFFFFF;
           --ink: #1d1d1b;
-          --muted: #6f6b63;
+          --primary: #F59E0B;
+          --primary-soft: rgba(245, 158, 11, 0.15);
+          --secondary: #EF4444;
+          --success: #059669;
+          
+          --sidebar-bg: #FEF3C7;
+          --sidebar-sel-bg: #FBBF24;
+          --sidebar-sel-text: #78350F;
+          --sidebar-unsel-text: #92400E;
+          
           --line: #ded9cf;
-          --accent: #2f5d50;
-          --accent-soft: #e6eee9;
         }
         .stApp {
-          background: linear-gradient(180deg, #faf9f5 0%, var(--surface) 100%);
+          background: var(--main-bg);
           color: var(--ink);
         }
         #MainMenu, footer {
@@ -67,23 +86,45 @@ def inject_style() -> None:
           font-weight: 560;
         }
         [data-testid="stSidebar"] {
-          background: #f1eee7;
-          border-right: 1px solid var(--line);
+          background-color: var(--sidebar-bg);
+          background-image: 
+            linear-gradient(rgba(251, 191, 36, 0.15) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(251, 191, 36, 0.15) 1px, transparent 1px);
+          background-size: 20px 20px;
+          border-right: 1px solid rgba(251, 191, 36, 0.3);
         }
-        [data-testid="stSidebar"] .stRadio > label {
-          color: var(--muted);
-          font-size: 0.86rem;
+        [data-testid="stSidebar"] * {
+          color: var(--sidebar-unsel-text) !important;
+        }
+        [data-testid="stSidebar"] div[data-testid="stRadio"] div[role="radiogroup"] > label {
+          background: transparent;
+          border-radius: 6px;
+          padding: 0.25rem 0.5rem;
+          margin-bottom: 0.25rem;
+          transition: background 0.2s;
+        }
+        [data-testid="stSidebar"] div[data-testid="stRadio"] div[role="radiogroup"] > label:hover {
+          background: rgba(251, 191, 36, 0.3);
+        }
+        [data-testid="stSidebar"] div[data-testid="stRadio"] div[role="radiogroup"] > label[data-checked="true"],
+        [data-testid="stSidebar"] div[data-testid="stRadio"] input:checked + div {
+          background-color: transparent !important;
+        }
+        [data-testid="stSidebar"] div[data-testid="stRadio"] div[role="radiogroup"] > label[data-checked="true"] *,
+        [data-testid="stSidebar"] div[data-testid="stRadio"] input:checked + div * {
+          color: var(--sidebar-sel-text) !important;
+          font-weight: 600;
         }
         .hero {
           border: 1px solid var(--line);
-          background: rgba(255, 255, 255, 0.74);
+          background: var(--panel);
           border-radius: 8px;
           padding: 1.25rem 1.35rem;
           margin-bottom: 1.1rem;
-          box-shadow: 0 18px 50px rgba(34, 31, 26, 0.06);
+          box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.05), 0 2px 4px -1px rgba(245, 158, 11, 0.03);
         }
         .eyebrow {
-          color: var(--accent);
+          color: var(--primary);
           font-size: 0.78rem;
           font-weight: 650;
           letter-spacing: .08em;
@@ -91,7 +132,7 @@ def inject_style() -> None:
           margin-bottom: .35rem;
         }
         .subtle {
-          color: var(--muted);
+          color: #6f6b63;
           font-size: 0.98rem;
           line-height: 1.55;
           margin: 0;
@@ -103,13 +144,14 @@ def inject_style() -> None:
           margin: 1rem 0 1.15rem;
         }
         .metric-card {
-          border: 1px solid var(--line);
-          background: rgba(255,255,255,.68);
+          border: 1px solid rgba(245, 158, 11, 0.2);
+          background: var(--panel);
           border-radius: 8px;
           padding: .9rem 1rem;
+          box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.05);
         }
         .metric-label {
-          color: var(--muted);
+          color: #6f6b63;
           font-size: .78rem;
           margin-bottom: .35rem;
         }
@@ -129,20 +171,20 @@ def inject_style() -> None:
         .line-icon {
           width: 18px;
           height: 18px;
-          color: var(--accent);
+          color: var(--primary);
         }
         .stButton>button, .stDownloadButton>button {
           border-radius: 6px;
           border: 1px solid #cfc8bc;
-          background: #ffffff;
+          background: var(--panel);
           color: var(--ink);
           padding: .48rem .8rem;
           font-weight: 520;
         }
         .stButton>button:hover, .stDownloadButton>button:hover {
-          border-color: var(--accent);
-          color: var(--accent);
-          background: var(--accent-soft);
+          border-color: var(--primary);
+          color: var(--primary);
+          background: var(--primary-soft);
         }
         [data-testid="stDataFrame"], [data-testid="stDataEditor"] {
           border: 1px solid var(--line);
@@ -185,7 +227,9 @@ def init_state() -> None:
     if "selected_provider" not in st.session_state:
         st.session_state.selected_provider = available_provider_names()[0]
     if "selected_model" not in st.session_state:
-        st.session_state.selected_model = available_models(st.session_state.selected_provider)[0]
+        st.session_state.selected_model = available_models(
+            st.session_state.selected_provider
+        )[0]
     if "project_name" not in st.session_state:
         st.session_state.project_name = "simpletodolist"
 
@@ -196,7 +240,9 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
     risk_time, risks = measure_time(analyze_risks, structured)
     coverage_items = identify_coverage_items(structured, risks)
     strategies = select_strategies(coverage_items)
-    generation_time, test_cases = measure_time(generate_test_cases, structured, coverage_items, strategies)
+    generation_time, test_cases = measure_time(
+        generate_test_cases, structured, coverage_items, strategies
+    )
     optimized_cases = optimize_suite(test_cases)
     state_sequences = generate_all_transitions_sequence()
     traceability = build_traceability_matrix(
@@ -207,9 +253,15 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
     )
     performance = pd.DataFrame(
         [
-            {"metric": "requirement_structuring_seconds", "value": round(structuring_time, 4)},
+            {
+                "metric": "requirement_structuring_seconds",
+                "value": round(structuring_time, 4),
+            },
             {"metric": "risk_analysis_seconds", "value": round(risk_time, 4)},
-            {"metric": "test_case_generation_seconds", "value": round(generation_time, 4)},
+            {
+                "metric": "test_case_generation_seconds",
+                "value": round(generation_time, 4),
+            },
         ]
     )
     return {
@@ -228,13 +280,17 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
 
 def render_metrics(artifacts: dict[str, pd.DataFrame]) -> None:
     risk_values = artifacts["risk_analysis"]["risk_level"].value_counts().to_dict()
+    high_risk_count = risk_values.get("High", 0)
+    risk_color_style = (
+        "color: var(--secondary);" if high_risk_count > 0 else "color: var(--success);"
+    )
     st.markdown(
         f"""
         <div class="metric-row">
           <div class="metric-card"><div class="metric-label">Requirements</div><div class="metric-value">{len(artifacts["requirements"])}</div></div>
           <div class="metric-card"><div class="metric-label">Coverage Items</div><div class="metric-value">{len(artifacts["coverage_items"])}</div></div>
           <div class="metric-card"><div class="metric-label">Test Cases</div><div class="metric-value">{len(artifacts["test_cases"])}</div></div>
-          <div class="metric-card"><div class="metric-label">High Risk</div><div class="metric-value">{risk_values.get("High", 0)}</div></div>
+          <div class="metric-card"><div class="metric-label">High Risk</div><div class="metric-value" style="{risk_color_style}">{high_risk_count}</div></div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -265,7 +321,7 @@ inject_style()
 init_state()
 
 with st.sidebar:
-    st.markdown("### AutoTestDesign")
+    st.markdown("### 🛠️ AutoTestDesign Workflow")
     page = st.radio(
         "Workflow",
         [
@@ -279,22 +335,28 @@ with st.sidebar:
         label_visibility="collapsed",
     )
     st.divider()
-    st.session_state.project_name = st.text_input("Project", st.session_state.project_name)
+    st.session_state.project_name = st.text_input(
+        "Project", st.session_state.project_name
+    )
     providers = available_provider_names()
     st.session_state.selected_provider = st.selectbox(
         "Provider",
         providers,
-        index=providers.index(st.session_state.selected_provider)
-        if st.session_state.selected_provider in providers
-        else 0,
+        index=(
+            providers.index(st.session_state.selected_provider)
+            if st.session_state.selected_provider in providers
+            else 0
+        ),
     )
     models = available_models(st.session_state.selected_provider)
     st.session_state.selected_model = st.selectbox(
         "Model",
         models,
-        index=models.index(st.session_state.selected_model)
-        if st.session_state.selected_model in models
-        else 0,
+        index=(
+            models.index(st.session_state.selected_model)
+            if st.session_state.selected_model in models
+            else 0
+        ),
     )
     st.caption("Provider and model are used by optional LLM review.")
 
@@ -304,7 +366,7 @@ st.markdown(
     """
     <div class="hero">
       <div class="eyebrow">AI-assisted test design</div>
-      <h1>AutoTestDesign</h1>
+    <h1>🛠️ AutoTestDesign Workflow</h1>
       <p class="subtle">A calm workspace for requirement analysis, risk-based prioritization, coverage review, and traceable test design.</p>
     </div>
     """,
@@ -315,7 +377,9 @@ render_metrics(artifacts)
 if page == "Requirement Input":
     with st.container():
         section_header("Requirement Input", "file")
-        st.caption("Import CSV requirements, paste plain text, or edit the table directly.")
+        st.caption(
+            "Import CSV requirements, paste plain text, or edit the table directly."
+        )
 
         upload_col, text_col = st.columns([1, 1], gap="medium")
         with upload_col:
@@ -329,7 +393,9 @@ if page == "Requirement Input":
                     ].copy()
                     st.success("CSV requirements loaded.")
                 else:
-                    st.error("CSV must include requirement_id, module, and requirement_text columns.")
+                    st.error(
+                        "CSV must include requirement_id, module, and requirement_text columns."
+                    )
 
         with text_col:
             raw_requirements = st.text_area(
@@ -387,13 +453,23 @@ if page == "Test Cases":
 
 if page == "AI Review":
     section_header("AI Coverage Review", "ai")
-    st.write(f"Selected provider: `{st.session_state.selected_provider}`")
-    st.write(f"Selected model: `{st.session_state.selected_model}`")
+    st.markdown(
+        f"<p style='font-size: 18px;'>Selected provider: <strong style='font-size: 20px; background-color: transparent; color: brown; padding: 4px 8px; border-radius: 4px;'>{st.session_state.selected_provider}</strong></p>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"<p style='font-size: 18px;'>Selected model: <strong style='font-size: 20px; background-color: transparent; color: brown; padding: 4px 8px; border-radius: 4px;'>{st.session_state.selected_model}</strong></p>",
+        unsafe_allow_html=True,
+    )
     if not is_llm_enabled(st.session_state.selected_provider):
-        st.info("Selected provider is not configured. Local rules remain available. Copy .env.example to .env to enable model calls.")
+        st.info(
+            "Selected provider is not configured. Local rules remain available. Copy .env.example to .env to enable model calls."
+        )
     else:
         user_prompt = coverage_improvement_prompt(
-            artifacts["structured_requirements"][["requirement_id", "requirement_text"]].to_string(index=False),
+            artifacts["structured_requirements"][
+                ["requirement_id", "requirement_text"]
+            ].to_string(index=False),
             artifacts["coverage_items"].to_string(index=False),
         )
         if st.button("Review Coverage"):
@@ -423,33 +499,49 @@ if page == "Persistence & Export":
             st.success(f"Saved to {path}")
     with right:
         projects = list_projects()
-        selected_project = st.selectbox("Saved projects", projects) if projects else None
+        selected_project = (
+            st.selectbox("Saved projects", projects) if projects else None
+        )
         if selected_project and st.button("Load Project"):
             loaded = load_project(selected_project)
-            st.session_state.project_name = loaded.get("project_name", st.session_state.project_name)
-            st.session_state.selected_provider = loaded.get("selected_provider", st.session_state.selected_provider)
-            st.session_state.selected_model = loaded.get("selected_model", st.session_state.selected_model)
+            st.session_state.project_name = loaded.get(
+                "project_name", st.session_state.project_name
+            )
+            st.session_state.selected_provider = loaded.get(
+                "selected_provider", st.session_state.selected_provider
+            )
+            st.session_state.selected_model = loaded.get(
+                "selected_model", st.session_state.selected_model
+            )
             requirements_records = loaded.get("artifacts", {}).get("requirements", [])
             if requirements_records:
                 st.session_state.requirements = pd.DataFrame(requirements_records)
             st.success(f"Loaded {selected_project}")
 
     section_header("Export Artifacts", "save")
-    export_left, export_mid, export_right, export_json_col = st.columns(4, gap="medium")
-    with export_left:
-        if st.button("Export Risk Excel"):
-            path = export_excel({"risk_analysis": artifacts["risk_analysis"]}, "risk_analysis.xlsx")
+    row1_cols = st.columns(3, gap="medium")
+    with row1_cols[0]:
+        if st.button("Export Risk Excel", use_container_width=True):
+            path = export_excel(
+                {"risk_analysis": artifacts["risk_analysis"]}, "risk_analysis.xlsx"
+            )
             st.success(f"Saved to {path}")
-    with export_mid:
-        if st.button("Export Test Cases Excel"):
-            path = export_excel({"test_cases": artifacts["optimized_test_cases"]}, "test_cases.xlsx")
+    with row1_cols[1]:
+        if st.button("Export Test Cases Excel", use_container_width=True):
+            path = export_excel(
+                {"test_cases": artifacts["optimized_test_cases"]}, "test_cases.xlsx"
+            )
             st.success(f"Saved to {path}")
-    with export_right:
-        if st.button("Export Traceability CSV"):
-            path = export_csv(artifacts["traceability_matrix"], "traceability_matrix.csv")
+    with row1_cols[2]:
+        if st.button("Export Traceability CSV", use_container_width=True):
+            path = export_csv(
+                artifacts["traceability_matrix"], "traceability_matrix.csv"
+            )
             st.success(f"Saved to {path}")
-    with export_json_col:
-        if st.button("Export Project JSON"):
+
+    row2_cols = st.columns(3, gap="medium")
+    with row2_cols[0]:
+        if st.button("Export Project JSON", use_container_width=True):
             state = build_project_state(
                 st.session_state.project_name,
                 st.session_state.selected_provider,
@@ -458,10 +550,8 @@ if page == "Persistence & Export":
             )
             path = export_json(state, "test_suite_artifacts.json")
             st.success(f"Saved to {path}")
-
-    full_export_col, draft_export_col = st.columns([1, 1], gap="medium")
-    with full_export_col:
-        if st.button("Export Full Test Design Artifacts"):
+    with row2_cols[1]:
+        if st.button("Export Full Test Design Artifacts", use_container_width=True):
             paths = export_test_artifacts(
                 structured_requirements=artifacts["structured_requirements"],
                 coverage_items=artifacts["coverage_items"],
@@ -472,8 +562,8 @@ if page == "Persistence & Export":
             )
             st.success("Full artifact export completed.")
             render_export_paths(paths)
-    with draft_export_col:
-        if st.button("Export Selenium/PyTest Draft"):
+    with row2_cols[2]:
+        if st.button("Export Selenium/PyTest Draft", use_container_width=True):
             path = export_selenium_pytest_draft(artifacts["optimized_test_cases"])
             st.success(f"Saved to {path}")
 
