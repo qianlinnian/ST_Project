@@ -2,7 +2,7 @@
 
 This backend is a lightweight REST API extension for the `Todo Item Management` feature of `simpletodolist`.
 
-It is intentionally limited to todo item CRUD, completion state, filtering, and JSON-file persistence. It does not implement admin login, multi-user behavior, or todo list management.
+It is intentionally limited to todo item CRUD, completion state, filtering, and SQLite persistence. It does not implement admin login, multi-user behavior, or todo list management.
 
 ## Run
 
@@ -25,6 +25,12 @@ http://127.0.0.1:5000/api
 
 Start this backend before using `todo.html` in API-backed mode. The list management and admin pages still use the original browser storage behavior.
 
+FastAPI also exposes OpenAPI documentation at:
+
+```text
+http://127.0.0.1:5000/docs
+```
+
 ## API
 
 ```text
@@ -38,7 +44,7 @@ PUT    /api/todos/<id>
 PATCH  /api/todos/<id>/complete
 PATCH  /api/todos/complete-all
 DELETE /api/todos/<id>
-DELETE /api/todos/completed
+POST   /api/todos/clear-completed
 ```
 
 ## Test

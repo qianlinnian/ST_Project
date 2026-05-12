@@ -28,6 +28,7 @@ env/
 # Assignment2 generated exports
 Assignment2/exports/*
 !Assignment2/exports/.gitkeep
-
+Assignment2/data/*.db
+Assignment2/data/*.db-journal
 # work log
 *log.md
