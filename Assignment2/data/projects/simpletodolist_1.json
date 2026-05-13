@@ -1,6 +1,6 @@
 {
   "project_name": "simpletodolist",
-  "saved_at": "2026-05-12T02:22:40.014810+00:00",
+  "saved_at": "2026-05-12T17:29:52.339978+00:00",
   "selected_provider": "deepseek",
   "selected_model": "deepseek-v4-flash",
   "artifacts": {
@@ -3798,15 +3798,15 @@
     "performance": [
       {
         "metric": "requirement_structuring_seconds",
-        "value": 0.0132
+        "value": 0.004
       },
       {
         "metric": "risk_analysis_seconds",
-        "value": 0.0039
+        "value": 0.0018
       },
       {
         "metric": "test_case_generation_seconds",
-        "value": 0.0496
+        "value": 0.0609
       }
     ]
   }

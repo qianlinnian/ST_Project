@@ -17,6 +17,7 @@ d22abc7310da36e632aba1507b38ceaa7af60106
 61e4c9a feat: 为 Todo 管理补充轻量后端和 API 测试
 581e23d feat: 接入 Todo 前端到轻量后端 API
 d22abc7 refactor: 将 Todo 后端迁移为 FastAPI 和 SQLite
+f615e4a feat: add list-scoped todo backend support
 ```
 
 ## 总体变化
@@ -97,7 +98,7 @@ total
 
 ## 新增 SQLite 持久化
 
-原项目只使用浏览器 `localStorage`。补充后端后，Todo item 会保存到 SQLite 数据库：
+原项目只使用浏览器 `localStorage`。补充后端后，Todo List 和 Todo Item 会保存到 SQLite 数据库：
 
 ```text
 simpletodolist/backend/data/todos.db
@@ -159,11 +160,13 @@ todo.storage.createStore(todo.app.getTodoStorageName('todos-' + todoListName));
 todo.app.storage = todo.storage;
 ```
 
-也就是说，Todo Item Management 页面现在会通过后端 API 保存和读取 todo 数据。
+也就是说，Todo Item Management 页面现在会通过后端 API 保存和读取 todo 数据，并且每个 item 都归属于具体的 Todo List。
 
 `todolists.html` 也改为使用 `ApiStorage` 管理 Todo List，因此在列表页新增、删除、重命名 list 都会写入后端 SQLite。
 
 `adminview.html` 改为只调用 `GET /api/lists`，用于展示每个 list 的 `active / completed / all` 数量，不再读取浏览器 `localStorage`。
+
+Simple Auth Management 仍保留原前端实现：`adminlogin.html` 和 `js/admin.js` 负责校验固定账号密码，并使用 cookie 保存登录状态。本次没有为 auth 补充后端认证接口，因为作业测试重点是 Todo Item Management 及其依赖的 Todo List 数据隔离。
 
 ## 保守保留原前端核心逻辑
 
@@ -240,7 +243,13 @@ http://127.0.0.1:5000/docs
 
 ## 结论
 
-这次后端补充没有把原项目重写成完整 full-stack 系统，而是在 Todo Item Management 这个主要功能模块上补充了轻量后端。
+这次后端补充没有把原项目重写成完整 full-stack 系统，而是围绕作业测试重点补充了轻量后端：
+
+- Todo Item Management：完整接入后端 CRUD、完成状态、过滤和持久化。
+- Todo List Management：接入后端 list 创建、删除、重命名、统计和 item 隔离。
+- Admin View：接入后端统计读取，用于展示每个 list 的 active / completed / all 数量。
+
+Simple Auth Management 暂未补充后端认证，仍使用原前端 cookie 方案。它不影响 Todo Item Management 和 Todo List Management 的 API 测试、UI 测试与前后端集成测试。
 
 最终目标是让该模块可以支持：
 
