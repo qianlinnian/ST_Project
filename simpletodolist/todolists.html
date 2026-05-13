@@ -36,6 +36,7 @@
 </section>
 
 <script src="js/store.js"></script>
+<script src="js/api.js"></script>
 <script src="js/listmanagementtemplate.js"></script>
 <script src="js/listmanagementview.js"></script>
 <script src="js/todoapp.js"></script>
@@ -47,6 +48,9 @@
 window.app = window.app || {};
 
 var todo = new Todo('todos-eviltester');
+todo.storage = new ApiStorage();
+todo.storage.createStore(todo.app.getTodoStorageName('todos-eviltester'));
+todo.app.storage = todo.storage;
 window.app = todo.app;
 
 

@@ -34,6 +34,12 @@ def create_todo(client, title="Buy milk"):
     return response.json()["data"]
 
 
+def create_todo_in_list(client, list_name, title="Buy milk"):
+    response = client.post(f"/api/todos?list={list_name}", json={"title": title})
+    assert response.status_code == 201
+    return response.json()["data"]
+
+
 def test_health_check(client):
     response = client.get("/api/health")
     assert response.status_code == 200
@@ -50,6 +56,47 @@ def test_create_and_list_todo(client):
     assert todos[0]["id"] == created["id"]
     assert todos[0]["title"] == "Buy milk"
     assert todos[0]["completed"] is False
+    assert todos[0]["list_name"] == "todos-eviltester"
+
+
+def test_todos_are_scoped_to_list(client):
+    first = create_todo_in_list(client, "todos-work", "Work item")
+    second = create_todo_in_list(client, "todos-home", "Home item")
+
+    work_todos = client.get("/api/todos?list=todos-work").json()["data"]
+    home_todos = client.get("/api/todos?list=todos-home").json()["data"]
+
+    assert [todo["id"] for todo in work_todos] == [first["id"]]
+    assert [todo["title"] for todo in work_todos] == ["Work item"]
+    assert [todo["id"] for todo in home_todos] == [second["id"]]
+    assert [todo["title"] for todo in home_todos] == ["Home item"]
+
+
+def test_list_counts_update_from_todo_changes(client):
+    first = create_todo_in_list(client, "todos-project", "First")
+    create_todo_in_list(client, "todos-project", "Second")
+
+    response = client.patch(
+        f"/api/todos/{first['id']}/complete?list=todos-project",
+        json={"completed": True},
+    )
+    assert response.status_code == 200
+
+    lists = client.get("/api/lists").json()["data"]
+    project = next(todo_list for todo_list in lists if todo_list["name"] == "todos-project")
+    assert project["active"] == 1
+    assert project["completed"] == 1
+    assert project["total"] == 2
+
+
+def test_updates_do_not_cross_list_boundaries(client):
+    todo = create_todo_in_list(client, "todos-a", "A")
+    create_todo_in_list(client, "todos-b", "B")
+
+    response = client.put(f"/api/todos/{todo['id']}?list=todos-b", json={"title": "Wrong"})
+
+    assert response.status_code == 404
+    assert client.get("/api/todos?list=todos-a").json()["data"][0]["title"] == "A"
 
 
 def test_reject_invalid_titles(client):

@@ -3,6 +3,7 @@
 <head><title>Todo Admin View</title>
     <link rel="stylesheet" type="text/css" href="css/todo.css">
     <script src="js/store.js"></script>
+    <script src="js/api.js"></script>
     <script src="js/listmanagementtemplate.js"></script>
     <script src="js/listmanagementview.js"></script>
     <script src="js/todoapp.js"></script>
@@ -50,26 +51,45 @@
 
     new Admin().activateLoginLink();
 
-    var data = new Storage().listStores();
-    var lists = [];
-    data.forEach(
-        function(element){
-            if(element.startsWith("todos-")){
-                lists.push(element.substring("todos-".length));
-            }
+    function displayListName(name){
+        if(name.startsWith("todos-")){
+            return name.substring("todos-".length);
         }
-    );
+        return name;
+    }
 
-    lists.forEach(function(alist){
-        console.log(alist);
-        var todo = new Todo(alist);
-        todo.app.getCount(function(aCount){
-            li = document.createElement("li");
-            li.innerHTML = "<a id='" + alist + "' href='todo.html#/&" + alist + "'>" + alist + "</a> " + JSON.stringify(aCount);
-            console.log(alist);console.log(aCount);
-            document.getElementById("reportlist").appendChild(li);
-        })
-    })
+    function renderAdminList(todoList){
+        var visibleName = displayListName(todoList.name);
+        var li = document.createElement("li");
+        var link = document.createElement("a");
+        var stats = document.createElement("span");
+
+        link.id = visibleName;
+        link.href = "todo.html#/&" + encodeURIComponent(visibleName);
+        link.textContent = visibleName;
+        stats.textContent = " active: " + todoList.active
+            + " completed: " + todoList.completed
+            + " all: " + todoList.total;
+
+        li.appendChild(link);
+        li.appendChild(stats);
+        document.getElementById("reportlist").appendChild(li);
+    }
+
+    function loadAdminReport(){
+        var reportList = document.getElementById("reportlist");
+        reportList.innerHTML = "";
+
+        try {
+            new ApiStorage().request("GET", "/lists").forEach(renderAdminList);
+        } catch (error) {
+            var li = document.createElement("li");
+            li.textContent = "Could not load todo lists from API: " + error.message;
+            reportList.appendChild(li);
+        }
+    }
+
+    loadAdminReport();
 
 
 
