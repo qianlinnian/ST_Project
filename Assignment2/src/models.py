@@ -17,27 +17,50 @@ class Requirement:
 @dataclass
 class RiskRecord:
     requirement_id: str
-    impact: float = 0.0  # 业务影响、安全影响、财务影响等 (0.0-1.0)
-    probability: float = 0.0  # 缺陷发生的可能性 / Likelihood (0.0-1.0)
-    risk_score: float = 0.0  # 通常 = impact * probability，或加权
+    risk_description: str
+    risk_id: str = ""
+    risk_category: str = "functional suitability"
+    impact: int = 1  # 1, 2, or 3
+    likelihood: int = 1  # 1, 2, or 3
+    risk_score: int = 1  # likelihood * impact
     risk_level: str = "Low"  # High, Medium, Low
     reason: str = ""
+    test_suggestion: str = ""
+
+    def to_dict(self) -> dict:
+        """Convert to dict for JSON/CSV export (FR 6.0)"""
+        return {
+            "risk_id": self.risk_id,
+            "requirement_id": self.requirement_id,
+            "risk_description": self.risk_description,
+            "risk_category": self.risk_category,
+            "impact": self.impact,
+            "likelihood": self.likelihood,
+            "risk_score": self.risk_score,
+            "risk_level": self.risk_level,
+            "reason": self.reason,
+            "test_suggestion": self.test_suggestion,
+        }
 
 
 @dataclass
 class CoverageItem:
     """Test coverage item for traceability and test design (aligned with ISTQB)."""
-    
-    coverage_id: str                    # COV-001
-    requirement_id: str                 # Traceability
-    description: str                    # Clear description of what needs to be covered
-    
+
+    coverage_id: str  # COV-001
+    requirement_id: str  # Traceability
+    description: str  # Clear description of what needs to be covered
+
     # 推荐核心扩展字段
-    coverage_type: str = "Functional"   # Functional, Input, Boundary, Condition, Error, etc.
-    risk_level: str = "Medium"          # High, Medium, Low （直接来自 RiskRecord）
-    
+    coverage_type: str = (
+        "Functional"  # Functional, Input, Boundary, Condition, Error, etc.
+    )
+    risk_level: str = "Medium"  # High, Medium, Low （直接来自 RiskRecord）
+
     # 可选但强烈推荐的字段
-    related_techniques: List[str] = field(default_factory=list)  # e.g. ["EP", "BVA", "Decision Table"]
+    related_techniques: List[str] = field(
+        default_factory=list
+    )  # e.g. ["EP", "BVA", "Decision Table"]
     tags: List[str] = field(default_factory=list)
     notes: str = ""
 

@@ -4,17 +4,15 @@ These prompts do not replace B/C's rule-based modules. They are used to
 explain, review, and improve generated artifacts while preserving traceability.
 """
 
-
 REQUIREMENT_STRUCTURING_SYSTEM = (
     "You are a software testing analyst following ISTQB Foundation Level and "
     "ISO/IEC/IEEE 29119-4 terminology. Extract test-design information from a "
     "single requirement. Return only valid JSON. Do not add markdown."
 )
 
-RISK_EXPLANATION_SYSTEM = (
-    "You are a risk-based testing reviewer. Explain risk scoring using Impact, "
-    "Probability/Likelihood, Risk Score, Risk Level, and Test Priority. Do not "
-    "change requirement_id values."
+RISK_ANALYSIS_SYSTEM = (
+    "You are a risk analyzer following ISO/IEC/IEEE 29119-4. "
+    "Classify and assess the risk of a given requirement. Return only valid JSON. Do not add markdown."
 )
 
 COVERAGE_IMPROVEMENT_SYSTEM = (
@@ -68,25 +66,9 @@ def requirement_structuring_prompt(requirement_text: str) -> str:
     )
 
 
-def risk_explanation_prompt(requirement_text: str, risk_score: float, risk_level: str) -> str:
-    return (
-        "Explain the risk assessment for the requirement below. The local tool "
-        "has already generated risk_score and risk_level; your role is to explain "
-        "and review them, not to replace the local model.\n\n"
-        f"Requirement:\n{requirement_text}\n\n"
-        f"risk_score: {risk_score}\n"
-        f"risk_level: {risk_level}\n\n"
-        "Return JSON with this shape:\n"
-        "{\n"
-        '  "impact_rationale": "...",\n'
-        '  "probability_rationale": "...",\n'
-        '  "priority_rationale": "...",\n'
-        '  "review_note": "..."\n'
-        "}"
-    )
-
-
-def coverage_improvement_prompt(requirements_summary: str, coverage_summary: str) -> str:
+def coverage_improvement_prompt(
+    requirements_summary: str, coverage_summary: str
+) -> str:
     return (
         "Review the current coverage items and identify missing valid coverage. "
         "The tool currently uses these coverage fields: coverage_id, "
@@ -184,7 +166,9 @@ def oracle_review_prompt(test_case_summary: str) -> str:
     )
 
 
-def suite_optimization_review_prompt(test_case_summary: str, optimized_summary: str) -> str:
+def suite_optimization_review_prompt(
+    test_case_summary: str, optimized_summary: str
+) -> str:
     return (
         "Review whether the optimized suite preserves risk and coverage while "
         "reducing redundancy.\n\n"
@@ -195,5 +179,37 @@ def suite_optimization_review_prompt(test_case_summary: str, optimized_summary: 
         '  "optimization_review": "...",\n'
         '  "coverage_risks": ["..."],\n'
         '  "recommended_changes": ["..."]\n'
+        "}"
+    )
+
+
+def risk_analysis_batch_prompt(requirements_text: str) -> str:
+    return (
+        "Analyze the given requirements and assess their risk level based on the criteria below.\n\n"
+        "Risk Categories (choose exactly one for each requirement):\n"
+        "functional suitability, performance efficiency, compatibility, interaction capability, "
+        "reliability, security, maintainability, flexibility, safety\n\n"
+        "Likelihood Scoring Criteria:\n"
+        "- 3 (High): The defect is very likely to occur. Complex code paths, multiple conditional judgments, lack of input validation, or reliance on known vulnerable mechanisms (e.g., direct write to localStorage without error handling, hard-coded credentials, etc.).\n"
+        "- 2 (Medium): The defect may occur under specific conditions. Basic validation exists but is insufficient; moderate logical complexity.\n"
+        "- 1 (Low): The defect is extremely unlikely to occur. Pure display logic, simple single-step operations, or no complex state dependencies.\n\n"
+        "Impact Scoring Criteria:\n"
+        "- 3 (High): Failure leads to severe consequences (e.g., security vulnerabilities, permanent loss of user data, complete unavailability of core functions, bypass of authentication).\n"
+        "- 2 (Medium): Failure causes noticeable degradation in functionality or user experience, but the application remains partially usable.\n"
+        "- 1 (Low): Failure causes only minor inconvenience, UI glitches, or affects edge cases, without impacting main workflows.\n\n"
+        f"Requirements:\n{requirements_text}\n\n"
+        "Return exactly this JSON shape, providing one result for each requirement:\n"
+        "{\n"
+        '  "risk_analyses": [\n'
+        "    {\n"
+        '      "requirement_id": "...",\n'
+        '      "risk_category": "...",\n'
+        '      "risk_description": "...",\n'
+        '      "likelihood": 1,\n'
+        '      "impact": 1,\n'
+        '      "reason": "...",\n'
+        '      "test_suggestion": "..."\n'
+        "    }\n"
+        "  ]\n"
         "}"
     )
