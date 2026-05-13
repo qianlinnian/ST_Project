@@ -1,8 +1,8 @@
 # Simple Todo List Backend Extension
 
-This backend is a lightweight REST API extension for the `Todo Item Management` feature of `simpletodolist`.
+This backend is a lightweight REST API extension for the todo list and todo item features of `simpletodolist`.
 
-It is intentionally limited to todo item CRUD, completion state, filtering, and SQLite persistence. It does not implement admin login, multi-user behavior, or todo list management.
+It supports todo list management, list-scoped todo item CRUD, completion state, filtering, per-list statistics, and SQLite persistence. It does not implement admin login or multi-user behavior.
 
 ## Run
 
@@ -17,13 +17,13 @@ The API runs at:
 http://127.0.0.1:5000
 ```
 
-The `todo.html` page is configured to call this backend for Todo Item Management through:
+The `todo.html` and `todolists.html` pages are configured to call this backend through:
 
 ```text
 http://127.0.0.1:5000/api
 ```
 
-Start this backend before using `todo.html` in API-backed mode. The list management and admin pages still use the original browser storage behavior.
+Start this backend before using `todo.html`, `todolists.html`, or `adminview.html` in API-backed mode. Admin login still uses the original browser behavior.
 
 FastAPI also exposes OpenAPI documentation at:
 
@@ -35,16 +35,20 @@ http://127.0.0.1:5000/docs
 
 ```text
 GET    /api/health
-GET    /api/todos
-GET    /api/todos?status=active
-GET    /api/todos?status=completed
-GET    /api/todos/<id>
-POST   /api/todos
-PUT    /api/todos/<id>
-PATCH  /api/todos/<id>/complete
-PATCH  /api/todos/complete-all
-DELETE /api/todos/<id>
-POST   /api/todos/clear-completed
+GET    /api/lists
+POST   /api/lists
+PUT    /api/lists/<name>
+DELETE /api/lists/<name>
+GET    /api/todos?list=<name>
+GET    /api/todos?list=<name>&status=active
+GET    /api/todos?list=<name>&status=completed
+GET    /api/todos/<id>?list=<name>
+POST   /api/todos?list=<name>
+PUT    /api/todos/<id>?list=<name>
+PATCH  /api/todos/<id>/complete?list=<name>
+PATCH  /api/todos/complete-all?list=<name>
+DELETE /api/todos/<id>?list=<name>
+POST   /api/todos/clear-completed?list=<name>
 ```
 
 ## Test
