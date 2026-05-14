@@ -26,25 +26,26 @@ COVERAGE_IMPROVEMENT_SYSTEM = (
 TEST_STRATEGY_REVIEW_SYSTEM = (
     "You are a test strategy reviewer. Review whether each coverage item is "
     "mapped to a suitable ISO/IEC/IEEE 29119-4 black-box or state-based test "
-    "technique. Preserve coverage_id and requirement_id traceability."
+    "technique. Do not rewrite the full strategy table. Return only valid JSON. "
+    "Preserve coverage_id and requirement_id traceability."
 )
 
 TEST_CASE_IMPROVEMENT_SYSTEM = (
-    "You are a test case design reviewer. Improve generated test cases without "
-    "breaking traceability. Do not invent new requirement_id or coverage_id "
-    "values unless explicitly asked to suggest missing cases."
+    "You are a test case design reviewer. Review generated test cases and suggest "
+    "improvements without directly replacing the generated table. Return only "
+    "valid JSON. Do not change requirement_id or coverage_id values."
 )
 
 ORACLE_REVIEW_SYSTEM = (
     "You are a test oracle reviewer. Review expected_result fields for clarity, "
     "observability, and consistency with the requirement, test data, and selected "
-    "test technique."
+    "test technique. Return only valid JSON."
 )
 
 SUITE_OPTIMIZATION_REVIEW_SYSTEM = (
     "You are a test suite optimization reviewer. Review prioritization, "
     "deduplication, and risk-based ordering. Preserve high-risk coverage and "
-    "explain any recommended minimization."
+    "coverage traceability. Return only valid JSON."
 )
 
 
@@ -130,13 +131,17 @@ def test_strategy_review_prompt(coverage_summary: str, strategy_summary: str) ->
         '  "strategy_reviews": [\n'
         "    {\n"
         '      "coverage_id": "...",\n'
+        '      "requirement_id": "...",\n'
         '      "current_technique": "...",\n'
         '      "recommended_technique": "...",\n'
+        '      "change_needed": true,\n'
         '      "recommendation_reason": "...",\n'
-        '      "change_needed": true\n'
+        '      "standard_reference": "ISO/IEC/IEEE 29119-4"\n'
         "    }\n"
-        "  ]\n"
-        "}"
+        "  ],\n"
+        '  "review_summary": "..."\n'
+        "}\n\n"
+        "Only recommend a technique change when the current mapping is clearly weak."
     )
 
 
@@ -154,8 +159,11 @@ def test_case_improvement_prompt(test_case_summary: str) -> str:
         '  "case_reviews": [\n'
         "    {\n"
         '      "test_case_id": "...",\n'
+        '      "requirement_id": "...",\n'
+        '      "coverage_id": "...",\n'
         '      "issue": "...",\n'
         '      "suggested_revision": "...",\n'
+        '      "missing_case_suggestion": "...",\n'
         '      "severity": "High|Medium|Low"\n'
         "    }\n"
         "  ],\n"
@@ -177,9 +185,11 @@ def oracle_review_prompt(test_case_summary: str) -> str:
         '      "test_case_id": "...",\n'
         '      "current_expected_result": "...",\n'
         '      "improved_expected_result": "...",\n'
+        '      "observability_issue": "...",\n'
         '      "reason": "..."\n'
         "    }\n"
-        "  ]\n"
+        "  ],\n"
+        '  "review_summary": "..."\n'
         "}"
     )
 
@@ -193,7 +203,8 @@ def suite_optimization_review_prompt(test_case_summary: str, optimized_summary: 
         "Return JSON with this shape:\n"
         "{\n"
         '  "optimization_review": "...",\n'
-        '  "coverage_risks": ["..."],\n'
+        '  "removed_or_missing_coverage": ["..."],\n'
+        '  "high_risk_preservation": "...",\n'
         '  "recommended_changes": ["..."]\n'
         "}"
     )

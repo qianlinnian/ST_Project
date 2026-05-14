@@ -25,7 +25,15 @@ from src.persistence import (
 )
 from src.prompt_templates import (
     COVERAGE_IMPROVEMENT_SYSTEM,
+    ORACLE_REVIEW_SYSTEM,
+    SUITE_OPTIMIZATION_REVIEW_SYSTEM,
+    TEST_CASE_IMPROVEMENT_SYSTEM,
+    TEST_STRATEGY_REVIEW_SYSTEM,
     coverage_improvement_prompt,
+    oracle_review_prompt,
+    suite_optimization_review_prompt,
+    test_case_improvement_prompt,
+    test_strategy_review_prompt,
 )
 from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import structure_requirements
@@ -42,7 +50,6 @@ PAGE_OPTIONS = [
     "Structuring & Risk",
     "Coverage & Strategy",
     "Test Cases",
-    "AI Review",
     "Persistence & Export",
 ]
 
@@ -347,6 +354,36 @@ def render_export_paths(paths: dict[str, object]) -> None:
     st.code("\n".join(f"{name}: {path}" for name, path in paths.items()))
 
 
+def render_ai_review(
+    title: str,
+    button_label: str,
+    system_prompt: str,
+    user_prompt: str,
+    key: str,
+) -> None:
+    st.markdown(f"#### {title}")
+    if not is_llm_enabled(st.session_state.selected_provider):
+        st.info("当前模型服务未配置，规则生成结果仍可正常使用。")
+        return
+
+    if st.button(button_label, key=f"{key}_button"):
+        try:
+            st.session_state[f"{key}_result"] = chat_completion(
+                system_prompt,
+                user_prompt,
+                provider=st.session_state.selected_provider,
+                model=st.session_state.selected_model,
+            )
+        except Exception as exc:
+            st.error(f"AI review failed: {exc}")
+
+    result = st.session_state.get(f"{key}_result")
+    if result:
+        st.markdown(result)
+        with st.expander("Raw AI response"):
+            st.text_area("Raw output", result, height=220, key=f"{key}_raw")
+
+
 inject_style()
 init_state()
 
@@ -467,6 +504,32 @@ if page == "Coverage & Strategy":
     st.dataframe(artifacts["test_strategies"], width="stretch")
     with st.expander("State transition model sequences"):
         st.dataframe(artifacts["state_transition_sequences"], width="stretch")
+    section_header("AI-assisted Review", "ai")
+    review_col_1, review_col_2 = st.columns(2, gap="medium")
+    with review_col_1:
+        render_ai_review(
+            "覆盖项审查",
+            "Review Coverage",
+            COVERAGE_IMPROVEMENT_SYSTEM,
+            coverage_improvement_prompt(
+                artifacts["structured_requirements"][
+                    ["requirement_id", "requirement_text"]
+                ].to_string(index=False),
+                artifacts["coverage_items"].to_string(index=False),
+            ),
+            "coverage_review",
+        )
+    with review_col_2:
+        render_ai_review(
+            "测试策略审查",
+            "Review Test Strategy",
+            TEST_STRATEGY_REVIEW_SYSTEM,
+            test_strategy_review_prompt(
+                artifacts["coverage_items"].to_string(index=False),
+                artifacts["test_strategies"].to_string(index=False),
+            ),
+            "strategy_review",
+        )
     render_next_step("Next: Generate and Review Test Cases", "Test Cases")
 
 if page == "Test Cases":
@@ -484,43 +547,37 @@ if page == "Test Cases":
         st.dataframe(artifacts["optimized_test_cases"], width="stretch")
     with st.expander("Standalone state transition tests"):
         st.dataframe(artifacts["state_transition_sequences"], width="stretch")
-    render_next_step("Next: Run Optional AI Review", "AI Review")
-
-if page == "AI Review":
-    section_header("AI Coverage Review", "ai")
-    st.markdown(
-        f"<p style='font-size: 18px;'>Selected provider: <strong style='font-size: 20px; background-color: transparent; color: brown; padding: 4px 8px; border-radius: 4px;'>{st.session_state.selected_provider}</strong></p>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f"<p style='font-size: 18px;'>Selected model: <strong style='font-size: 20px; background-color: transparent; color: brown; padding: 4px 8px; border-radius: 4px;'>{st.session_state.selected_model}</strong></p>",
-        unsafe_allow_html=True,
-    )
-    if not is_llm_enabled(st.session_state.selected_provider):
-        st.info(
-            "Selected provider is not configured. Local rules remain available. Copy .env.example to .env to enable model calls."
+    section_header("AI-assisted Review", "ai")
+    case_col, oracle_col, suite_col = st.columns(3, gap="medium")
+    with case_col:
+        render_ai_review(
+            "测试用例审查",
+            "Review Test Cases",
+            TEST_CASE_IMPROVEMENT_SYSTEM,
+            test_case_improvement_prompt(
+                artifacts["test_cases"].to_string(index=False)
+            ),
+            "test_case_review",
         )
-    else:
-        user_prompt = coverage_improvement_prompt(
-            artifacts["structured_requirements"][
-                ["requirement_id", "requirement_text"]
-            ].to_string(index=False),
-            artifacts["coverage_items"].to_string(index=False),
+    with oracle_col:
+        render_ai_review(
+            "预期结果审查",
+            "Review Expected Results",
+            ORACLE_REVIEW_SYSTEM,
+            oracle_review_prompt(artifacts["test_cases"].to_string(index=False)),
+            "oracle_review",
         )
-        if st.button("Review Coverage"):
-            try:
-                result = chat_completion(
-                    COVERAGE_IMPROVEMENT_SYSTEM,
-                    user_prompt,
-                    provider=st.session_state.selected_provider,
-                    model=st.session_state.selected_model,
-                )
-                st.markdown("#### AI suggestions")
-                st.markdown(result)
-                with st.expander("Raw AI response"):
-                    st.text_area("Raw output", result, height=240)
-            except Exception as exc:
-                st.error(f"AI review failed: {exc}")
+    with suite_col:
+        render_ai_review(
+            "测试套件优化审查",
+            "Review Suite Optimization",
+            SUITE_OPTIMIZATION_REVIEW_SYSTEM,
+            suite_optimization_review_prompt(
+                artifacts["test_cases"].to_string(index=False),
+                artifacts["optimized_test_cases"].to_string(index=False),
+            ),
+            "suite_review",
+        )
     render_next_step("Next: Save and Export Artifacts", "Persistence & Export")
 
 if page == "Persistence & Export":
