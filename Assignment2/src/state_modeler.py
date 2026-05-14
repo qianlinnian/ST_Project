@@ -1,161 +1,154 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pandas as pd
 
 from src.oracle_generator import generate_expected_result
 
 
-# Todo 状态机定义
-# 定义 Todo 系统的所有可能状态
-TODO_STATES = ["Empty List", "Active Todo", "Completed Todo", "Deleted Todo"]
-
-# Todo 状态转换规则定义
-# 每个转换包含：源状态、触发事件、目标状态、守卫条件、测试数据
-TODO_TRANSITIONS = [
-    {
-        "transition_id": "TR-001",        # 转换ID
-        "source_state": "Empty List",     # 源状态：空列表
-        "event": "create valid todo",     # 触发事件：创建有效Todo
-        "target_state": "Active Todo",    # 目标状态：活跃Todo
-        "guard": "Todo text is non-empty and satisfies stated input constraints",  # 守卫条件
-        "test_data": "Valid Todo text",   # 测试数据
-    },
-    {
-        "transition_id": "TR-002",
-        "source_state": "Empty List",
-        "event": "reject empty todo",     # 触发事件：拒绝空Todo
-        "target_state": "Empty List",     # 目标状态：保持空列表
-        "guard": "Todo text is empty or whitespace only",
-        "test_data": "Empty string / whitespace",
-    },
-    {
-        "transition_id": "TR-003",
-        "source_state": "Active Todo",
-        "event": "mark complete",         # 触发事件：标记完成
-        "target_state": "Completed Todo",
-        "guard": "Todo exists and is active",
-        "test_data": "Existing active Todo",
-    },
-    {
-        "transition_id": "TR-004",
-        "source_state": "Completed Todo",
-        "event": "mark active",           # 触发事件：标记活跃
-        "target_state": "Active Todo",
-        "guard": "Todo exists and is completed",
-        "test_data": "Existing completed Todo",
-    },
-    {
-        "transition_id": "TR-005",
-        "source_state": "Active Todo",
-        "event": "delete active todo",    # 触发事件：删除活跃Todo
-        "target_state": "Deleted Todo",
-        "guard": "Todo exists and is active",
-        "test_data": "Existing active Todo",
-    },
-    {
-        "transition_id": "TR-006",
-        "source_state": "Completed Todo",
-        "event": "delete completed todo", # 触发事件：删除已完成Todo
-        "target_state": "Deleted Todo",
-        "guard": "Todo exists and is completed",
-        "test_data": "Existing completed Todo",
-    },
-]
+DEFAULT_GENERIC_STATE_MODEL = {
+    "states": ["Initial State", "Active State", "Completed State", "Error/Rejected State"],
+    "transitions": [
+        {
+            "transition_id": "TR-001",
+            "source_state": "Initial State",
+            "event": "submit valid action or input",
+            "target_state": "Active State",
+            "guard": "Input or action satisfies the requirement constraints",
+            "test_data": "Representative valid data",
+        },
+        {
+            "transition_id": "TR-002",
+            "source_state": "Initial State",
+            "event": "submit invalid action or input",
+            "target_state": "Error/Rejected State",
+            "guard": "Input or action violates a requirement constraint",
+            "test_data": "Representative invalid data",
+        },
+        {
+            "transition_id": "TR-003",
+            "source_state": "Active State",
+            "event": "complete the primary workflow action",
+            "target_state": "Completed State",
+            "guard": "The entity or workflow is active and can be completed",
+            "test_data": "Valid completion action",
+        },
+    ],
+}
 
 
-def build_todo_state_model() -> dict:
-    """
-    构建 Todo 状态转换模型
-    
-    Returns:
-        状态模型字典，包含 states（状态列表）、transitions（转换三元组）、transition_details（完整转换信息）
-    """
+def _as_text(value: Any) -> str:
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value)
+    return str(value or "")
+
+
+def build_state_model(
+    states: list[str] | None = None,
+    transitions: list[dict] | None = None,
+) -> dict:
+    selected_states = states or DEFAULT_GENERIC_STATE_MODEL["states"]
+    selected_transitions = transitions or DEFAULT_GENERIC_STATE_MODEL["transitions"]
     return {
-        "states": TODO_STATES,
+        "states": selected_states,
         "transitions": [
             (
-                transition["source_state"],
-                transition["target_state"],
-                transition["event"],
+                transition.get("source_state", ""),
+                transition.get("target_state", ""),
+                transition.get("event", ""),
             )
-            for transition in TODO_TRANSITIONS
+            for transition in selected_transitions
         ],
-        "transition_details": TODO_TRANSITIONS,
+        "transition_details": selected_transitions,
     }
 
 
-def generate_all_states_sequence() -> pd.DataFrame:
-    """
-    生成"所有状态"覆盖准则的测试序列
-    
-    覆盖目标：确保系统能够到达每个定义的状态
-    
-    Returns:
-        状态覆盖测试序列 DataFrame
-    """
-    rows = []
-    for index, state in enumerate(TODO_STATES, start=1):
-        if state == "Empty List":
-            precondition = "TodoList page is open with no Todo items."
-            steps = "1. Open the TodoList page\n2. Observe the initial list state"
-        elif state == "Active Todo":
-            precondition = "TodoList page is open."
-            steps = "1. Create a Todo with valid text\n2. Observe the newly created item"
-        elif state == "Completed Todo":
-            precondition = "At least one active Todo exists."
-            steps = "1. Select an active Todo\n2. Mark it as completed\n3. Observe the item state"
-        else:
-            precondition = "At least one Todo exists."
-            steps = "1. Select an existing Todo\n2. Delete it\n3. Observe the list"
+def infer_state_model_from_requirements(structured_requirements: pd.DataFrame) -> dict:
+    if structured_requirements.empty:
+        return build_state_model()
 
+    states = ["Initial State"]
+    transitions = []
+    counter = 1
+
+    for _, row in structured_requirements.iterrows():
+        req_text = _as_text(row.get("requirement_text", ""))
+        actions = row.get("actions", [])
+        conditions = row.get("conditions", [])
+        expected_results = row.get("expected_results", [])
+        action_text = _as_text(actions) or req_text or "perform requirement action"
+        condition_text = _as_text(conditions) or "Requirement preconditions are satisfied"
+        expected_text = _as_text(expected_results) or "Expected requirement outcome is reached"
+        target_state = f"Postcondition for {row.get('requirement_id', counter)}"
+        if target_state not in states:
+            states.append(target_state)
+        transitions.append(
+            {
+                "transition_id": f"TR-{counter:03d}",
+                "source_state": "Initial State",
+                "event": action_text,
+                "target_state": target_state,
+                "guard": condition_text,
+                "test_data": expected_text,
+            }
+        )
+        counter += 1
+
+    if len(transitions) < 2:
+        fallback = DEFAULT_GENERIC_STATE_MODEL["transitions"][1]
+        transitions.append({**fallback, "transition_id": f"TR-{counter:03d}"})
+        if fallback["target_state"] not in states:
+            states.append(fallback["target_state"])
+
+    return build_state_model(states=states, transitions=transitions)
+
+
+def generate_all_states_sequence(state_model: dict | None = None) -> pd.DataFrame:
+    model = state_model or build_state_model()
+    rows = []
+    for index, state in enumerate(model.get("states", []), start=1):
         rows.append(
             {
                 "sequence_id": f"STATE-{index:03d}",
                 "coverage_goal": "All States",
                 "state": state,
-                "precondition": precondition,
-                "steps": steps,
-                "expected_result": f"The system reaches or displays the '{state}' state as expected.",
+                "precondition": "The system is available and the relevant workflow can be exercised.",
+                "steps": f"1. Establish or navigate to the conditions required for state: {state}\n2. Observe the system state",
+                "expected_result": f"The system reaches or displays the '{state}' state as defined by the requirements or model.",
             }
         )
     return pd.DataFrame(rows)
 
 
-def generate_all_transitions_sequence() -> pd.DataFrame:
-    """
-    生成"所有转换"覆盖准则的测试序列
-    
-    覆盖目标：确保每个状态转换都被测试到
-    
-    Returns:
-        转换覆盖测试序列 DataFrame
-    """
+def generate_all_transitions_sequence(state_model: dict | None = None) -> pd.DataFrame:
+    model = state_model or build_state_model()
     rows = []
-    for index, transition in enumerate(TODO_TRANSITIONS, start=1):
-        event = transition["event"]
-        source = transition["source_state"]
-        target = transition["target_state"]
-        steps = (
-            f"1. Establish source state: {source}\n"
-            f"2. Apply event/action: {event}\n"
-            f"3. Observe the resulting TodoList state"
-        )
+    for index, transition in enumerate(model.get("transition_details", []), start=1):
+        event = transition.get("event", "perform transition event")
+        source = transition.get("source_state", "Initial State")
+        target = transition.get("target_state", "Expected Target State")
+        test_data = transition.get("test_data", "Representative data for the transition")
         rows.append(
             {
                 "sequence_id": f"TRANS-{index:03d}",
-                "transition_id": transition["transition_id"],
+                "transition_id": transition.get("transition_id", f"TR-{index:03d}"),
                 "coverage_goal": "All Transitions",
                 "source_state": source,
                 "event": event,
-                "guard": transition["guard"],
-                "test_data": transition["test_data"],
+                "guard": transition.get("guard", "Transition preconditions are satisfied"),
+                "test_data": test_data,
                 "target_state": target,
-                "precondition": f"The TodoList is in state: {source}.",
-                "steps": steps,
+                "precondition": f"The system is in source state: {source}.",
+                "steps": (
+                    f"1. Establish source state: {source}\n"
+                    f"2. Apply event/action: {event}\n"
+                    f"3. Observe the resulting system state"
+                ),
                 "expected_result": generate_expected_result(
                     technique="State Transition Testing",
-                    action=event,
-                    test_data=transition["test_data"],
+                    action=f"{source} --{event}--> {target}",
+                    test_data=test_data,
                 ),
             }
         )
@@ -163,12 +156,13 @@ def generate_all_transitions_sequence() -> pd.DataFrame:
 
 
 def generate_state_transition_tests(
-    requirement_id: str = "REQ-STATE-001",
-    coverage_id: str = "COV-STATE-001",
+    requirement_id: str = "REQ-STATE-GENERIC",
+    coverage_id: str = "COV-STATE-GENERIC",
     start_index: int = 1,
+    state_model: dict | None = None,
 ) -> pd.DataFrame:
     rows = []
-    transitions = generate_all_transitions_sequence()
+    transitions = generate_all_transitions_sequence(state_model)
     for offset, row in transitions.iterrows():
         rows.append(
             {
@@ -186,8 +180,12 @@ def generate_state_transition_tests(
                 "risk_level": "Medium",
                 "coverage_type": "State Transition",
                 "automation_candidate": "Yes",
-                "source": "State Model",
+                "source": "Generic State Model",
                 "design_basis": f"{row['source_state']} --{row['event']}--> {row['target_state']}",
             }
         )
     return pd.DataFrame(rows)
+
+
+def build_todo_state_model() -> dict:
+    return build_state_model()

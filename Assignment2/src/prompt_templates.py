@@ -122,6 +122,50 @@ def test_strategy_review_prompt(coverage_summary: str, strategy_summary: str) ->
     )
 
 
+def test_case_generation_prompt(
+    requirements_summary: str,
+    coverage_summary: str,
+    strategy_summary: str,
+) -> str:
+    return (
+        "Generate systematic test cases from structured requirements, coverage items, "
+        "and selected test strategies. Use ISTQB Foundation Level terminology and "
+        "ISO/IEC/IEEE 29119-4 detailed test techniques. Do not assume any specific "
+        "application domain unless it is present in the input requirements.\n\n"
+        "Required test case fields: test_case_id, requirement_id, coverage_id, "
+        "technique, technique_standard, precondition, test_data, steps, "
+        "expected_result, priority, risk_score, risk_level, coverage_type, "
+        "automation_candidate, source, design_basis.\n\n"
+        f"Structured requirements:\n{requirements_summary}\n\n"
+        f"Coverage items:\n{coverage_summary}\n\n"
+        f"Selected strategies:\n{strategy_summary}\n\n"
+        "Return JSON with this shape:\n"
+        "{\n"
+        '  "test_cases": [\n'
+        "    {\n"
+        '      "test_case_id": "TC-001",\n'
+        '      "requirement_id": "...",\n'
+        '      "coverage_id": "...",\n'
+        '      "technique": "Equivalence Partitioning|Boundary Value Analysis|Decision Table Testing|State Transition Testing",\n'
+        '      "technique_standard": "...",\n'
+        '      "precondition": "...",\n'
+        '      "test_data": "...",\n'
+        '      "steps": "1. ...",\n'
+        '      "expected_result": "...",\n'
+        '      "priority": "High|Medium|Low",\n'
+        '      "risk_score": 0.0,\n'
+        '      "risk_level": "High|Medium|Low",\n'
+        '      "coverage_type": "...",\n'
+        '      "automation_candidate": "Yes|No|Partial",\n'
+        '      "source": "LLM prompt generation",\n'
+        '      "design_basis": "..."\n'
+        "    }\n"
+        "  ]\n"
+        "}\n\n"
+        "Preserve existing requirement_id and coverage_id values."
+    )
+
+
 def test_case_improvement_prompt(test_case_summary: str) -> str:
     return (
         "Review generated test cases for clarity, traceability, and executable "

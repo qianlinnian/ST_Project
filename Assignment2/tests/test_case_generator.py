@@ -40,7 +40,7 @@ def test_generated_cases_include_black_box_and_state_techniques():
 def test_state_transition_sequences_cover_all_transitions():
     transitions = generate_all_transitions_sequence()
     assert {"source_state", "event", "target_state", "expected_result"}.issubset(transitions.columns)
-    assert len(transitions) >= 4
+    assert len(transitions) >= 3
 
 
 def test_optimize_suite_keeps_traceability_columns():

@@ -1,269 +1,201 @@
 from __future__ import annotations
 
+import json
 import re
 from typing import Any
 
 import pandas as pd
 
-from src.oracle_generator import generate_expected_result
-from src.state_modeler import generate_state_transition_tests
+from src.ai_client import chat_completion, is_llm_enabled
+from src.oracle_generator import generate_expected_result, improve_oracles_with_llm
+from src.prompt_templates import TEST_CASE_IMPROVEMENT_SYSTEM, test_case_generation_prompt, test_case_improvement_prompt
+from src.state_modeler import infer_state_model_from_requirements, generate_state_transition_tests
 from src.test_strategy_selector import TECHNIQUE_STANDARDS
-
 
 PRIORITY_BY_RISK = {"High": "High", "Medium": "Medium", "Low": "Low"}
 RISK_SCORE_BY_LEVEL = {"High": 5.0, "Medium": 3.0, "Low": 1.0}
+REQUIRED_COLUMNS = [
+    "test_case_id", "requirement_id", "coverage_id", "technique", "technique_standard",
+    "precondition", "test_data", "steps", "expected_result", "priority", "risk_score",
+    "risk_level", "coverage_type", "automation_candidate", "source", "design_basis",
+]
 
 
 def _as_text(value: Any) -> str:
-    if isinstance(value, list):
-        return ", ".join(str(item) for item in value)
-    return str(value or "")
+    return ", ".join(str(item) for item in value) if isinstance(value, list) else str(value or "")
 
 
-def _find_requirement(structured_requirements: pd.DataFrame, requirement_id: str) -> dict:
-    if structured_requirements.empty or "requirement_id" not in structured_requirements.columns:
+def _clean_json(text: str) -> dict:
+    cleaned = text.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    return json.loads(cleaned.strip())
+
+
+def _find_requirement(requirements: pd.DataFrame, requirement_id: str) -> dict:
+    if requirements.empty or "requirement_id" not in requirements.columns:
         return {}
-    matches = structured_requirements[structured_requirements["requirement_id"] == requirement_id]
-    if matches.empty:
-        return {}
-    return matches.iloc[0].to_dict()
+    matches = requirements[requirements["requirement_id"] == requirement_id]
+    return {} if matches.empty else matches.iloc[0].to_dict()
 
 
-def _extract_length_bounds(*texts: str) -> tuple[int | None, int | None]:
+def _bounds(*texts: str) -> tuple[int | None, int | None]:
     combined = " ".join(texts).lower()
-    numbers = [int(value) for value in re.findall(r"\b\d+\b", combined)]
-    min_value = None
-    max_value = None
-
-    range_match = re.search(r"(\d+)\s*(?:-|to|~|–)\s*(\d+)", combined)
-    if range_match:
-        first, second = int(range_match.group(1)), int(range_match.group(2))
-        return min(first, second), max(first, second)
-
-    for number in numbers:
-        local = combined[max(0, combined.find(str(number)) - 25) : combined.find(str(number)) + 35]
-        if any(word in local for word in ["min", "minimum", "least", "at least"]):
+    match = re.search(r"(\d+)\s*(?:-|to|~|–)\s*(\d+)", combined)
+    if match:
+        a, b = int(match.group(1)), int(match.group(2))
+        return min(a, b), max(a, b)
+    min_value = max_value = None
+    for number in [int(value) for value in re.findall(r"\b\d+\b", combined)]:
+        pos = combined.find(str(number))
+        local = combined[max(0, pos - 30): pos + 40]
+        if any(k in local for k in ["min", "minimum", "least", "lower"]):
             min_value = number
-        if any(word in local for word in ["max", "maximum", "limit", "up to", "no more", "less than"]):
+        if any(k in local for k in ["max", "maximum", "limit", "upper", "no more"]):
             max_value = number
-
-    if max_value is None and numbers and any(word in combined for word in ["length", "character", "char", "limit"]):
-        max_value = max(numbers)
     return min_value, max_value
 
 
-def _make_id(counter: int) -> str:
-    return f"TC-{counter:03d}"
+def _hint(req: dict) -> str:
+    expected = req.get("expected_results", "")
+    return str(expected[0]) if isinstance(expected, list) and expected else str(expected or "")
 
 
-def _base_case(
-    counter: int,
-    requirement_id: str,
-    coverage_id: str,
-    technique: str,
-    coverage: dict,
-    requirement: dict,
-    test_data: str,
-    steps: str,
-    expected_result: str | None = None,
-    precondition: str = "TodoList page is open and ready for user interaction.",
-    source: str | None = None,
-    design_basis: str = "",
-) -> dict:
-    risk_level = str(coverage.get("risk_level") or "Medium")
+def _case(idx: int, req_id: str, cov_id: str, tech: str, cov: dict, req: dict, data: str, steps: str,
+          expected: str | None = None, source: str = "Rule fallback", basis: str = "") -> dict:
+    risk = str(cov.get("risk_level") or "Medium")
+    req_text = _as_text(req.get("requirement_text", ""))
+    cov_text = _as_text(cov.get("description", ""))
     return {
-        "test_case_id": _make_id(counter),
-        "requirement_id": requirement_id,
-        "coverage_id": coverage_id,
-        "technique": technique,
-        "technique_standard": TECHNIQUE_STANDARDS.get(technique, "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4"),
-        "precondition": precondition,
-        "test_data": test_data,
+        "test_case_id": f"TC-{idx:03d}",
+        "requirement_id": req_id,
+        "coverage_id": cov_id,
+        "technique": tech,
+        "technique_standard": TECHNIQUE_STANDARDS.get(tech, "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4"),
+        "precondition": "The system under test is available and the relevant feature can be exercised.",
+        "test_data": data,
         "steps": steps,
-        "expected_result": expected_result
-        or generate_expected_result(
-            requirement_text=_as_text(requirement.get("requirement_text", "")),
-            test_data=test_data,
-            technique=technique,
-            action=_as_text(coverage.get("description", "")),
-            expected_hint=_first_expected_hint(requirement),
-        ),
-        "priority": PRIORITY_BY_RISK.get(risk_level, "Medium"),
-        "risk_score": RISK_SCORE_BY_LEVEL.get(risk_level, 3.0),
-        "risk_level": risk_level,
-        "coverage_type": coverage.get("coverage_type", "Functional"),
-        "automation_candidate": "Yes",
-        "source": source or technique,
-        "design_basis": design_basis or _as_text(coverage.get("description", "")),
+        "expected_result": expected or generate_expected_result(req_text, data, tech, cov_text, _hint(req)),
+        "priority": PRIORITY_BY_RISK.get(risk, "Medium"),
+        "risk_score": RISK_SCORE_BY_LEVEL.get(risk, 3.0),
+        "risk_level": risk,
+        "coverage_type": cov.get("coverage_type", "Functional"),
+        "automation_candidate": "Partial",
+        "source": source,
+        "design_basis": basis or cov_text or req_text,
     }
 
 
-def _first_expected_hint(requirement: dict) -> str:
-    expected = requirement.get("expected_results", "")
-    if isinstance(expected, list) and expected:
-        return str(expected[0])
-    return str(expected or "")
-
-
-def _ep_cases(counter: int, requirement_id: str, coverage_id: str, coverage: dict, requirement: dict) -> list[dict]:
-    description = _as_text(coverage.get("description", ""))
+def _ep(start: int, req_id: str, cov_id: str, cov: dict, req: dict) -> list[dict]:
+    basis = _as_text(cov.get("description", "")) or _as_text(req.get("requirement_text", ""))
     return [
-        _base_case(
-            counter,
-            requirement_id,
-            coverage_id,
-            "Equivalence Partitioning",
-            coverage,
-            requirement,
-            "Valid partition: non-empty Todo text such as 'Buy milk'",
-            "1. Enter a representative valid Todo text\n2. Submit the Todo\n3. Observe the Todo list",
-            source="EP valid partition",
-            design_basis=f"Valid equivalence partition for {description}",
-        ),
-        _base_case(
-            counter + 1,
-            requirement_id,
-            coverage_id,
-            "Equivalence Partitioning",
-            coverage,
-            requirement,
-            "Invalid partition: empty string or whitespace-only Todo text",
-            "1. Enter an empty or whitespace-only Todo text\n2. Submit the Todo\n3. Observe validation and list state",
-            source="EP invalid partition",
-            design_basis=f"Invalid equivalence partition for {description}",
-        ),
+        _case(start, req_id, cov_id, "Equivalence Partitioning", cov, req,
+              "Representative valid partition data derived from the requirement",
+              "1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response",
+              source="Rule fallback - EP valid partition", basis=f"Valid equivalence partition for: {basis}"),
+        _case(start + 1, req_id, cov_id, "Equivalence Partitioning", cov, req,
+              "Representative invalid partition data derived from the requirement",
+              "1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling",
+              source="Rule fallback - EP invalid partition", basis=f"Invalid equivalence partition for: {basis}"),
     ]
 
 
-def _bva_cases(counter: int, requirement_id: str, coverage_id: str, coverage: dict, requirement: dict) -> list[dict]:
-    text_sources = [
-        _as_text(requirement.get("requirement_text", "")),
-        _as_text(requirement.get("data_ranges", "")),
-        _as_text(requirement.get("conditions", "")),
-        _as_text(coverage.get("description", "")),
-    ]
-    min_value, max_value = _extract_length_bounds(*text_sources)
-    cases = []
-    next_id = counter
-
-    if min_value is not None:
-        values = [
-            (max(min_value - 1, 0), "below minimum boundary"),
-            (min_value, "on minimum boundary"),
-            (min_value + 1, "just above minimum boundary"),
-        ]
-    else:
-        values = [(0, "generic lower invalid boundary"), (1, "generic lower valid boundary")]
-
-    if max_value is not None:
-        values.extend(
-            [
-                (max(max_value - 1, 0), "just below maximum boundary"),
-                (max_value, "on maximum boundary"),
-                (max_value + 1, "above maximum boundary"),
-            ]
-        )
-    else:
-        values.append(("stated maximum not available", "generic upper boundary review"))
-
-    seen = set()
+def _bva(start: int, req_id: str, cov_id: str, cov: dict, req: dict) -> list[dict]:
+    lo, hi = _bounds(_as_text(req.get("requirement_text", "")), _as_text(req.get("data_ranges", "")), _as_text(cov.get("description", "")))
+    values = []
+    values += [(str(max(lo - 1, 0)), "just below minimum"), (str(lo), "on minimum"), (str(lo + 1), "just above minimum")] if lo is not None else [("below lower boundary", "generic lower invalid boundary"), ("on lower boundary", "generic lower valid boundary")]
+    values += [(str(max(hi - 1, 0)), "just below maximum"), (str(hi), "on maximum"), (str(hi + 1), "just above maximum")] if hi is not None else [("above upper boundary", "generic upper boundary review")]
+    rows, seen = [], set()
     for value, label in values:
-        key = (str(value), label)
-        if key in seen:
+        if (value, label) in seen:
             continue
-        seen.add(key)
-        if isinstance(value, int):
-            test_data = f"Todo text length = {value} characters ({label})"
-        else:
-            test_data = f"{value} ({label}; derived from available requirement text)"
-        cases.append(
-            _base_case(
-                next_id,
-                requirement_id,
-                coverage_id,
-                "Boundary Value Analysis",
-                coverage,
-                requirement,
-                test_data,
-                "1. Prepare Todo text with the specified boundary length\n2. Submit the Todo\n3. Observe validation and list state",
-                source="BVA boundary set",
-                design_basis="Boundary values are selected at, just below, and just above identifiable input limits.",
-            )
-        )
-        next_id += 1
-    return cases
-
-
-def _decision_table_cases(counter: int, requirement_id: str, coverage_id: str, coverage: dict, requirement: dict) -> list[dict]:
-    rules = [
-        ("Todo exists = Yes; Todo completed = No; Action = Delete", "The active Todo is removed from the list."),
-        ("Todo exists = Yes; Todo completed = Yes; Action = Delete", "The completed Todo is removed from the list."),
-        ("Todo exists = No; Todo completed = N/A; Action = Delete", "No Todo is removed and the list state remains consistent."),
-        ("Todo exists = Yes; Todo completed = No; Action = Mark complete", "The Todo changes from active to completed."),
-    ]
-    cases = []
-    for offset, (test_data, expected) in enumerate(rules):
-        cases.append(
-            _base_case(
-                counter + offset,
-                requirement_id,
-                coverage_id,
-                "Decision Table Testing",
-                coverage,
-                requirement,
-                test_data,
-                "1. Establish the condition combination in the decision table\n2. Execute the specified action\n3. Compare the actual result with the expected action outcome",
-                expected_result=expected,
-                source="Decision table rule",
-                design_basis=f"Rule {offset + 1}: {test_data}",
-            )
-        )
-    return cases
-
-
-def _state_cases(counter: int, requirement_id: str, coverage_id: str, coverage: dict) -> list[dict]:
-    state_tests = generate_state_transition_tests(requirement_id, coverage_id, counter)
-    rows = state_tests.to_dict("records")
-    for row in rows:
-        row["coverage_type"] = coverage.get("coverage_type", "State Transition")
-        row["risk_level"] = coverage.get("risk_level", row.get("risk_level", "Medium"))
-        row["priority"] = PRIORITY_BY_RISK.get(row["risk_level"], row.get("priority", "High"))
-        row["risk_score"] = RISK_SCORE_BY_LEVEL.get(row["risk_level"], row.get("risk_score", 3.0))
+        seen.add((value, label))
+        rows.append(_case(start + len(rows), req_id, cov_id, "Boundary Value Analysis", cov, req,
+                          f"Boundary value: {value} ({label})",
+                          "1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule",
+                          source="Rule fallback - BVA",
+                          basis="Values are selected on and around identifiable or inferred boundaries."))
     return rows
 
 
-def generate_test_cases(
-    structured_requirements: pd.DataFrame,
-    coverage_items: pd.DataFrame,
-    strategies: pd.DataFrame,
-    include_state_tests: bool = True,
-) -> pd.DataFrame:
+def _decision(start: int, req_id: str, cov_id: str, cov: dict, req: dict) -> list[dict]:
+    rules = [
+        ("All required conditions are true", "The permitted action is completed successfully."),
+        ("At least one required condition is false", "The action is rejected or the alternative specified outcome occurs."),
+        ("Invalid or conflicting condition combination", "The system handles the combination safely and consistently."),
+    ]
+    return [_case(start + i, req_id, cov_id, "Decision Table Testing", cov, req,
+                  f"Rule {i + 1}: {cond}",
+                  "1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome",
+                  expected=exp, source="Rule fallback - Decision Table",
+                  basis=f"Decision rule based on requirement conditions: {cond}") for i, (cond, exp) in enumerate(rules)]
+
+
+def _state(start: int, req_id: str, cov_id: str, cov: dict, state_model: dict) -> list[dict]:
+    rows = generate_state_transition_tests(req_id, cov_id, start, state_model=state_model).to_dict("records")
+    for row in rows:
+        risk = cov.get("risk_level", row.get("risk_level", "Medium"))
+        row.update({"coverage_type": cov.get("coverage_type", "State Transition"), "risk_level": risk,
+                    "priority": PRIORITY_BY_RISK.get(risk, row.get("priority", "High")),
+                    "risk_score": RISK_SCORE_BY_LEVEL.get(risk, row.get("risk_score", 3.0))})
+    return rows
+
+
+def _fallback(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame, include_state: bool) -> pd.DataFrame:
     strategy_map = strategies.set_index("coverage_id").to_dict("index") if not strategies.empty else {}
-    rows: list[dict] = []
-    counter = 1
-
-    for _, coverage_row in coverage_items.iterrows():
-        coverage = coverage_row.to_dict()
-        requirement_id = coverage.get("requirement_id", "")
-        coverage_id = coverage.get("coverage_id", "")
-        requirement = _find_requirement(structured_requirements, requirement_id)
-        strategy = strategy_map.get(coverage_id, {})
-        technique = strategy.get("technique", "Equivalence Partitioning")
-
-        if technique == "Boundary Value Analysis":
-            generated = _bva_cases(counter, requirement_id, coverage_id, coverage, requirement)
-        elif technique == "Decision Table Testing":
-            generated = _decision_table_cases(counter, requirement_id, coverage_id, coverage, requirement)
-        elif technique == "State Transition Testing":
-            generated = _state_cases(counter, requirement_id, coverage_id, coverage)
-        else:
-            generated = _ep_cases(counter, requirement_id, coverage_id, coverage, requirement)
-
+    state_model = infer_state_model_from_requirements(requirements)
+    rows, counter = [], 1
+    for _, cov_row in coverage.iterrows():
+        cov = cov_row.to_dict()
+        req_id, cov_id = cov.get("requirement_id", ""), cov.get("coverage_id", "")
+        req = _find_requirement(requirements, req_id)
+        tech = strategy_map.get(cov_id, {}).get("technique", "Equivalence Partitioning")
+        generated = _bva(counter, req_id, cov_id, cov, req) if tech == "Boundary Value Analysis" else _decision(counter, req_id, cov_id, cov, req) if tech == "Decision Table Testing" else _state(counter, req_id, cov_id, cov, state_model) if tech == "State Transition Testing" else _ep(counter, req_id, cov_id, cov, req)
         rows.extend(generated)
         counter += len(generated)
+    if include_state and not any(r.get("technique") == "State Transition Testing" for r in rows):
+        rows.extend(generate_state_transition_tests(start_index=counter, state_model=state_model).to_dict("records"))
+    return pd.DataFrame(rows, columns=REQUIRED_COLUMNS)
 
-    if include_state_tests and not any(row.get("technique") == "State Transition Testing" for row in rows):
-        state_rows = generate_state_transition_tests(start_index=counter).to_dict("records")
-        rows.extend(state_rows)
 
-    return pd.DataFrame(rows)
+def _llm_generate(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame, provider: str, model: str | None) -> pd.DataFrame:
+    prompt = test_case_generation_prompt(requirements.to_string(index=False), coverage.to_string(index=False), strategies.to_string(index=False))
+    parsed = _clean_json(chat_completion(TEST_CASE_IMPROVEMENT_SYSTEM, prompt, provider=provider, model=model))
+    data = pd.DataFrame(parsed.get("test_cases", []))
+    if data.empty:
+        raise ValueError("LLM returned no test_cases")
+    for col in REQUIRED_COLUMNS:
+        if col not in data.columns:
+            data[col] = ""
+    return data[REQUIRED_COLUMNS]
+
+
+def improve_test_cases_with_llm(test_cases: pd.DataFrame, provider: str | None = None, model: str | None = None, use_llm: bool = True) -> pd.DataFrame:
+    if test_cases.empty or not use_llm or not provider or not is_llm_enabled(provider):
+        return test_cases.copy()
+    improved = test_cases.copy()
+    try:
+        parsed = _clean_json(chat_completion(TEST_CASE_IMPROVEMENT_SYSTEM, test_case_improvement_prompt(improved.to_string(index=False)), provider=provider, model=model))
+    except Exception as exc:
+        improved["improvement_llm_error"] = str(exc)
+        return improved
+    reviews = {r.get("test_case_id"): r for r in parsed.get("case_reviews", [])}
+    improved["llm_review_issue"] = improved["test_case_id"].map(lambda cid: reviews.get(cid, {}).get("issue", ""))
+    improved["llm_suggested_revision"] = improved["test_case_id"].map(lambda cid: reviews.get(cid, {}).get("suggested_revision", ""))
+    return improved
+
+
+def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame,
+                        include_state_tests: bool = True, provider: str | None = None,
+                        model: str | None = None, use_llm: bool = True) -> pd.DataFrame:
+    if use_llm and provider and is_llm_enabled(provider):
+        try:
+            generated = _llm_generate(requirements, coverage, strategies, provider, model)
+            return improve_oracles_with_llm(generated, provider=provider, model=model, use_llm=True)
+        except Exception:
+            pass
+    return _fallback(requirements, coverage, strategies, include_state_tests)

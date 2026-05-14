@@ -1,19 +1,27 @@
 from __future__ import annotations
 
+import json
 from typing import Any
+
+import pandas as pd
+
+from src.ai_client import chat_completion, is_llm_enabled
+from src.prompt_templates import ORACLE_REVIEW_SYSTEM, oracle_review_prompt
 
 
 def _normalise(value: Any) -> str:
-    """
-    辅助函数：将任意值规范化为小写字符串
-    
-    Args:
-        value: 任意类型的值
-        
-    Returns:
-        规范化后的小写字符串
-    """
     return str(value or "").strip().lower()
+
+
+def _clean_json(text: str) -> dict:
+    cleaned = text.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    return json.loads(cleaned.strip())
 
 
 def generate_expected_result(
@@ -23,77 +31,62 @@ def generate_expected_result(
     action: str = "",
     expected_hint: str = "",
 ) -> str:
-    """
-    测试预言生成器：根据测试数据和上下文自动生成预期结果草稿
-    
-    这是 FR 5.0（测试预言生成）的实现，支持黑盒测试和状态转换测试的预期结果生成。
-    预期结果会根据关键词匹配不同的场景生成相应的描述。
-    
-    Args:
-        requirement_text: 需求文本
-        test_data: 测试数据描述
-        technique: 测试技术名称
-        action: 执行的动作描述
-        expected_hint: 预期结果提示（如果提供则直接返回）
-        
-    Returns:
-        生成的预期结果字符串
-    """
-    req = _normalise(requirement_text)
-    data = _normalise(test_data)
-    tech = _normalise(technique)
-    act = _normalise(action)
     hint = str(expected_hint or "").strip()
-
-    # 如果有明确的提示，直接返回
     if hint:
         return hint
 
-    # 合并所有文本用于关键词匹配
-    combined = " ".join([req, data, tech, act])
+    combined = " ".join(
+        [
+            _normalise(requirement_text),
+            _normalise(test_data),
+            _normalise(technique),
+            _normalise(action),
+        ]
+    )
 
-    # 根据关键词匹配不同场景生成预期结果
+    if any(keyword in combined for keyword in ["invalid", "empty", "blank", "below minimum", "above maximum", "outside"]):
+        return "The system rejects or safely handles the invalid input; no invalid state or invalid data is committed."
 
-    # 空输入场景
-    if "empty" in combined or "blank" in combined or "0 character" in combined or "whitespace" in combined:
-        return "The Todo item is not created; the list remains unchanged and input validation feedback is available."
+    if "boundary" in combined or "limit" in combined or "threshold" in combined:
+        return "The observable result is consistent with the specified boundary rule for the selected boundary value."
 
-    # 低于最小值场景
-    if "below minimum" in combined or "less than minimum" in combined:
-        return "The input is rejected because it is outside the valid equivalence partition; no Todo item is added."
+    if "decision table" in combined or "condition" in combined or "combination" in combined:
+        return "The observable result matches the expected action for the specified condition combination."
 
-    # 超过最大值场景
-    if "above maximum" in combined or "exceeds" in combined or "too long" in combined:
-        return "The input is rejected or constrained according to the stated maximum length; no invalid Todo item is stored."
+    if "state transition" in combined or "source state" in combined or "target state" in combined:
+        return "The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
 
-    # 删除场景
-    if "delete" in combined or "removed" in combined:
-        if "not exist" in combined or "missing" in combined:
-            return "No Todo item is removed; the system handles the missing item without corrupting the list state."
-        return "The selected Todo item is removed from the list and is no longer visible after the action."
+    if "valid" in combined or "equivalence" in combined:
+        return "The system accepts the representative valid input or behaviour and produces the requirement-consistent observable output."
 
-    # 标记完成场景
-    if "complete" in combined or "completed" in combined or "mark done" in combined:
-        return "The selected Todo item changes to the completed state and the UI/state representation reflects completion."
+    return f"The observable result satisfies the requirement under the specified test data: {requirement_text}"
 
-    # 重新激活场景
-    if "active" in combined or "reopen" in combined or "uncomplete" in combined:
-        return "The selected Todo item returns to the active state and is no longer shown as completed."
 
-    # 持久化/刷新场景
-    if "refresh" in combined or "persist" in combined or "save" in combined or "reload" in combined:
-        return "After refresh or reload, the Todo list preserves the expected items and their states."
+def improve_oracles_with_llm(
+    test_cases: pd.DataFrame,
+    provider: str | None = None,
+    model: str | None = None,
+    use_llm: bool = True,
+) -> pd.DataFrame:
+    if test_cases.empty or not use_llm or not provider or not is_llm_enabled(provider):
+        return test_cases.copy()
 
-    # 创建/添加场景
-    if "create" in combined or "add" in combined or "valid partition" in combined or "boundary" in combined:
-        return "A Todo item is created successfully and appears in the list with the submitted valid text."
+    improved = test_cases.copy()
+    try:
+        prompt = oracle_review_prompt(improved.to_string(index=False))
+        response = chat_completion(ORACLE_REVIEW_SYSTEM, prompt, provider=provider, model=model)
+        parsed = _clean_json(response)
+    except Exception as exc:
+        improved["oracle_llm_error"] = str(exc)
+        return improved
 
-    # 决策表测试场景
-    if "decision table" in combined:
-        return "The observed outcome matches the decision table rule for the specified condition combination."
-
-    # 状态转换测试场景
-    if "state transition" in combined:
-        return "The system reaches the expected target state after the transition and no invalid state is introduced."
-
-    return f"The observable result satisfies the requirement: {requirement_text}"
+    for review in parsed.get("oracle_reviews", []):
+        test_case_id = review.get("test_case_id")
+        improved_result = review.get("improved_expected_result")
+        if not test_case_id or not improved_result:
+            continue
+        mask = improved["test_case_id"] == test_case_id
+        if mask.any():
+            improved.loc[mask, "expected_result"] = improved_result
+            improved.loc[mask, "oracle_source"] = "LLM prompt review"
+    return improved

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import json
+from typing import Any
+
 import pandas as pd
 
+from src.ai_client import chat_completion, is_llm_enabled
+from src.prompt_templates import TEST_STRATEGY_REVIEW_SYSTEM, test_strategy_review_prompt
 
-# 测试技术标准映射表
-# 每个测试技术对应 ISTQB 和 ISO/IEC/IEEE 29119-4 标准的描述
+
 TECHNIQUE_STANDARDS = {
     "Equivalence Partitioning": "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning",
     "Boundary Value Analysis": "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis",
@@ -13,102 +17,123 @@ TECHNIQUE_STANDARDS = {
 }
 
 
-def _text(row: pd.Series) -> str:
-    """
-    辅助函数：从覆盖项行中提取所有文本字段，用于策略选择的关键词匹配
-    
-    Args:
-        row: 单个覆盖项的数据行
-        
-    Returns:
-        合并后的小写文本字符串
-    """
+def _as_text(value: Any) -> str:
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value)
+    return str(value or "")
+
+
+def _clean_json(text: str) -> dict:
+    cleaned = text.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    return json.loads(cleaned.strip())
+
+
+def _coverage_text(row: pd.Series) -> str:
     values = [
-        row.get("description", ""),       # 覆盖项描述
-        row.get("coverage_item", ""),     # 覆盖项内容
-        row.get("coverage_type", ""),     # 覆盖类型
-        row.get("tags", ""),              # 标签
-        row.get("related_techniques", ""),# 相关技术
+        row.get("description", ""),
+        row.get("coverage_item", ""),
+        row.get("coverage_type", ""),
+        row.get("tags", ""),
+        row.get("related_techniques", ""),
+        row.get("notes", ""),
     ]
-    return " ".join(str(value).lower() for value in values if value is not None)
+    return " ".join(_as_text(value).lower() for value in values if value is not None)
 
 
-def _choose_strategy(row: pd.Series) -> tuple[str, str]:
-    """
-    根据覆盖项内容选择最合适的测试技术
-    
-    选择优先级（按顺序匹配）：
-    1. 状态转换测试 - 涉及状态、转换、完成、激活等关键词
-    2. 边界值分析 - 涉及边界、范围、长度、限制等关键词
-    3. 决策表测试 - 涉及条件、规则、组合、删除、存在等关键词
-    4. 等价类划分 - 涉及输入、有效、无效、功能、创建、添加等关键词
-    5. 默认使用等价类划分
-    
-    Args:
-        row: 单个覆盖项的数据行
-        
-    Returns:
-        元组 (测试技术名称, 选择理由)
-    """
-    text = _text(row)
+def _fallback_strategy(row: pd.Series) -> tuple[str, str]:
+    text = _coverage_text(row)
 
-    # 状态转换测试：适用于事件驱动的行为，如 Todo 的生命周期状态变化
-    if any(word in text for word in ["state", "transition", "complete", "completed", "active", "toggle"]):
+    if any(keyword in text for keyword in ["state", "transition", "lifecycle", "workflow", "event", "mode"]):
         return (
             "State Transition Testing",
-            "The coverage item focuses on Todo lifecycle states or transitions; state transition testing is appropriate for event-driven behaviour.",
+            "Fallback rule: coverage describes states, events, or lifecycle behaviour, so state transition testing is suitable.",
         )
 
-    # 边界值分析：适用于输入限制或边界条件
-    if any(word in text for word in ["boundary", "range", "length", "limit", "empty", "blank", "minimum", "maximum"]):
+    if any(keyword in text for keyword in ["boundary", "range", "limit", "minimum", "maximum", "threshold", "length", "empty", "zero"]):
         return (
             "Boundary Value Analysis",
-            "The coverage item references input limits or boundary conditions; boundary value analysis targets values on and around boundaries.",
+            "Fallback rule: coverage describes a boundary, range, limit, threshold, or empty/zero value.",
         )
 
-    # 决策表测试：适用于多条件组合的业务规则
-    if any(word in text for word in ["condition", "rule", "combination", "delete", "exist", "missing", "decision"]):
+    if any(keyword in text for keyword in ["condition", "combination", "rule", "decision", "if", "when", "valid and", "valid or"]):
         return (
             "Decision Table Testing",
-            "The coverage item depends on combinations of conditions and actions; decision table testing makes the rules explicit.",
+            "Fallback rule: coverage depends on combinations of conditions and actions.",
         )
 
-    # 等价类划分：适用于输入验证和功能测试
-    if any(word in text for word in ["input", "valid", "invalid", "functional", "create", "add", "display", "list"]):
-        return (
-            "Equivalence Partitioning",
-            "The coverage item can be divided into valid and invalid input or behaviour classes; one representative per partition is selected.",
-        )
-
-    # 默认使用等价类划分
     return (
         "Equivalence Partitioning",
-        "Default black-box technique for representative coverage when no stronger condition, boundary, or state signal is present.",
+        "Fallback rule: representative valid and invalid partitions are appropriate for general functional or input coverage.",
     )
 
 
-def select_strategies(coverage_items: pd.DataFrame) -> pd.DataFrame:
-    """
-    为每个覆盖项选择测试策略（测试技术）
-    
-    Args:
-        coverage_items: 覆盖项 DataFrame，包含覆盖项的详细信息
-        
-    Returns:
-        策略选择结果 DataFrame，包含 coverage_id、technique、strategy_reason 等字段
-    """
+def _fallback_strategies(coverage_items: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for _, row in coverage_items.iterrows():
-        technique, reason = _choose_strategy(row)
+        technique, reason = _fallback_strategy(row)
         rows.append(
             {
-                "coverage_id": row["coverage_id"],       # 覆盖项ID
-                "requirement_id": row.get("requirement_id", ""),  # 关联的需求ID
-                "coverage_type": row.get("coverage_type", "Functional"),  # 覆盖类型
-                "risk_level": row.get("risk_level", "Medium"),    # 风险等级
-                "technique": technique,                 # 选择的测试技术
-                "technique_standard": TECHNIQUE_STANDARDS[technique],  # 技术标准
-                "strategy_reason": reason,              # 选择理由
+                "coverage_id": row["coverage_id"],
+                "requirement_id": row.get("requirement_id", ""),
+                "coverage_type": row.get("coverage_type", "Functional"),
+                "risk_level": row.get("risk_level", "Medium"),
+                "technique": technique,
+                "technique_standard": TECHNIQUE_STANDARDS[technique],
+                "strategy_reason": reason,
+                "source": "Rule fallback",
             }
         )
     return pd.DataFrame(rows)
+
+
+def _llm_refine_strategies(
+    coverage_items: pd.DataFrame,
+    strategies: pd.DataFrame,
+    provider: str,
+    model: str | None = None,
+) -> pd.DataFrame:
+    prompt = test_strategy_review_prompt(
+        coverage_items.to_string(index=False),
+        strategies.to_string(index=False),
+    )
+    response = chat_completion(TEST_STRATEGY_REVIEW_SYSTEM, prompt, provider=provider, model=model)
+    parsed = _clean_json(response)
+    reviews = parsed.get("strategy_reviews", [])
+    if not reviews:
+        return strategies
+
+    refined = strategies.copy()
+    for review in reviews:
+        coverage_id = review.get("coverage_id")
+        recommended = review.get("recommended_technique")
+        if recommended not in TECHNIQUE_STANDARDS:
+            continue
+        mask = refined["coverage_id"] == coverage_id
+        if not mask.any():
+            continue
+        refined.loc[mask, "technique"] = recommended
+        refined.loc[mask, "technique_standard"] = TECHNIQUE_STANDARDS[recommended]
+        refined.loc[mask, "strategy_reason"] = review.get("recommendation_reason", refined.loc[mask, "strategy_reason"].iloc[0])
+        refined.loc[mask, "source"] = "LLM prompt review"
+    return refined
+
+
+def select_strategies(
+    coverage_items: pd.DataFrame,
+    provider: str | None = None,
+    model: str | None = None,
+    use_llm: bool = True,
+) -> pd.DataFrame:
+    strategies = _fallback_strategies(coverage_items)
+    if use_llm and provider and is_llm_enabled(provider):
+        try:
+            return _llm_refine_strategies(coverage_items, strategies, provider=provider, model=model)
+        except Exception as exc:
+            strategies["llm_error"] = str(exc)
+    return strategies

@@ -231,7 +231,7 @@ def init_state() -> None:
             st.session_state.selected_provider
         )[0]
     if "project_name" not in st.session_state:
-        st.session_state.project_name = "simpletodolist"
+        st.session_state.project_name = "sample_project"
 
 
 def compute_artifacts() -> dict[str, pd.DataFrame]:
@@ -239,12 +239,24 @@ def compute_artifacts() -> dict[str, pd.DataFrame]:
     structuring_time, structured = measure_time(structure_requirements, requirements)
     risk_time, risks = measure_time(analyze_risks, structured)
     coverage_items = identify_coverage_items(structured, risks)
-    strategies = select_strategies(coverage_items)
+    provider = st.session_state.selected_provider
+    model = st.session_state.selected_model
+    strategies = select_strategies(coverage_items, provider=provider, model=model)
     generation_time, test_cases = measure_time(
-        generate_test_cases, structured, coverage_items, strategies
+        generate_test_cases,
+        structured,
+        coverage_items,
+        strategies,
+        True,
+        provider,
+        model,
     )
     optimized_cases = optimize_suite(test_cases)
-    state_sequences = generate_all_transitions_sequence()
+    from src.state_modeler import infer_state_model_from_requirements
+
+    state_sequences = generate_all_transitions_sequence(
+        infer_state_model_from_requirements(structured)
+    )
     traceability = build_traceability_matrix(
         structured,
         coverage_items,
@@ -305,8 +317,8 @@ def requirements_from_text(raw_text: str) -> pd.DataFrame:
             continue
         rows.append(
             {
-                "requirement_id": f"REQ-TODO-{index:03d}",
-                "module": "Todo",
+                "requirement_id": f"REQ-{index:03d}",
+                "module": "General",
                 "requirement_text": requirement_text,
             }
         )
@@ -358,7 +370,7 @@ with st.sidebar:
             else 0
         ),
     )
-    st.caption("Provider and model are used by optional LLM review.")
+    st.caption("Provider and model are used by optional LLM prompt-based strategy, test case, oracle, and improvement functions.")
 
 artifacts = compute_artifacts()
 
@@ -367,7 +379,7 @@ st.markdown(
     <div class="hero">
       <div class="eyebrow">AI-assisted test design</div>
     <h1>🛠️ AutoTestDesign Workflow</h1>
-      <p class="subtle">A calm workspace for requirement analysis, risk-based prioritization, coverage review, and traceable test design.</p>
+      <p class="subtle">A general-purpose workspace for requirement analysis, risk-based prioritization, coverage review, and prompt-assisted traceable test design. TodoList can be used as a demonstration target, but the generator is requirement-driven and domain-neutral.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -414,45 +426,43 @@ if page == "Requirement Input":
         edited = st.data_editor(
             st.session_state.requirements,
             num_rows="dynamic",
-            width="stretch",
             key="requirements_editor",
         )
         st.session_state.requirements = edited
 
 if page == "Structuring & Risk":
     section_header("Requirement Structuring", "file")
-    st.dataframe(artifacts["structured_requirements"], width="stretch")
+    st.dataframe(artifacts["structured_requirements"])
     section_header("Risk Analysis", "risk")
-    st.dataframe(artifacts["risk_analysis"], width="stretch")
+    st.dataframe(artifacts["risk_analysis"])
     st.caption("Performance targets are tracked locally for reporting.")
-    st.dataframe(artifacts["performance"], width="stretch")
+    st.dataframe(artifacts["performance"])
 
 if page == "Coverage & Strategy":
     section_header("Coverage Items", "map")
-    st.dataframe(artifacts["coverage_items"], width="stretch")
+    st.dataframe(artifacts["coverage_items"])
     section_header("Coverage Strategy", "map")
-    st.dataframe(artifacts["test_strategies"], width="stretch")
+    st.dataframe(artifacts["test_strategies"])
     with st.expander("State transition model sequences"):
-        st.dataframe(artifacts["state_transition_sequences"], width="stretch")
+        st.dataframe(artifacts["state_transition_sequences"])
 
 if page == "Test Cases":
     section_header("Generated Test Cases", "case")
     edited_cases = st.data_editor(
         artifacts["test_cases"],
         num_rows="dynamic",
-        width="stretch",
         key="test_cases_editor",
     )
     artifacts["test_cases"] = edited_cases
     section_header("Traceability Matrix", "map")
-    st.dataframe(artifacts["traceability_matrix"], width="stretch")
+    st.dataframe(artifacts["traceability_matrix"])
     with st.expander("Optimized test suite"):
-        st.dataframe(artifacts["optimized_test_cases"], width="stretch")
+        st.dataframe(artifacts["optimized_test_cases"])
     with st.expander("Standalone state transition tests"):
-        st.dataframe(artifacts["state_transition_sequences"], width="stretch")
+        st.dataframe(artifacts["state_transition_sequences"])
 
 if page == "AI Review":
-    section_header("AI Coverage Review", "ai")
+    section_header("AI Prompt Review & Improvement", "ai")
     st.markdown(
         f"<p style='font-size: 18px;'>Selected provider: <strong style='font-size: 20px; background-color: transparent; color: brown; padding: 4px 8px; border-radius: 4px;'>{st.session_state.selected_provider}</strong></p>",
         unsafe_allow_html=True,
@@ -483,6 +493,21 @@ if page == "AI Review":
                 st.text_area("AI suggestions", result, height=300)
             except Exception as exc:
                 st.error(f"AI review failed: {exc}")
+
+        from src.improvement_engine import generate_improved_test_design_with_llm
+
+        if st.button("Generate Improvement Suggestions"):
+            result = generate_improved_test_design_with_llm(
+                artifacts["structured_requirements"],
+                artifacts["coverage_items"],
+                artifacts["test_cases"],
+                provider=st.session_state.selected_provider,
+                model=st.session_state.selected_model,
+            )
+            st.write("Missing coverage suggestions")
+            st.dataframe(result["missing_coverage"])
+            st.write("Improved or additional test cases")
+            st.dataframe(result["suggested_test_cases"])
 
 if page == "Persistence & Export":
     section_header("Local Project Persistence", "save")
@@ -567,4 +592,4 @@ if page == "Persistence & Export":
             path = export_selenium_pytest_draft(artifacts["optimized_test_cases"])
             st.success(f"Saved to {path}")
 
-    st.dataframe(artifacts["performance"], width="stretch")
+    st.dataframe(artifacts["performance"])
