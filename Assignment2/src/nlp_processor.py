@@ -22,7 +22,17 @@ def extract_requirement_parts(
     """
     使用规则识别+spacy识别，之后LLM兜底。
     """
-    if not requirement_text or not requirement_text.strip():
+    if requirement_text is None:
+        return _empty_structure()
+    if not isinstance(requirement_text, str):
+        try:
+            if requirement_text != requirement_text:
+                return _empty_structure()
+        except Exception:
+            return _empty_structure()
+        requirement_text = str(requirement_text)
+    requirement_text = requirement_text.strip()
+    if not requirement_text:
         return _empty_structure()
 
     if not force_llm:

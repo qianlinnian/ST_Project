@@ -12,10 +12,17 @@ def structure_requirements(requirements: pd.DataFrame) -> pd.DataFrame:
     """
     rows = []
     for _, row in requirements.iterrows():
-        parts = extract_requirement_parts(row["requirement_text"])
+        requirement_text = row.get("requirement_text", "")
+        if requirement_text is None or requirement_text != requirement_text:
+            requirement_text = ""
+        requirement_text = str(requirement_text).strip()
+        if not requirement_text:
+            continue
+        parts = extract_requirement_parts(requirement_text)
         
         # 保留原始列表格式（推荐），仅在需要展示时才转字符串
         row_dict = row.to_dict()
+        row_dict["requirement_text"] = requirement_text
         row_dict.update({
             "input_fields": parts.get("input_fields", []),
             "data_ranges": parts.get("data_ranges", []),
@@ -35,7 +42,10 @@ def parse_requirements(requirements_data: List[dict]) -> List[Requirement]:
     parsed_reqs = []
     for data in requirements_data:
         req_id = data.get("requirement_id", f"REQ_{len(parsed_reqs)+1}")
-        req_text = data.get("requirement_text", "").strip()
+        req_text = data.get("requirement_text", "")
+        if req_text is None or req_text != req_text:
+            req_text = ""
+        req_text = str(req_text).strip()
         module = data.get("module", "")
 
         if not req_text:
