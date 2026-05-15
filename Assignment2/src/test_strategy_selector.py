@@ -6,7 +6,10 @@ from typing import Any
 import pandas as pd
 
 from src.ai_client import chat_completion, is_llm_enabled
-from src.prompt_templates import TEST_STRATEGY_REVIEW_SYSTEM, test_strategy_review_prompt
+from src.prompt_templates import (
+    TEST_STRATEGY_REVIEW_SYSTEM,
+    test_strategy_review_prompt as build_test_strategy_review_prompt,
+)
 
 
 TECHNIQUE_STANDARDS = {
@@ -98,7 +101,7 @@ def _llm_refine_strategies(
     provider: str,
     model: str | None = None,
 ) -> pd.DataFrame:
-    prompt = test_strategy_review_prompt(
+    prompt = build_test_strategy_review_prompt(
         coverage_items.to_string(index=False),
         strategies.to_string(index=False),
     )

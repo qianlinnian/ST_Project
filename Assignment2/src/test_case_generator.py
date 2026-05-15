@@ -8,7 +8,12 @@ import pandas as pd
 
 from src.ai_client import chat_completion, is_llm_enabled
 from src.oracle_generator import generate_expected_result, improve_oracles_with_llm
-from src.prompt_templates import TEST_CASE_IMPROVEMENT_SYSTEM, test_case_generation_prompt, test_case_improvement_prompt
+from src.prompt_templates import (
+    TEST_CASE_GENERATION_SYSTEM,
+    TEST_CASE_IMPROVEMENT_SYSTEM,
+    test_case_generation_prompt as build_test_case_generation_prompt,
+    test_case_improvement_prompt as build_test_case_improvement_prompt,
+)
 from src.state_modeler import infer_state_model_from_requirements, generate_state_transition_tests
 from src.test_strategy_selector import TECHNIQUE_STANDARDS
 
@@ -163,8 +168,8 @@ def _fallback(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd
 
 
 def _llm_generate(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame, provider: str, model: str | None) -> pd.DataFrame:
-    prompt = test_case_generation_prompt(requirements.to_string(index=False), coverage.to_string(index=False), strategies.to_string(index=False))
-    parsed = _clean_json(chat_completion(TEST_CASE_IMPROVEMENT_SYSTEM, prompt, provider=provider, model=model))
+    prompt = build_test_case_generation_prompt(requirements.to_string(index=False), coverage.to_string(index=False), strategies.to_string(index=False))
+    parsed = _clean_json(chat_completion(TEST_CASE_GENERATION_SYSTEM, prompt, provider=provider, model=model))
     data = pd.DataFrame(parsed.get("test_cases", []))
     if data.empty:
         raise ValueError("LLM returned no test_cases")
@@ -179,7 +184,7 @@ def improve_test_cases_with_llm(test_cases: pd.DataFrame, provider: str | None =
         return test_cases.copy()
     improved = test_cases.copy()
     try:
-        parsed = _clean_json(chat_completion(TEST_CASE_IMPROVEMENT_SYSTEM, test_case_improvement_prompt(improved.to_string(index=False)), provider=provider, model=model))
+        parsed = _clean_json(chat_completion(TEST_CASE_IMPROVEMENT_SYSTEM, build_test_case_improvement_prompt(improved.to_string(index=False)), provider=provider, model=model))
     except Exception as exc:
         improved["improvement_llm_error"] = str(exc)
         return improved

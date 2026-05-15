@@ -3,7 +3,10 @@ import re
 from typing import Dict, List
 
 from src.ai_client import chat_completion
-from src.prompt_templates import REQUIREMENT_STRUCTURING_SYSTEM
+from src.prompt_templates import (
+    REQUIREMENT_STRUCTURING_SYSTEM,
+    requirement_structuring_prompt,
+)
 
 try:
     import spacy
@@ -32,16 +35,12 @@ def extract_requirement_parts(
         ):
             return local_result
 
-    # LLM 兜底
+    # LLM兜底
     response_text = ""
     try:
-        user_prompt = f"""Requirement ID: [待填充]
-Requirement Text:
-{requirement_text}"""
-
         response_text = chat_completion(
             system_prompt=REQUIREMENT_STRUCTURING_SYSTEM,
-            user_prompt=user_prompt,
+            user_prompt=requirement_structuring_prompt(requirement_text),
         )
 
         cleaned = response_text.strip()
@@ -75,7 +74,7 @@ def _spacy_rule_based_structure(requirement_text: str) -> Dict[str, List[str]]:
         doc = nlp(requirement_text)
         # 用 spacy 增强输入字段和条件
         for chunk in doc.noun_chunks:
-            if chunk.text.lower() not in [i.lower() for i in result["input_fields"]]:
+            if chunk.text.lower() not in [item.lower() for item in result["input_fields"]]:
                 # Add important nouns
                 if len(chunk.text) > 2:
                     result["input_fields"].append(chunk.text)
@@ -90,7 +89,7 @@ def _rule_based_structure(requirement_text: str) -> Dict[str, List[str]]:
         result["input_fields"].append("Todo text")
 
     ranges = re.findall(
-        r"(?:\d+\s*(?:-|to|~|–)\s*\d+|\d+\s*(?:characters?|chars?))",
+        r"\d+\s*(?:-|to|~)\s*\d+|\d+\s*(?:characters?|chars?)",
         requirement_text,
         flags=re.I,
     )

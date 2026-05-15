@@ -33,6 +33,14 @@ TEST_CASE_IMPROVEMENT_SYSTEM = (
     "values unless explicitly asked to suggest missing cases."
 )
 
+TEST_CASE_GENERATION_SYSTEM = (
+    "You are a test case generation assistant following ISTQB Foundation Level "
+    "and ISO/IEC/IEEE 29119-4 detailed test techniques. Generate systematic, "
+    "traceable test cases from structured requirements, coverage items, and "
+    "selected test strategies. Return only valid JSON. Preserve existing "
+    "requirement_id and coverage_id values."
+)
+
 ORACLE_REVIEW_SYSTEM = (
     "You are a test oracle reviewer. Review expected_result fields for clarity, "
     "observability, and consistency with the requirement, test data, and selected "
@@ -62,7 +70,8 @@ def requirement_structuring_prompt(requirement_text: str) -> str:
         "Rules:\n"
         "- Use empty lists when a field is not present.\n"
         "- Keep values short and directly grounded in the requirement text.\n"
-        "- Do not include requirement_id or module unless they appear in the input."
+        "- Do not invent requirement_id or module values.\n"
+        "- Extract only information explicitly supported by this requirement text."
     )
 
 
