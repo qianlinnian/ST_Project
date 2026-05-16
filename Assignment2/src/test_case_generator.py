@@ -201,6 +201,9 @@ def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, stra
         try:
             generated = _llm_generate(requirements, coverage, strategies, provider, model)
             return improve_oracles_with_llm(generated, provider=provider, model=model, use_llm=True)
-        except Exception:
-            pass
+        except Exception as exc:
+            fallback = _fallback(requirements, coverage, strategies, include_state_tests)
+            fallback["llm_error"] = str(exc)
+            fallback["source"] = fallback["source"].astype(str) + " after LLM fallback"
+            return fallback
     return _fallback(requirements, coverage, strategies, include_state_tests)
