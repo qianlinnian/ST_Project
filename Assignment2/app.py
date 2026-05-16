@@ -29,7 +29,7 @@ from src.prompt_templates import (
 )
 from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import structure_requirements
-from src.risk_analyzer import analyze_risks
+from src.risk_analyzer import analyze_risks_with_llm_fallback
 from src.state_modeler import (
     generate_all_transitions_sequence,
     infer_state_model_from_requirements,
@@ -460,7 +460,10 @@ def analyze_current_risks() -> None:
         return
 
     risk_time, risks = measure_time(
-        analyze_risks, st.session_state.structured_requirements
+        analyze_risks_with_llm_fallback,
+        st.session_state.structured_requirements,
+        st.session_state.selected_provider,
+        st.session_state.selected_model,
     )
     st.session_state.risk_analysis = risks
     st.session_state.risk_analysis_draft = risks.copy()
@@ -556,7 +559,12 @@ def save_test_strategies(test_strategies: pd.DataFrame) -> None:
 
 def render_llm_status(artifacts: dict[str, pd.DataFrame]) -> None:
     messages = []
-    for artifact_name in ["test_strategies", "test_cases", "optimized_test_cases"]:
+    for artifact_name in [
+        "risk_analysis",
+        "test_strategies",
+        "test_cases",
+        "optimized_test_cases",
+    ]:
         artifact = artifacts.get(artifact_name, pd.DataFrame())
         if not artifact.empty and "llm_error" in artifact.columns:
             errors = [str(error) for error in artifact["llm_error"].dropna().unique() if str(error)]
