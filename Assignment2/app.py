@@ -4,7 +4,6 @@ import streamlit as st
 from src.ai_client import (
     available_models,
     available_provider_names,
-    chat_completion,
     is_llm_enabled,
 )
 from src.coverage_identifier import identify_coverage_items
@@ -23,21 +22,20 @@ from src.persistence import (
     load_project,
     save_project,
 )
-from src.prompt_templates import (
-    COVERAGE_IMPROVEMENT_SYSTEM,
-    coverage_improvement_prompt,
-)
 from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import structure_requirements
 from src.risk_analyzer import analyze_risks_with_llm_fallback
 from src.state_modeler import (
-    generate_all_transitions_sequence,
+    generate_optimized_transition_sequence,
     infer_state_model_from_requirements,
 )
 from src.suite_optimizer import optimize_suite
 from src.test_case_generator import generate_test_cases
 from src.test_strategy_selector import select_strategies
-from src.improvement_engine import generate_improved_test_design_with_llm
+from src.improvement_engine import (
+    generate_improved_test_design_with_llm,
+    suggest_missing_coverage_with_llm,
+)
 
 st.set_page_config(page_title="AutoTestDesign", layout="wide")
 
@@ -246,6 +244,10 @@ def init_state() -> None:
         st.session_state.test_strategies_draft = pd.DataFrame()
     if "test_cases_draft" not in st.session_state:
         st.session_state.test_cases_draft = pd.DataFrame()
+    if "coverage_ai_improvement" not in st.session_state:
+        st.session_state.coverage_ai_improvement = None
+    if "ai_improvement_result" not in st.session_state:
+        st.session_state.ai_improvement_result = None
     for key in [
         "structured_requirements",
         "risk_analysis",
@@ -434,6 +436,11 @@ def reset_downstream(from_step: str) -> None:
     }
     for key in order.get(from_step, []):
         st.session_state[key] = pd.DataFrame()
+    if from_step in {"requirements", "structured", "risk"}:
+        st.session_state.coverage_ai_improvement = None
+        st.session_state.ai_improvement_result = None
+    if from_step == "strategy":
+        st.session_state.ai_improvement_result = None
 
 
 def structure_current_requirements() -> None:
@@ -479,21 +486,33 @@ def generate_current_strategy() -> None:
         st.warning("Please analyze risks first.")
         return
 
-    coverage_items = identify_coverage_items(
-        st.session_state.structured_requirements,
-        st.session_state.risk_analysis,
-    )
-    provider = st.session_state.selected_provider
-    model = st.session_state.selected_model
-    strategies = select_strategies(coverage_items, provider=provider, model=model)
-    state_sequences = generate_all_transitions_sequence(
-        infer_state_model_from_requirements(st.session_state.structured_requirements)
-    )
+    def build_strategy_artifacts() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        coverage_items = identify_coverage_items(
+            st.session_state.structured_requirements,
+            st.session_state.risk_analysis,
+        )
+        provider = st.session_state.selected_provider
+        model = st.session_state.selected_model
+        strategies = select_strategies(
+            coverage_items,
+            provider=provider,
+            model=model,
+            use_llm=False,
+        )
+        state_sequences = generate_optimized_transition_sequence(
+            infer_state_model_from_requirements(st.session_state.structured_requirements)
+        )
+        return coverage_items, strategies, state_sequences
+
+    strategy_time, artifacts = measure_time(build_strategy_artifacts)
+    coverage_items, strategies, state_sequences = artifacts
     st.session_state.coverage_items = coverage_items
     st.session_state.test_strategies = strategies
     st.session_state.coverage_items_draft = coverage_items.copy()
     st.session_state.test_strategies_draft = strategies.copy()
     st.session_state.state_transition_sequences = state_sequences
+    st.session_state.coverage_ai_improvement = None
+    set_performance("coverage_strategy_generation_seconds", strategy_time)
     reset_downstream("strategy")
 
 
@@ -507,9 +526,10 @@ def generate_current_test_cases() -> None:
         st.session_state.structured_requirements,
         st.session_state.coverage_items,
         st.session_state.test_strategies,
-        True,
-        st.session_state.selected_provider,
-        st.session_state.selected_model,
+        include_state_tests=True,
+        provider=st.session_state.selected_provider,
+        model=st.session_state.selected_model,
+        use_llm=False,
     )
     optimized_cases = optimize_suite(test_cases)
     traceability = build_traceability_matrix(
@@ -522,6 +542,7 @@ def generate_current_test_cases() -> None:
     st.session_state.test_cases_draft = test_cases.copy()
     st.session_state.optimized_test_cases = optimized_cases
     st.session_state.traceability_matrix = traceability
+    st.session_state.ai_improvement_result = None
     set_performance("test_case_generation_seconds", generation_time)
 
 
@@ -529,6 +550,7 @@ def save_test_cases(test_cases: pd.DataFrame) -> None:
     st.session_state.test_cases = test_cases.copy()
     st.session_state.test_cases_draft = test_cases.copy()
     st.session_state.optimized_test_cases = optimize_suite(st.session_state.test_cases)
+    st.session_state.ai_improvement_result = None
     st.session_state.traceability_matrix = build_traceability_matrix(
         st.session_state.structured_requirements,
         st.session_state.coverage_items,
@@ -546,6 +568,7 @@ def save_risk_analysis(risk_analysis: pd.DataFrame) -> None:
 def save_coverage_items(coverage_items: pd.DataFrame) -> None:
     st.session_state.coverage_items = coverage_items.copy()
     st.session_state.coverage_items_draft = coverage_items.copy()
+    st.session_state.coverage_ai_improvement = None
     st.session_state.test_strategies = pd.DataFrame()
     st.session_state.test_strategies_draft = pd.DataFrame()
     reset_downstream("strategy")
@@ -554,6 +577,7 @@ def save_coverage_items(coverage_items: pd.DataFrame) -> None:
 def save_test_strategies(test_strategies: pd.DataFrame) -> None:
     st.session_state.test_strategies = test_strategies.copy()
     st.session_state.test_strategies_draft = test_strategies.copy()
+    st.session_state.ai_improvement_result = None
     reset_downstream("strategy")
 
 
@@ -623,9 +647,21 @@ def render_export_paths(paths: dict[str, object]) -> None:
     st.code("\n".join(f"{name}: {path}" for name, path in paths.items()))
 
 
-def render_ai_text_result(key: str, text: str) -> None:
-    st.session_state[key] = text
-    st.markdown(text)
+def render_llm_dataframe(title: str, data: pd.DataFrame, empty_message: str) -> None:
+    with st.expander(title, expanded=True):
+        if data.empty:
+            st.info(empty_message)
+        elif "llm_error" in data.columns:
+            st.error(str(data["llm_error"].dropna().iloc[0]))
+            st.dataframe(data, width="stretch", hide_index=True)
+        else:
+            st.dataframe(data, width="stretch", hide_index=True)
+
+
+def render_performance_table(artifacts: dict[str, pd.DataFrame]) -> None:
+    if not artifacts["performance"].empty:
+        st.caption("Performance targets are tracked locally for reporting.")
+        st.dataframe(artifacts["performance"], width="stretch", hide_index=True)
 
 
 inject_style()
@@ -783,18 +819,39 @@ if page == "Risk Analysis":
         if st.button("Save Edited Risk Analysis", width="stretch"):
             save_risk_analysis(st.session_state.risk_analysis_draft)
             st.toast("Edited risk analysis saved.")
-    if not artifacts["performance"].empty:
-        st.caption("Performance targets are tracked locally for reporting.")
-        st.dataframe(artifacts["performance"])
+    render_performance_table(artifacts)
 
 if page == "Coverage & Strategy":
     section_header("Coverage Items", "map")
-    if st.button("Generate Coverage & Strategy", type="primary", width="stretch"):
-        with st.spinner("Generating coverage items and strategy..."):
-            if not st.session_state.risk_analysis_draft.empty:
-                save_risk_analysis(st.session_state.risk_analysis_draft)
-            generate_current_strategy()
-        artifacts = current_artifacts()
+    local_col, llm_col = st.columns([1, 1], gap="medium")
+    with local_col:
+        if st.button("Generate Coverage & Strategy", type="primary", width="stretch"):
+            with st.spinner("Generating local coverage items and strategy..."):
+                if not st.session_state.risk_analysis_draft.empty:
+                    save_risk_analysis(st.session_state.risk_analysis_draft)
+                generate_current_strategy()
+            artifacts = current_artifacts()
+    with llm_col:
+        coverage_llm_disabled = (
+            not is_llm_enabled(st.session_state.selected_provider)
+            or artifacts["coverage_items"].empty
+        )
+        if st.button(
+            "Improve Coverage With LLM",
+            width="stretch",
+            disabled=coverage_llm_disabled,
+        ):
+            with st.spinner("Reviewing coverage with LLM..."):
+                llm_time, coverage_improvement = measure_time(
+                    suggest_missing_coverage_with_llm,
+                    artifacts["structured_requirements"],
+                    artifacts["coverage_items"],
+                    st.session_state.selected_provider,
+                    st.session_state.selected_model,
+                )
+                st.session_state.coverage_ai_improvement = coverage_improvement
+                set_performance("llm_coverage_improvement_seconds", llm_time)
+            st.toast("LLM coverage improvement completed.")
     if artifacts["coverage_items"].empty:
         st.info("Run requirement structuring and risk analysis first.")
     else:
@@ -836,38 +893,54 @@ if page == "Coverage & Strategy":
         with st.expander("State transition model sequences"):
             st.dataframe(artifacts["state_transition_sequences"])
 
-    section_header("AI Coverage Review", "ai")
-    if not is_llm_enabled(st.session_state.selected_provider):
-        st.info("Selected provider is not configured. Local rules remain available.")
-    elif artifacts["coverage_items"].empty:
-        st.info("Generate coverage items before running AI coverage review.")
-    else:
-        if st.button("Review Coverage With AI", width="stretch"):
-            try:
-                user_prompt = coverage_improvement_prompt(
-                    artifacts["structured_requirements"][
-                        ["requirement_id", "requirement_text"]
-                    ].to_string(index=False),
-                    artifacts["coverage_items"].to_string(index=False),
+    coverage_improvement = st.session_state.get("coverage_ai_improvement")
+    if coverage_improvement is not None:
+        section_header("LLM Coverage Improvement", "ai")
+        if coverage_improvement.empty:
+            st.info("LLM did not identify additional missing coverage items.")
+        elif "llm_error" in coverage_improvement.columns:
+            st.error(str(coverage_improvement["llm_error"].dropna().iloc[0]))
+        else:
+            metric_col, note_col = st.columns([1, 3], gap="medium")
+            with metric_col:
+                st.metric("Suggested Items", len(coverage_improvement))
+            with note_col:
+                st.caption(
+                    "Review these LLM suggestions before manually adding them to the baseline coverage table."
                 )
-                result = chat_completion(
-                    COVERAGE_IMPROVEMENT_SYSTEM,
-                    user_prompt,
-                    provider=st.session_state.selected_provider,
-                    model=st.session_state.selected_model,
-                )
-                render_ai_text_result("coverage_ai_review", result)
-            except Exception as exc:
-                st.error(f"AI coverage review failed: {exc}")
-        elif st.session_state.get("coverage_ai_review"):
-            st.markdown(st.session_state.coverage_ai_review)
+            st.dataframe(coverage_improvement, width="stretch", hide_index=True)
+    render_performance_table(artifacts)
 
 if page == "Test Cases":
     section_header("Generated Test Cases", "case")
-    if st.button("Generate Test Cases", type="primary", width="stretch"):
-        with st.spinner("Generating test cases with LLM-first pipeline and rule fallback..."):
-            generate_current_test_cases()
-        artifacts = current_artifacts()
+    local_col, llm_col = st.columns([1, 1], gap="medium")
+    with local_col:
+        if st.button("Generate Test Cases", type="primary", width="stretch"):
+            with st.spinner("Generating local test cases..."):
+                generate_current_test_cases()
+            artifacts = current_artifacts()
+    with llm_col:
+        test_llm_disabled = (
+            not is_llm_enabled(st.session_state.selected_provider)
+            or artifacts["test_cases"].empty
+        )
+        if st.button(
+            "Improve Test Design With LLM",
+            width="stretch",
+            disabled=test_llm_disabled,
+        ):
+            with st.spinner("Generating LLM improvement suggestions..."):
+                llm_time, improvement_result = measure_time(
+                    generate_improved_test_design_with_llm,
+                    artifacts["structured_requirements"],
+                    artifacts["coverage_items"],
+                    artifacts["test_cases"],
+                    st.session_state.selected_provider,
+                    st.session_state.selected_model,
+                )
+                st.session_state.ai_improvement_result = improvement_result
+                set_performance("llm_test_design_improvement_seconds", llm_time)
+            st.toast("LLM test design improvement completed.")
     if artifacts["test_cases"].empty:
         st.info("Generate coverage and strategy first, then generate test cases.")
     else:
@@ -898,34 +971,35 @@ if page == "Test Cases":
         with st.expander("Standalone state transition tests"):
             st.dataframe(artifacts["state_transition_sequences"])
 
-    section_header("AI Test Design Improvement", "ai")
-    if not is_llm_enabled(st.session_state.selected_provider):
-        st.info(
-            "Selected provider is not configured. Local rules remain available. Copy .env.example to .env to enable model calls."
-        )
-    elif artifacts["test_cases"].empty:
-        st.info("Generate test cases before running AI improvement.")
-    else:
-        if st.button("Generate AI Improvement Suggestions", width="stretch"):
-            with st.spinner("Generating AI improvement suggestions..."):
-                result = generate_improved_test_design_with_llm(
-                    artifacts["structured_requirements"],
-                    artifacts["coverage_items"],
-                    artifacts["test_cases"],
-                    provider=st.session_state.selected_provider,
-                    model=st.session_state.selected_model,
-                )
-            st.session_state.ai_improvement_result = result
+    result = st.session_state.get("ai_improvement_result")
+    if result:
+        section_header("LLM Test Design Improvement", "ai")
+        summary_cols = st.columns(3, gap="medium")
+        with summary_cols[0]:
+            st.metric("Missing Coverage", len(result.get("missing_coverage", [])))
+        with summary_cols[1]:
+            st.metric("Reviewed Cases", len(result.get("suggested_test_cases", [])))
+        with summary_cols[2]:
+            suite_review = result.get("suite_optimization_review", pd.DataFrame())
+            st.metric("Suite Reviews", 0 if suite_review.empty else len(suite_review))
 
-        result = st.session_state.get("ai_improvement_result")
-        if result:
-            with st.expander("Missing coverage suggestions", expanded=True):
-                st.dataframe(result["missing_coverage"])
-            with st.expander("Improved or additional test cases", expanded=True):
-                st.dataframe(result["suggested_test_cases"])
-            if "suite_optimization_review" in result:
-                with st.expander("Suite optimization review", expanded=True):
-                    st.dataframe(result["suite_optimization_review"])
+        render_llm_dataframe(
+            "Missing coverage suggestions",
+            result["missing_coverage"],
+            "LLM did not identify additional missing coverage.",
+        )
+        render_llm_dataframe(
+            "Improved or additional test cases",
+            result["suggested_test_cases"],
+            "LLM did not return improved test cases.",
+        )
+        if "suite_optimization_review" in result:
+            render_llm_dataframe(
+                "Suite optimization review",
+                result["suite_optimization_review"],
+                "LLM did not return suite optimization feedback.",
+            )
+    render_performance_table(artifacts)
 
 if page == "Persistence & Export":
     section_header("Local Project Persistence", "save")

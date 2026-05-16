@@ -3,7 +3,10 @@ from src.exporter import build_traceability_matrix
 from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import structure_requirements
 from src.risk_analyzer import analyze_risks
-from src.state_modeler import generate_all_transitions_sequence
+from src.state_modeler import (
+    generate_all_transitions_sequence,
+    generate_optimized_transition_sequence,
+)
 from src.suite_optimizer import optimize_suite
 from src.test_case_generator import generate_test_cases
 from src.test_strategy_selector import select_strategies
@@ -41,6 +44,34 @@ def test_state_transition_sequences_cover_all_transitions():
     transitions = generate_all_transitions_sequence()
     assert {"source_state", "event", "target_state", "expected_result"}.issubset(transitions.columns)
     assert len(transitions) >= 3
+
+
+def test_optimized_transition_sequence_keeps_coverage_goal_and_removes_duplicates():
+    state_model = {
+        "states": ["Initial State", "Active State"],
+        "transition_details": [
+            {
+                "transition_id": "TR-001",
+                "source_state": "Initial State",
+                "event": "create item",
+                "target_state": "Active State",
+                "guard": "valid data",
+                "test_data": "valid todo",
+            },
+            {
+                "transition_id": "TR-001-DUP",
+                "source_state": "Initial State",
+                "event": "create item",
+                "target_state": "Active State",
+                "guard": "valid data",
+                "test_data": "valid todo",
+            },
+        ],
+    }
+    sequence = generate_optimized_transition_sequence(state_model)
+    assert len(sequence) == 1
+    assert sequence.iloc[0]["coverage_goal"] == "All Transitions"
+    assert "optimization_rule" in sequence.columns
 
 
 def test_optimize_suite_keeps_traceability_columns():

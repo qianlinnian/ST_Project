@@ -64,6 +64,76 @@ def build_state_model(
     }
 
 
+def _transition_identity(transition: dict) -> tuple[str, str, str]:
+    return (
+        transition.get("source_state", ""),
+        transition.get("event", ""),
+        transition.get("target_state", ""),
+    )
+
+
+def _dedupe_transitions(transitions: list[dict]) -> list[dict]:
+    seen = set()
+    unique = []
+    for transition in transitions:
+        identity = _transition_identity(transition)
+        if identity in seen:
+            continue
+        seen.add(identity)
+        unique.append(transition)
+    return unique
+
+
+def _selected_transitions_for_coverage(model: dict, coverage_goal: str) -> list[dict]:
+    transitions = _dedupe_transitions(model.get("transition_details", []))
+    if coverage_goal == "All States":
+        covered_states = {"Initial State"}
+        selected = []
+        for transition in transitions:
+            target = transition.get("target_state", "")
+            if target and target not in covered_states:
+                selected.append(transition)
+                covered_states.add(target)
+        return selected
+    return transitions
+
+
+def _order_transitions_with_resets(transitions: list[dict]) -> list[tuple[bool, dict]]:
+    if not transitions:
+        return []
+
+    remaining = transitions.copy()
+    current_state = "Initial State"
+    ordered = []
+
+    while remaining:
+        next_index = next(
+            (
+                index
+                for index, transition in enumerate(remaining)
+                if transition.get("source_state") == current_state
+            ),
+            None,
+        )
+        reset_required = next_index is None
+        if reset_required:
+            current_state = "Initial State"
+            next_index = next(
+                (
+                    index
+                    for index, transition in enumerate(remaining)
+                    if transition.get("source_state") == current_state
+                ),
+                0,
+            )
+
+        transition = remaining.pop(next_index)
+        ordered.append((reset_required, transition))
+        current_state = transition.get("target_state", current_state)
+
+    return ordered
+
+
 def infer_state_model_from_requirements(structured_requirements: pd.DataFrame) -> dict:
     if structured_requirements.empty:
         return build_state_model()
@@ -152,6 +222,55 @@ def generate_all_transitions_sequence(state_model: dict | None = None) -> pd.Dat
                 ),
             }
         )
+    return pd.DataFrame(rows)
+
+
+def generate_optimized_transition_sequence(
+    state_model: dict | None = None,
+    coverage_goal: str = "All Transitions",
+) -> pd.DataFrame:
+    model = state_model or build_state_model()
+    selected = _selected_transitions_for_coverage(model, coverage_goal)
+    ordered = _order_transitions_with_resets(selected)
+    rows = []
+
+    for index, (reset_required, transition) in enumerate(ordered, start=1):
+        event = transition.get("event", "perform transition event")
+        source = transition.get("source_state", "Initial State")
+        target = transition.get("target_state", "Expected Target State")
+        test_data = transition.get("test_data", "Representative data for the transition")
+        reset_step = (
+            "1. Reset or navigate the system to the source state\n"
+            if reset_required
+            else ""
+        )
+        rows.append(
+            {
+                "sequence_id": f"OPT-TRANS-{index:03d}",
+                "transition_id": transition.get("transition_id", f"TR-{index:03d}"),
+                "coverage_goal": coverage_goal,
+                "optimization_rule": "Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.",
+                "reset_required": reset_required,
+                "source_state": source,
+                "event": event,
+                "guard": transition.get("guard", "Transition preconditions are satisfied"),
+                "test_data": test_data,
+                "target_state": target,
+                "precondition": f"The system is in source state: {source}.",
+                "steps": (
+                    f"{reset_step}"
+                    f"{'2' if reset_required else '1'}. Establish source state: {source}\n"
+                    f"{'3' if reset_required else '2'}. Apply event/action: {event}\n"
+                    f"{'4' if reset_required else '3'}. Observe the resulting system state"
+                ),
+                "expected_result": generate_expected_result(
+                    technique="State Transition Testing",
+                    action=f"{source} --{event}--> {target}",
+                    test_data=test_data,
+                ),
+            }
+        )
+
     return pd.DataFrame(rows)
 
 
