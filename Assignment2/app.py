@@ -37,6 +37,7 @@ from src.state_modeler import (
 from src.suite_optimizer import optimize_suite
 from src.test_case_generator import generate_test_cases
 from src.test_strategy_selector import select_strategies
+from src.improvement_engine import generate_improved_test_design_with_llm
 
 st.set_page_config(page_title="AutoTestDesign", layout="wide")
 
@@ -297,6 +298,18 @@ def compact_structured_requirements() -> pd.DataFrame:
     return st.session_state.structured_requirements[available_columns].copy()
 
 
+def display_risk_analysis() -> pd.DataFrame:
+    hidden_columns = {"risk_id", "impact", "likelihood"}
+    return st.session_state.risk_analysis_draft.drop(
+        columns=[
+            column
+            for column in hidden_columns
+            if column in st.session_state.risk_analysis_draft.columns
+        ],
+        errors="ignore",
+    ).copy()
+
+
 def normalize_requirements(requirements: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     messages = []
     rows = []
@@ -541,6 +554,23 @@ def save_test_strategies(test_strategies: pd.DataFrame) -> None:
     reset_downstream("strategy")
 
 
+def render_llm_status(artifacts: dict[str, pd.DataFrame]) -> None:
+    messages = []
+    for artifact_name in ["test_strategies", "test_cases", "optimized_test_cases"]:
+        artifact = artifacts.get(artifact_name, pd.DataFrame())
+        if not artifact.empty and "llm_error" in artifact.columns:
+            errors = [str(error) for error in artifact["llm_error"].dropna().unique() if str(error)]
+            for error in errors:
+                messages.append(f"{artifact_name}: {error}")
+    if messages:
+        st.warning(
+            "LLM call did not complete successfully. Local rule fallback was used.\n\n"
+            + "\n\n".join(messages)
+            + "\n\nTry a faster model, switch provider, check API quota/permissions, "
+            "or increase AUTOTESTDESIGN_LLM_TIMEOUT in Assignment2/.env."
+        )
+
+
 def render_metrics(artifacts: dict[str, pd.DataFrame]) -> None:
     risk_values = (
         artifacts["risk_analysis"]["risk_level"].value_counts().to_dict()
@@ -585,6 +615,11 @@ def render_export_paths(paths: dict[str, object]) -> None:
     st.code("\n".join(f"{name}: {path}" for name, path in paths.items()))
 
 
+def render_ai_text_result(key: str, text: str) -> None:
+    st.session_state[key] = text
+    st.markdown(text)
+
+
 inject_style()
 init_state()
 
@@ -597,7 +632,6 @@ with st.sidebar:
             "Risk Analysis",
             "Coverage & Strategy",
             "Test Cases",
-            "AI Review",
             "Persistence & Export",
         ],
         label_visibility="collapsed",
@@ -642,6 +676,7 @@ st.markdown(
 artifacts = current_artifacts()
 if page != "Requirement Input":
     render_metrics(artifacts)
+    render_llm_status(artifacts)
 
 if page == "Requirement Input":
     with st.container():
@@ -686,20 +721,17 @@ if page == "Requirement Input":
                     save_requirements(parsed_requirements)
                     st.toast("Text requirements converted to table.")
 
-        with st.form("requirements_edit_form"):
-            edited = st.data_editor(
-                st.session_state.requirements_draft,
-                num_rows="dynamic",
-                key="requirements_editor",
-                width="stretch",
-                hide_index=True,
-                column_order=["requirement_id", "module", "requirement_text"],
-            )
-            saved = st.form_submit_button(
-                "Save Edited Requirements", width="stretch"
-            )
-        if saved:
-            save_requirements(edited)
+        edited = st.data_editor(
+            st.session_state.requirements_draft,
+            num_rows="dynamic",
+            key="requirements_editor",
+            width="stretch",
+            hide_index=True,
+            column_order=["requirement_id", "module", "requirement_text"],
+        )
+        st.session_state.requirements_draft = edited
+        if st.button("Save Edited Requirements", width="stretch"):
+            save_requirements(st.session_state.requirements_draft)
             st.toast("Edited requirements saved.")
 
         if st.button("Structure Requirements", type="primary", width="stretch"):
@@ -722,20 +754,26 @@ if page == "Risk Analysis":
     if artifacts["risk_analysis"].empty:
         st.info("Structure requirements on the Requirement Input page, then run risk analysis.")
     else:
-        with st.form("risk_analysis_edit_form"):
-            edited_risks = st.data_editor(
-                st.session_state.risk_analysis_draft,
-                num_rows="dynamic",
-                key="risk_analysis_editor",
-                width="stretch",
-                hide_index=True,
-            )
-            saved_risks = st.form_submit_button(
-                "Save Edited Risk Analysis", width="stretch"
-            )
-        if saved_risks:
-            save_risk_analysis(edited_risks)
-            artifacts = current_artifacts()
+        edited_risks = st.data_editor(
+            display_risk_analysis(),
+            num_rows="dynamic",
+            key="risk_analysis_editor",
+            width="stretch",
+            hide_index=True,
+        )
+        preserved = st.session_state.risk_analysis_draft[
+            [
+                column
+                for column in ["risk_id", "impact", "likelihood"]
+                if column in st.session_state.risk_analysis_draft.columns
+            ]
+        ].reset_index(drop=True)
+        edited_risks = edited_risks.reset_index(drop=True)
+        st.session_state.risk_analysis_draft = pd.concat(
+            [preserved, edited_risks], axis=1
+        )
+        if st.button("Save Edited Risk Analysis", width="stretch"):
+            save_risk_analysis(st.session_state.risk_analysis_draft)
             st.toast("Edited risk analysis saved.")
     if not artifacts["performance"].empty:
         st.caption("Performance targets are tracked locally for reporting.")
@@ -745,6 +783,8 @@ if page == "Coverage & Strategy":
     section_header("Coverage Items", "map")
     if st.button("Generate Coverage & Strategy", type="primary", width="stretch"):
         with st.spinner("Generating coverage items and strategy..."):
+            if not st.session_state.risk_analysis_draft.empty:
+                save_risk_analysis(st.session_state.risk_analysis_draft)
             generate_current_strategy()
         artifacts = current_artifacts()
     if artifacts["coverage_items"].empty:
@@ -788,6 +828,32 @@ if page == "Coverage & Strategy":
         with st.expander("State transition model sequences"):
             st.dataframe(artifacts["state_transition_sequences"])
 
+    section_header("AI Coverage Review", "ai")
+    if not is_llm_enabled(st.session_state.selected_provider):
+        st.info("Selected provider is not configured. Local rules remain available.")
+    elif artifacts["coverage_items"].empty:
+        st.info("Generate coverage items before running AI coverage review.")
+    else:
+        if st.button("Review Coverage With AI", width="stretch"):
+            try:
+                user_prompt = coverage_improvement_prompt(
+                    artifacts["structured_requirements"][
+                        ["requirement_id", "requirement_text"]
+                    ].to_string(index=False),
+                    artifacts["coverage_items"].to_string(index=False),
+                )
+                result = chat_completion(
+                    COVERAGE_IMPROVEMENT_SYSTEM,
+                    user_prompt,
+                    provider=st.session_state.selected_provider,
+                    model=st.session_state.selected_model,
+                )
+                render_ai_text_result("coverage_ai_review", result)
+            except Exception as exc:
+                st.error(f"AI coverage review failed: {exc}")
+        elif st.session_state.get("coverage_ai_review"):
+            st.markdown(st.session_state.coverage_ai_review)
+
 if page == "Test Cases":
     section_header("Generated Test Cases", "case")
     if st.button("Generate Test Cases", type="primary", width="stretch"):
@@ -824,58 +890,34 @@ if page == "Test Cases":
         with st.expander("Standalone state transition tests"):
             st.dataframe(artifacts["state_transition_sequences"])
 
-if page == "AI Review":
-    section_header("AI Prompt Review & Improvement", "ai")
-    st.markdown(
-        f"<p style='font-size: 18px;'>Selected provider: <strong style='font-size: 20px; background-color: transparent; color: brown; padding: 4px 8px; border-radius: 4px;'>{st.session_state.selected_provider}</strong></p>",
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f"<p style='font-size: 18px;'>Selected model: <strong style='font-size: 20px; background-color: transparent; color: brown; padding: 4px 8px; border-radius: 4px;'>{st.session_state.selected_model}</strong></p>",
-        unsafe_allow_html=True,
-    )
+    section_header("AI Test Design Improvement", "ai")
     if not is_llm_enabled(st.session_state.selected_provider):
         st.info(
             "Selected provider is not configured. Local rules remain available. Copy .env.example to .env to enable model calls."
         )
-    elif artifacts["coverage_items"].empty or artifacts["test_cases"].empty:
-        st.info("Generate coverage, strategy, and test cases before running AI review.")
+    elif artifacts["test_cases"].empty:
+        st.info("Generate test cases before running AI improvement.")
     else:
-        user_prompt = coverage_improvement_prompt(
-            artifacts["structured_requirements"][
-                ["requirement_id", "requirement_text"]
-            ].to_string(index=False),
-            artifacts["coverage_items"].to_string(index=False),
-        )
-        if st.button("Review Coverage"):
-            try:
-                result = chat_completion(
-                    COVERAGE_IMPROVEMENT_SYSTEM,
-                    user_prompt,
+        if st.button("Generate AI Improvement Suggestions", width="stretch"):
+            with st.spinner("Generating AI improvement suggestions..."):
+                result = generate_improved_test_design_with_llm(
+                    artifacts["structured_requirements"],
+                    artifacts["coverage_items"],
+                    artifacts["test_cases"],
                     provider=st.session_state.selected_provider,
                     model=st.session_state.selected_model,
                 )
-                st.text_area("AI suggestions", result, height=300)
-            except Exception as exc:
-                st.error(f"AI review failed: {exc}")
+            st.session_state.ai_improvement_result = result
 
-        from src.improvement_engine import generate_improved_test_design_with_llm
-
-        if st.button("Generate Improvement Suggestions"):
-            result = generate_improved_test_design_with_llm(
-                artifacts["structured_requirements"],
-                artifacts["coverage_items"],
-                artifacts["test_cases"],
-                provider=st.session_state.selected_provider,
-                model=st.session_state.selected_model,
-            )
-            st.write("Missing coverage suggestions")
-            st.dataframe(result["missing_coverage"])
-            st.write("Improved or additional test cases")
-            st.dataframe(result["suggested_test_cases"])
+        result = st.session_state.get("ai_improvement_result")
+        if result:
+            with st.expander("Missing coverage suggestions", expanded=True):
+                st.dataframe(result["missing_coverage"])
+            with st.expander("Improved or additional test cases", expanded=True):
+                st.dataframe(result["suggested_test_cases"])
             if "suite_optimization_review" in result:
-                st.write("Suite optimization review")
-                st.dataframe(result["suite_optimization_review"])
+                with st.expander("Suite optimization review", expanded=True):
+                    st.dataframe(result["suite_optimization_review"])
 
 if page == "Persistence & Export":
     section_header("Local Project Persistence", "save")
