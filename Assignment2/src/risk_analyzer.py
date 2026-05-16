@@ -3,8 +3,27 @@ from typing import List
 import json
 
 from src.models import Requirement, RiskRecord
-from src.ai_client import chat_completion
+from src.ai_client import chat_completion, is_llm_enabled
 from src.prompt_templates import RISK_ANALYSIS_SYSTEM, risk_analysis_batch_prompt
+
+
+def _clean_json(text: str) -> dict:
+    cleaned = text.strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    return json.loads(cleaned.strip())
+
+
+def _risk_level(score: int) -> str:
+    if score >= 7:
+        return "High"
+    if score >= 4:
+        return "Medium"
+    return "Low"
 
 
 def analyze_risks(structured_requirements: pd.DataFrame) -> pd.DataFrame:
@@ -32,13 +51,6 @@ def analyze_risks(structured_requirements: pd.DataFrame) -> pd.DataFrame:
         )
         score = likelihood * impact
 
-        if score >= 7:
-            risk_level = "High"
-        elif score >= 4:
-            risk_level = "Medium"
-        else:
-            risk_level = "Low"
-
         rows.append(
             {
                 "risk_id": f"RSK-{str(req_id).split('-')[-1]}",
@@ -48,12 +60,73 @@ def analyze_risks(structured_requirements: pd.DataFrame) -> pd.DataFrame:
                 "impact": impact,
                 "likelihood": likelihood,
                 "risk_score": score,
-                "risk_level": risk_level,
+                "risk_level": _risk_level(score),
                 "reason": _risk_reason(impact, likelihood, text),
                 "test_suggestion": _test_suggestion(risk_category),
+                "source": "Rule fallback",
             }
         )
     return pd.DataFrame(rows)
+
+
+def _structured_frame_to_requirements(
+    structured_requirements: pd.DataFrame,
+) -> List[Requirement]:
+    requirements = []
+    for _, row in structured_requirements.iterrows():
+        requirements.append(
+            Requirement(
+                requirement_id=str(row.get("requirement_id", "")),
+                requirement_text=str(row.get("requirement_text", "")),
+                module=str(row.get("module", "")),
+                input_fields=row.get("input_fields", []),
+                data_ranges=row.get("data_ranges", []),
+                conditions=row.get("conditions", []),
+                actions=row.get("actions", []),
+                expected_results=row.get("expected_results", []),
+            )
+        )
+    return requirements
+
+
+def _risk_records_to_frame(records: List[RiskRecord], source: str) -> pd.DataFrame:
+    rows = []
+    for record in records:
+        row = record.to_dict()
+        row["source"] = source
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def analyze_risks_with_llm_fallback(
+    structured_requirements: pd.DataFrame,
+    provider: str | None = None,
+    model: str | None = None,
+    use_llm: bool = True,
+) -> pd.DataFrame:
+    if (
+        structured_requirements.empty
+        or not use_llm
+        or not provider
+        or not is_llm_enabled(provider)
+    ):
+        return analyze_risks(structured_requirements)
+
+    try:
+        records = analyze_requirements_risks(
+            _structured_frame_to_requirements(structured_requirements),
+            provider=provider,
+            model=model,
+        )
+        risks = _risk_records_to_frame(records, source="LLM prompt analysis")
+        if risks.empty:
+            raise ValueError("LLM returned no risk_analyses")
+        return risks
+    except Exception as exc:
+        fallback = analyze_risks(structured_requirements)
+        fallback["llm_error"] = str(exc)
+        fallback["source"] = "Rule fallback after LLM failure"
+        return fallback
 
 
 def _classify_risk_category(text: str) -> str:
@@ -109,60 +182,62 @@ def _test_suggestion(risk_category: str) -> str:
     return suggestions.get(risk_category, suggestions["functional suitability"])
 
 
-def analyze_requirements_risks(requirements: List[Requirement]) -> List[RiskRecord]:
+def analyze_requirements_risks(
+    requirements: List[Requirement],
+    provider: str,
+    model: str | None = None,
+    batch_size: int = 5,
+) -> List[RiskRecord]:
+    if not provider:
+        raise ValueError("provider is required for LLM risk analysis")
+
     records = []
 
-    # Process in batches to reduce LLM overhead
-    batch_size = 5
     for i in range(0, len(requirements), batch_size):
         batch = requirements[i : i + batch_size]
 
         reqs_text = []
         for req in batch:
             reqs_text.append(
-                f"Requirement ID: {req.requirement_id}\nContent: {req.requirement_text}\n"
+                f"Requirement ID: {req.requirement_id}\n"
+                f"Content: {req.requirement_text}\n"
+                f"Input fields: {req.input_fields}\n"
+                f"Data ranges: {req.data_ranges}\n"
+                f"Conditions: {req.conditions}\n"
+                f"Actions: {req.actions}\n"
+                f"Expected results: {req.expected_results}\n"
             )
 
-        try:
-            system_prompt = RISK_ANALYSIS_SYSTEM
-            user_prompt = risk_analysis_batch_prompt("\n---\n".join(reqs_text))
+        parsed = _clean_json(
+            chat_completion(
+                RISK_ANALYSIS_SYSTEM,
+                risk_analysis_batch_prompt("\n---\n".join(reqs_text)),
+                provider=provider,
+                model=model,
+            )
+        )
+        analyses = parsed.get("risk_analyses", [])
+        analysis_dict = {
+            str(item.get("requirement_id", "")).strip(): item for item in analyses
+        }
 
-            # Using JSON mode for structured output
-            llm_response = chat_completion(
-                system_prompt, user_prompt, temperature=0.2
-            ).strip()
-
-            # Try parsing the json block if there are markdown tags
-            if llm_response.startswith("```json"):
-                llm_response = llm_response.strip("`").removeprefix("json").strip()
-            elif llm_response.startswith("```"):
-                llm_response = llm_response.strip("`").strip()
-
-            parsed = json.loads(llm_response)
-            analyses = parsed.get("risk_analyses", [])
-            analysis_dict = {item.get("requirement_id"): item for item in analyses}
-
-            for req in batch:
-                item = analysis_dict.get(req.requirement_id, {})
-                risk_category = item.get("risk_category", "functional suitability")
-                risk_description = item.get(
-                    "risk_description", "No description provided."
+        for req in batch:
+            item = analysis_dict.get(req.requirement_id)
+            if item is None:
+                raise ValueError(
+                    f"LLM response missing risk analysis for {req.requirement_id}"
                 )
-                likelihood = int(item.get("likelihood", 1))
-                impact = int(item.get("impact", 1))
-                reason = item.get("reason", "Analyzed by LLM in batch.")
-                test_suggestion = item.get("test_suggestion", "")
 
-                score = likelihood * impact
+            risk_category = item.get("risk_category", "functional suitability")
+            risk_description = item.get(
+                "risk_description", "No description provided."
+            )
+            likelihood = min(max(int(item.get("likelihood", 1)), 1), 3)
+            impact = min(max(int(item.get("impact", 1)), 1), 3)
+            score = likelihood * impact
 
-                if score >= 7:
-                    risk_level = "High"
-                elif score >= 4:
-                    risk_level = "Medium"
-                else:
-                    risk_level = "Low"
-
-                record = RiskRecord(
+            records.append(
+                RiskRecord(
                     risk_id=(
                         f"RSK-{req.requirement_id.split('-')[-1]}"
                         if "-" in req.requirement_id
@@ -174,31 +249,10 @@ def analyze_requirements_risks(requirements: List[Requirement]) -> List[RiskReco
                     impact=impact,
                     likelihood=likelihood,
                     risk_score=score,
-                    risk_level=risk_level,
-                    reason=reason,
-                    test_suggestion=test_suggestion,
+                    risk_level=_risk_level(score),
+                    reason=item.get("reason", "Analyzed by LLM in batch."),
+                    test_suggestion=item.get("test_suggestion", ""),
                 )
-                records.append(record)
-
-        except Exception as e:
-            # Fallback values if LLM parsing fails for the batch
-            for req in batch:
-                record = RiskRecord(
-                    risk_id=(
-                        f"RSK-{req.requirement_id.split('-')[-1]}"
-                        if "-" in req.requirement_id
-                        else f"RSK-{req.requirement_id}"
-                    ),
-                    requirement_id=req.requirement_id,
-                    risk_category="functional suitability",
-                    risk_description="Error during LLM analysis",
-                    impact=1,
-                    likelihood=1,
-                    risk_score=1,
-                    risk_level="Low",
-                    reason=f"Fallback due to LLM error: {str(e)}",
-                    test_suggestion="Recommend manual review.",
-                )
-                records.append(record)
+            )
 
     return records
