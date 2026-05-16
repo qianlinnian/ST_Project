@@ -12,12 +12,22 @@ def analyze_risks(structured_requirements: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for _, row in structured_requirements.iterrows():
         text = row["requirement_text"].lower()
+        req_id = row["requirement_id"]
+        risk_category = _classify_risk_category(text)
         impact = (
-            3 if any(word in text for word in ["delete", "reject", "refresh"]) else 2
+            3
+            if any(
+                word in text
+                for word in ["delete", "reject", "refresh", "persist", "save"]
+            )
+            else 2
         )
         likelihood = (
             3
-            if any(word in text for word in ["empty", "limit", "100", "completed"])
+            if any(
+                word in text
+                for word in ["empty", "limit", "100", "completed", "toggle", "filter"]
+            )
             else 2
         )
         score = likelihood * impact
@@ -31,12 +41,72 @@ def analyze_risks(structured_requirements: pd.DataFrame) -> pd.DataFrame:
 
         rows.append(
             {
-                "requirement_id": row["requirement_id"],
+                "risk_id": f"RSK-{str(req_id).split('-')[-1]}",
+                "requirement_id": req_id,
+                "risk_category": risk_category,
+                "risk_description": _describe_risk(risk_category),
+                "impact": impact,
+                "likelihood": likelihood,
                 "risk_score": score,
                 "risk_level": risk_level,
+                "reason": _risk_reason(impact, likelihood, text),
+                "test_suggestion": _test_suggestion(risk_category),
             }
         )
     return pd.DataFrame(rows)
+
+
+def _classify_risk_category(text: str) -> str:
+    if any(
+        word in text for word in ["credential", "password", "login", "admin", "auth"]
+    ):
+        return "security"
+    if any(
+        word in text
+        for word in ["refresh", "persist", "save", "localstorage", "storage"]
+    ):
+        return "reliability"
+    if any(
+        word in text for word in ["filter", "active", "completed", "display", "view"]
+    ):
+        return "interaction capability"
+    if any(
+        word in text for word in ["limit", "100", "empty", "blank", "input", "invalid"]
+    ):
+        return "functional suitability"
+    return "functional suitability"
+
+
+def _describe_risk(risk_category: str) -> str:
+    descriptions = {
+        "security": "Authentication or protected access behavior may be bypassed or handled incorrectly.",
+        "reliability": "Todo data or state may not be preserved consistently across operations.",
+        "interaction capability": "The UI may display an incorrect Todo state or filter result.",
+        "functional suitability": "The feature may not satisfy the required Todo behavior or input validation rule.",
+    }
+    return descriptions.get(risk_category, descriptions["functional suitability"])
+
+
+def _risk_reason(impact: int, likelihood: int, text: str) -> str:
+    signals = []
+    if any(word in text for word in ["delete", "reject", "persist", "save", "refresh"]):
+        signals.append("high-impact keyword")
+    if any(
+        word in text for word in ["empty", "limit", "100", "completed", "toggle", "filter"]
+    ):
+        signals.append("error-prone condition or state keyword")
+    signal_text = ", ".join(signals) if signals else "basic functional behavior"
+    return f"Impact={impact}, Likelihood={likelihood}; derived from {signal_text}."
+
+
+def _test_suggestion(risk_category: str) -> str:
+    suggestions = {
+        "security": "Include negative and unauthorized access tests.",
+        "reliability": "Include persistence and recovery-oriented tests.",
+        "interaction capability": "Include UI state, filtering, and transition tests.",
+        "functional suitability": "Include valid, invalid, and boundary input tests.",
+    }
+    return suggestions.get(risk_category, suggestions["functional suitability"])
 
 
 def analyze_requirements_risks(requirements: List[Requirement]) -> List[RiskRecord]:
