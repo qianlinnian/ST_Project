@@ -1,6 +1,7 @@
 import pandas as pd
-from typing import List
+from typing import List, Tuple
 import json
+import time
 
 from src.models import Requirement, RiskRecord
 from src.ai_client import chat_completion, is_llm_enabled
@@ -27,7 +28,6 @@ def _risk_level(score: int) -> str:
 
 
 def analyze_risks(structured_requirements: pd.DataFrame) -> pd.DataFrame:
-    # Legacy wrapper for Dataframes
     rows = []
     for _, row in structured_requirements.iterrows():
         text = row["requirement_text"].lower()
@@ -103,30 +103,66 @@ def analyze_risks_with_llm_fallback(
     provider: str | None = None,
     model: str | None = None,
     use_llm: bool = True,
-) -> pd.DataFrame:
+) -> Tuple[pd.DataFrame, dict]:
+    timing_details = {}
+
     if (
         structured_requirements.empty
         or not use_llm
         or not provider
         or not is_llm_enabled(provider)
     ):
-        return analyze_risks(structured_requirements)
+        t0 = time.time()
+        result = analyze_risks(structured_requirements)
+        timing_details["rule_fallback_total"] = time.time() - t0
+        timing_details["method"] = "rule_fallback"
+        return result, timing_details
+
+    t_start = time.time()
+    timing_details["method"] = "llm_analysis"
+    timing_details["batches"] = []
 
     try:
-        records = analyze_requirements_risks(
-            _structured_frame_to_requirements(structured_requirements),
+        t_transform_start = time.time()
+        requirements = _structured_frame_to_requirements(structured_requirements)
+        timing_details["data_transformation_seconds"] = time.time() - t_transform_start
+        print(f"[TIMING] 数据转换耗时: {timing_details['data_transformation_seconds']:.3f}s")
+
+        t_llm_start = time.time()
+        records, batch_times = analyze_requirements_risks(
+            requirements,
             provider=provider,
             model=model,
+            return_batch_times=True,
         )
+        timing_details["llm_total_seconds"] = time.time() - t_llm_start
+        timing_details["batches"] = batch_times
+        print(f"[TIMING] LLM调用总耗时: {timing_details['llm_total_seconds']:.3f}s")
+        for i, bt in enumerate(batch_times):
+            print(f"[TIMING]   Batch {i+1}: {bt['llm_call_seconds']:.3f}s (处理 {bt['batch_size']} 条需求)")
+
+        t_convert_start = time.time()
         risks = _risk_records_to_frame(records, source="LLM prompt analysis")
+        timing_details["frame_conversion_seconds"] = time.time() - t_convert_start
+        print(f"[TIMING] 结果转换DataFrame耗时: {timing_details['frame_conversion_seconds']:.3f}s")
+
         if risks.empty:
             raise ValueError("LLM returned no risk_analyses")
-        return risks
+
+        timing_details["total_seconds"] = time.time() - t_start
+        print(f"[TIMING] 风险分析总耗时: {timing_details['total_seconds']:.3f}s")
+        return risks, timing_details
+
     except Exception as exc:
+        t_fallback_start = time.time()
         fallback = analyze_risks(structured_requirements)
+        timing_details["fallback_after_error_seconds"] = time.time() - t_fallback_start
+        timing_details["error"] = str(exc)
+        timing_details["method"] = "rule_fallback_after_error"
+        print(f"[TIMING] LLM失败，回调规则方法耗时: {timing_details['fallback_after_error_seconds']:.3f}s")
         fallback["llm_error"] = str(exc)
         fallback["source"] = "Rule fallback after LLM failure"
-        return fallback
+        return fallback, timing_details
 
 
 def _classify_risk_category(text: str) -> str:
@@ -186,15 +222,20 @@ def analyze_requirements_risks(
     requirements: List[Requirement],
     provider: str,
     model: str | None = None,
-    batch_size: int = 5,
+    batch_size: int = 8,
+    return_batch_times: bool = False,
 ) -> List[RiskRecord]:
     if not provider:
         raise ValueError("provider is required for LLM risk analysis")
 
     records = []
+    batch_times = []
 
     for i in range(0, len(requirements), batch_size):
         batch = requirements[i : i + batch_size]
+        batch_time = {"batch_index": i // batch_size, "batch_size": len(batch)}
+
+        t_batch_start = time.time()
 
         reqs_text = []
         for req in batch:
@@ -208,14 +249,22 @@ def analyze_requirements_risks(
                 f"Expected results: {req.expected_results}\n"
             )
 
+        t_prompt_start = time.time()
+        prompt = risk_analysis_batch_prompt("\n---\n".join(reqs_text))
+        batch_time["prompt_preparation_seconds"] = time.time() - t_prompt_start
+
+        t_llm_start = time.time()
         parsed = _clean_json(
             chat_completion(
                 RISK_ANALYSIS_SYSTEM,
-                risk_analysis_batch_prompt("\n---\n".join(reqs_text)),
+                prompt,
                 provider=provider,
                 model=model,
             )
         )
+        batch_time["llm_call_seconds"] = time.time() - t_llm_start
+
+        t_parse_start = time.time()
         analyses = parsed.get("risk_analyses", [])
         analysis_dict = {
             str(item.get("requirement_id", "")).strip(): item for item in analyses
@@ -254,5 +303,12 @@ def analyze_requirements_risks(
                     test_suggestion=item.get("test_suggestion", ""),
                 )
             )
+        batch_time["result_parsing_seconds"] = time.time() - t_parse_start
+        batch_time["batch_total_seconds"] = time.time() - t_batch_start
 
+        if return_batch_times:
+            batch_times.append(batch_time)
+
+    if return_batch_times:
+        return records, batch_times
     return records

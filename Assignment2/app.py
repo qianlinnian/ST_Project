@@ -1,4 +1,5 @@
 import pandas as pd
+import time
 import streamlit as st
 
 from src.ai_client import (
@@ -466,14 +467,17 @@ def analyze_current_risks() -> None:
         st.warning("Please structure requirements first.")
         return
 
-    risk_time, risks = measure_time(
-        analyze_risks_with_llm_fallback,
+    t_start = time.time()
+    risks, timing_details = analyze_risks_with_llm_fallback(
         st.session_state.structured_requirements,
         st.session_state.selected_provider,
         st.session_state.selected_model,
     )
+    risk_time = time.time() - t_start
+
     st.session_state.risk_analysis = risks
     st.session_state.risk_analysis_draft = risks.copy()
+    st.session_state.risk_timing_details = timing_details
     set_performance("risk_analysis_seconds", risk_time)
     reset_downstream("risk")
 
@@ -653,15 +657,58 @@ def render_llm_dataframe(title: str, data: pd.DataFrame, empty_message: str) -> 
             st.info(empty_message)
         elif "llm_error" in data.columns:
             st.error(str(data["llm_error"].dropna().iloc[0]))
-            st.dataframe(data, width="stretch", hide_index=True)
+            st.dataframe(data, hide_index=True)
         else:
-            st.dataframe(data, width="stretch", hide_index=True)
+            st.dataframe(data, hide_index=True)
 
 
 def render_performance_table(artifacts: dict[str, pd.DataFrame]) -> None:
     if not artifacts["performance"].empty:
         st.caption("Performance targets are tracked locally for reporting.")
-        st.dataframe(artifacts["performance"], width="stretch", hide_index=True)
+        st.dataframe(artifacts["performance"], hide_index=True)
+
+
+def render_risk_timing_details() -> None:
+    timing = getattr(st.session_state, "risk_timing_details", None)
+    if not timing:
+        return
+
+    with st.expander("Risk Analysis Timing Details", expanded=False):
+        method = timing.get("method", "unknown")
+        st.markdown(f"**Method:** {method}")
+
+        if method == "llm_analysis":
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Data Transformation", f"{timing.get('data_transformation_seconds', 0):.3f}s")
+            with col2:
+                st.metric("LLM Total", f"{timing.get('llm_total_seconds', 0):.3f}s")
+            with col3:
+                st.metric("Frame Conversion", f"{timing.get('frame_conversion_seconds', 0):.3f}s")
+
+            batches = timing.get("batches", [])
+            if batches:
+                st.markdown("**LLM Batch Details:**")
+                batch_data = []
+                for i, bt in enumerate(batches):
+                    batch_data.append({
+                        "Batch": i + 1,
+                        "Batch Size": bt.get("batch_size", 0),
+                        "LLM Call (s)": f"{bt.get('llm_call_seconds', 0):.3f}",
+                        "Prompt Prep (s)": f"{bt.get('prompt_preparation_seconds', 0):.3f}",
+                        "Result Parse (s)": f"{bt.get('result_parsing_seconds', 0):.3f}",
+                        "Batch Total (s)": f"{bt.get('batch_total_seconds', 0):.3f}",
+                    })
+                st.dataframe(pd.DataFrame(batch_data), hide_index=True)
+
+            st.metric("Total Time", f"{timing.get('total_seconds', 0):.3f}s")
+
+        elif method == "rule_fallback":
+            st.metric("Rule Fallback Time", f"{timing.get('rule_fallback_total', 0):.3f}s")
+
+        elif method == "rule_fallback_after_error":
+            st.error(f"LLM Error: {timing.get('error', 'Unknown error')}")
+            st.metric("Fallback Time", f"{timing.get('fallback_after_error_seconds', 0):.3f}s")
 
 
 inject_style()
@@ -729,7 +776,7 @@ if page == "Requirement Input":
             "Import CSV requirements, paste plain text, or edit the table directly."
         )
 
-        if st.button("Load Sample Requirements", width="stretch"):
+        if st.button("Load Sample Requirements"):
             save_requirements(load_sample_requirements())
             st.toast("Sample requirements loaded.")
 
@@ -769,16 +816,15 @@ if page == "Requirement Input":
             st.session_state.requirements_draft,
             num_rows="dynamic",
             key="requirements_editor",
-            width="stretch",
-            hide_index=True,
+                        hide_index=True,
             column_order=["requirement_id", "module", "requirement_text"],
         )
         st.session_state.requirements_draft = edited
-        if st.button("Save Edited Requirements", width="stretch"):
+        if st.button("Save Edited Requirements"):
             save_requirements(st.session_state.requirements_draft)
             st.toast("Edited requirements saved.")
 
-        if st.button("Structure Requirements", type="primary", width="stretch"):
+        if st.button("Structure Requirements", type="primary"):
             with st.spinner("Structuring requirements..."):
                 save_requirements(st.session_state.requirements_draft)
                 structure_current_requirements()
@@ -787,11 +833,11 @@ if page == "Requirement Input":
 
         if not st.session_state.structured_requirements.empty:
             section_header("Structured Requirement Preview", "file")
-            st.dataframe(compact_structured_requirements(), width="stretch")
+            st.dataframe(compact_structured_requirements())
 
 if page == "Risk Analysis":
     section_header("Risk Analysis", "risk")
-    if st.button("Analyze Risks", type="primary", width="stretch"):
+    if st.button("Analyze Risks", type="primary"):
         with st.spinner("Analyzing risks..."):
             analyze_current_risks()
         artifacts = current_artifacts()
@@ -802,8 +848,7 @@ if page == "Risk Analysis":
             display_risk_analysis(),
             num_rows="dynamic",
             key="risk_analysis_editor",
-            width="stretch",
-            hide_index=True,
+                        hide_index=True,
         )
         preserved = st.session_state.risk_analysis_draft[
             [
@@ -816,16 +861,17 @@ if page == "Risk Analysis":
         st.session_state.risk_analysis_draft = pd.concat(
             [preserved, edited_risks], axis=1
         )
-        if st.button("Save Edited Risk Analysis", width="stretch"):
+        if st.button("Save Edited Risk Analysis"):
             save_risk_analysis(st.session_state.risk_analysis_draft)
             st.toast("Edited risk analysis saved.")
     render_performance_table(artifacts)
+    render_risk_timing_details()
 
 if page == "Coverage & Strategy":
     section_header("Coverage Items", "map")
     local_col, llm_col = st.columns([1, 1], gap="medium")
     with local_col:
-        if st.button("Generate Coverage & Strategy", type="primary", width="stretch"):
+        if st.button("Generate Coverage & Strategy", type="primary"):
             with st.spinner("Generating local coverage items and strategy..."):
                 if not st.session_state.risk_analysis_draft.empty:
                     save_risk_analysis(st.session_state.risk_analysis_draft)
@@ -838,8 +884,7 @@ if page == "Coverage & Strategy":
         )
         if st.button(
             "Improve Coverage With LLM",
-            width="stretch",
-            disabled=coverage_llm_disabled,
+                        disabled=coverage_llm_disabled,
         ):
             with st.spinner("Reviewing coverage with LLM..."):
                 llm_time, coverage_improvement = measure_time(
@@ -860,11 +905,10 @@ if page == "Coverage & Strategy":
                 st.session_state.coverage_items_draft,
                 num_rows="dynamic",
                 key="coverage_items_editor",
-                width="stretch",
-                hide_index=True,
+                                hide_index=True,
             )
             saved_coverage = st.form_submit_button(
-                "Save Edited Coverage Items", width="stretch"
+                "Save Edited Coverage Items"
             )
         if saved_coverage:
             save_coverage_items(edited_coverage)
@@ -879,11 +923,10 @@ if page == "Coverage & Strategy":
                 st.session_state.test_strategies_draft,
                 num_rows="dynamic",
                 key="test_strategies_editor",
-                width="stretch",
-                hide_index=True,
+                                hide_index=True,
             )
             saved_strategies = st.form_submit_button(
-                "Save Edited Test Strategies", width="stretch"
+                "Save Edited Test Strategies"
             )
         if saved_strategies:
             save_test_strategies(edited_strategies)
@@ -908,14 +951,14 @@ if page == "Coverage & Strategy":
                 st.caption(
                     "Review these LLM suggestions before manually adding them to the baseline coverage table."
                 )
-            st.dataframe(coverage_improvement, width="stretch", hide_index=True)
+            st.dataframe(coverage_improvement, hide_index=True)
     render_performance_table(artifacts)
 
 if page == "Test Cases":
     section_header("Generated Test Cases", "case")
     local_col, llm_col = st.columns([1, 1], gap="medium")
     with local_col:
-        if st.button("Generate Test Cases", type="primary", width="stretch"):
+        if st.button("Generate Test Cases", type="primary"):
             with st.spinner("Generating local test cases..."):
                 generate_current_test_cases()
             artifacts = current_artifacts()
@@ -926,8 +969,7 @@ if page == "Test Cases":
         )
         if st.button(
             "Improve Test Design With LLM",
-            width="stretch",
-            disabled=test_llm_disabled,
+                        disabled=test_llm_disabled,
         ):
             with st.spinner("Generating LLM improvement suggestions..."):
                 llm_time, improvement_result = measure_time(
@@ -949,11 +991,10 @@ if page == "Test Cases":
                 st.session_state.test_cases_draft,
                 num_rows="dynamic",
                 key="test_cases_editor",
-                width="stretch",
-                hide_index=True,
+                                hide_index=True,
             )
             saved_cases = st.form_submit_button(
-                "Save Edited Test Cases", width="stretch"
+                "Save Edited Test Cases"
             )
         if saved_cases:
             save_test_cases(edited_cases)
@@ -1058,19 +1099,19 @@ if page == "Persistence & Export":
 
     row1_cols = st.columns(3, gap="medium")
     with row1_cols[0]:
-        if st.button("Export Risk Excel", width="stretch"):
+        if st.button("Export Risk Excel"):
             path = export_excel(
                 {"risk_analysis": artifacts["risk_analysis"]}, "risk_analysis.xlsx"
             )
             st.toast(f"Saved to {path}")
     with row1_cols[1]:
-        if st.button("Export Test Cases Excel", width="stretch"):
+        if st.button("Export Test Cases Excel"):
             path = export_excel(
                 {"test_cases": artifacts["optimized_test_cases"]}, "test_cases.xlsx"
             )
             st.toast(f"Saved to {path}")
     with row1_cols[2]:
-        if st.button("Export Traceability CSV", width="stretch"):
+        if st.button("Export Traceability CSV"):
             path = export_csv(
                 artifacts["traceability_matrix"], "traceability_matrix.csv"
             )
@@ -1078,7 +1119,7 @@ if page == "Persistence & Export":
 
     row2_cols = st.columns(3, gap="medium")
     with row2_cols[0]:
-        if st.button("Export Project JSON", width="stretch"):
+        if st.button("Export Project JSON"):
             state = build_project_state(
                 st.session_state.project_name,
                 st.session_state.selected_provider,
@@ -1088,7 +1129,7 @@ if page == "Persistence & Export":
             path = export_json(state, "test_suite_artifacts.json")
             st.toast(f"Saved to {path}")
     with row2_cols[1]:
-        if st.button("Export Full Test Design Artifacts", width="stretch"):
+        if st.button("Export Full Test Design Artifacts"):
             paths = export_test_artifacts(
                 structured_requirements=artifacts["structured_requirements"],
                 coverage_items=artifacts["coverage_items"],
@@ -1100,7 +1141,7 @@ if page == "Persistence & Export":
             st.toast("Full artifact export completed.")
             render_export_paths(paths)
     with row2_cols[2]:
-        if st.button("Export Selenium/PyTest Draft", width="stretch"):
+        if st.button("Export Selenium/PyTest Draft"):
             path = export_selenium_pytest_draft(artifacts["optimized_test_cases"])
             st.toast(f"Saved to {path}")
 
