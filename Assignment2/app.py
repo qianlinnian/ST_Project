@@ -249,6 +249,10 @@ def init_state() -> None:
         st.session_state.coverage_ai_improvement = None
     if "ai_improvement_result" not in st.session_state:
         st.session_state.ai_improvement_result = None
+    if "risk_batch_size" not in st.session_state:
+        st.session_state.risk_batch_size = 25
+    if "risk_concurrency" not in st.session_state:
+        st.session_state.risk_concurrency = 4
     for key in [
         "structured_requirements",
         "risk_analysis",
@@ -455,7 +459,9 @@ def structure_current_requirements() -> None:
         return
 
     structuring_time, structured = measure_time(
-        structure_requirements, st.session_state.requirements
+        structure_requirements,
+        st.session_state.requirements,
+        provider=st.session_state.selected_provider,
     )
     st.session_state.structured_requirements = structured
     set_performance("requirement_structuring_seconds", structuring_time)
@@ -472,6 +478,9 @@ def analyze_current_risks() -> None:
         st.session_state.structured_requirements,
         st.session_state.selected_provider,
         st.session_state.selected_model,
+        batch_size=int(st.session_state.get("risk_batch_size", 25)),
+        concurrency=int(st.session_state.get("risk_concurrency", 4)),
+        fast_mode=True,
     )
     risk_time = time.time() - t_start
 
@@ -694,6 +703,8 @@ def render_risk_timing_details() -> None:
                     batch_data.append({
                         "Batch": i + 1,
                         "Batch Size": bt.get("batch_size", 0),
+                        "Prompt Chars": bt.get("prompt_chars", 0),
+                        "Max Tokens": bt.get("max_tokens", 0),
                         "LLM Call (s)": f"{bt.get('llm_call_seconds', 0):.3f}",
                         "Prompt Prep (s)": f"{bt.get('prompt_preparation_seconds', 0):.3f}",
                         "Result Parse (s)": f"{bt.get('result_parsing_seconds', 0):.3f}",
@@ -751,6 +762,21 @@ with st.sidebar:
             else 0
         ),
     )
+    with st.expander("Performance Settings", expanded=False):
+        st.session_state.risk_batch_size = st.number_input(
+            "Risk batch size",
+            min_value=1,
+            max_value=100,
+            value=int(st.session_state.risk_batch_size),
+            step=1,
+        )
+        st.session_state.risk_concurrency = st.number_input(
+            "Risk concurrency",
+            min_value=1,
+            max_value=16,
+            value=int(st.session_state.risk_concurrency),
+            step=1,
+        )
     st.caption("Provider and model are used by optional LLM prompt-based strategy, test case, oracle, and improvement functions.")
 
 st.markdown(

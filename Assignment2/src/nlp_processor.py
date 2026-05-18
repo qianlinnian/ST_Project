@@ -17,7 +17,7 @@ except (ImportError, OSError):
 
 
 def extract_requirement_parts(
-    requirement_text: str, force_llm: bool = False
+    requirement_text: str, force_llm: bool = False, provider: str = "openai"
 ) -> Dict[str, List[str]]:
     """
     使用规则识别+spacy识别，之后LLM兜底。
@@ -51,6 +51,7 @@ def extract_requirement_parts(
         response_text = chat_completion(
             system_prompt=REQUIREMENT_STRUCTURING_SYSTEM,
             user_prompt=requirement_structuring_prompt(requirement_text),
+            provider=provider,
         )
 
         cleaned = response_text.strip()

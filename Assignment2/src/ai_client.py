@@ -9,8 +9,26 @@ from typing import Optional, Generator
 import requests
 from dotenv import load_dotenv
 
+import threading
+from requests.adapters import HTTPAdapter
+
 load_dotenv()
 
+_THREAD_LOCAL = threading.local()
+
+def _get_http_session() -> requests.Session:
+    session = getattr(_THREAD_LOCAL, "session", None)
+    if session is None:
+        session = requests.Session()
+        adapter = HTTPAdapter(
+            pool_connections=32,
+            pool_maxsize=32,
+            max_retries=0,
+        )
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        _THREAD_LOCAL.session = session
+    return session
 
 @dataclass
 class LLMProvider:
@@ -101,7 +119,14 @@ def is_llm_enabled(provider: Optional[str] = None) -> bool:
     return any(load_provider(name) is not None for name in available_provider_names())
 
 
-def _build_payload(selected_model: str, system_prompt: str, user_prompt: str, provider_name: str) -> dict:
+def _build_payload(
+    selected_model: str,
+    system_prompt: str,
+    user_prompt: str,
+    provider_name: str,
+    max_tokens: Optional[int] = None,
+    response_format: Optional[dict] = None,
+) -> dict:
     payload = {
         "model": selected_model,
         "messages": [
@@ -110,6 +135,13 @@ def _build_payload(selected_model: str, system_prompt: str, user_prompt: str, pr
         ],
         "temperature": 0,
     }
+    
+    if max_tokens is not None:
+        payload["max_tokens"] = int(max_tokens)
+
+    if response_format is not None:
+        payload["response_format"] = response_format
+    
     # 禁用各模型深度思考/推理模式以提升响应速度
     if provider_name == "deepseek":
         payload["thinking"] = {"type": "disabled"}
@@ -126,6 +158,8 @@ def chat_completion(
     user_prompt: str,
     provider: str,
     model: Optional[str] = None,
+    max_tokens: Optional[int] = None,
+    response_format: Optional[dict] = None,
 ) -> str:
     config = load_provider(provider)
     if config is None:
@@ -145,8 +179,16 @@ def chat_completion(
     )
 
     try:
-        payload = _build_payload(selected_model, system_prompt, user_prompt, config.name)
-        response = requests.post(
+        payload = _build_payload(
+            selected_model,
+            system_prompt,
+            user_prompt,
+            config.name,
+            max_tokens=max_tokens,
+            response_format=response_format,
+        )
+        
+        response = _get_http_session().post(
             f"{config.base_url}/chat/completions",
             headers={
                 "Authorization": f"Bearer {config.api_key}",
@@ -235,7 +277,7 @@ def chat_completion_stream(
     try:
         payload = _build_payload(selected_model, system_prompt, user_prompt, config.name)
         payload["stream"] = True
-        response = requests.post(
+        response = _get_http_session().post(
             f"{config.base_url}/chat/completions",
             headers={
                 "Authorization": f"Bearer {config.api_key}",

@@ -5,7 +5,9 @@ from src.nlp_processor import extract_requirement_parts
 from src.models import Requirement
 
 
-def structure_requirements(requirements: pd.DataFrame) -> pd.DataFrame:
+def structure_requirements(
+    requirements: pd.DataFrame, provider: str = "openai"
+) -> pd.DataFrame:
     """
     为 DataFrame 显示/调试用途，结构化需求文本。
     注意：此函数主要用于展示，实际解析建议使用 parse_requirements。
@@ -18,7 +20,7 @@ def structure_requirements(requirements: pd.DataFrame) -> pd.DataFrame:
         requirement_text = str(requirement_text).strip()
         if not requirement_text:
             continue
-        parts = extract_requirement_parts(requirement_text)
+        parts = extract_requirement_parts(requirement_text, provider=provider)
         
         # 保留原始列表格式（推荐），仅在需要展示时才转字符串
         row_dict = row.to_dict()
@@ -35,7 +37,9 @@ def structure_requirements(requirements: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def parse_requirements(requirements_data: List[dict]) -> List[Requirement]:
+def parse_requirements(
+    requirements_data: List[dict], provider: str = "openai"
+) -> List[Requirement]:
     """
     将原始需求数据解析为 Requirement 对象列表（核心解析函数）。
     """
@@ -51,7 +55,7 @@ def parse_requirements(requirements_data: List[dict]) -> List[Requirement]:
         if not req_text:
             continue  # 跳过空需求
 
-        parts = extract_requirement_parts(req_text)
+        parts = extract_requirement_parts(req_text, provider=provider)
         
         req = Requirement(
             requirement_id=req_id,
