@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import pandas as pd
 
-from src.ai_client import chat_completion, is_llm_enabled
+from src.ai_client import is_llm_enabled
+from src.llm_execution import call_json_completion
 from src.prompt_templates import (
     COVERAGE_IMPROVEMENT_SYSTEM,
     SUITE_OPTIMIZATION_REVIEW_SYSTEM,
@@ -15,17 +15,6 @@ from src.prompt_templates import (
 from src.suite_optimizer import optimize_suite
 from src.test_case_generator import generate_test_cases, improve_test_cases_with_llm
 from src.test_strategy_selector import select_strategies
-
-
-def _clean_json(text: str) -> dict:
-    cleaned = text.strip()
-    if cleaned.startswith("```json"):
-        cleaned = cleaned[7:]
-    if cleaned.startswith("```"):
-        cleaned = cleaned[3:]
-    if cleaned.endswith("```"):
-        cleaned = cleaned[:-3]
-    return json.loads(cleaned.strip())
 
 
 def _next_coverage_id(existing: pd.DataFrame, offset: int) -> str:
@@ -38,6 +27,8 @@ def suggest_missing_coverage_with_llm(
     provider: str | None = None,
     model: str | None = None,
     use_llm: bool = True,
+    batch_size: int | None = None,
+    concurrency: int | None = None,
 ) -> pd.DataFrame:
     if not use_llm or not provider or not is_llm_enabled(provider):
         return pd.DataFrame(columns=coverage_items.columns.tolist() + ["reason"])
@@ -47,7 +38,13 @@ def suggest_missing_coverage_with_llm(
             requirements.to_string(index=False),
             coverage_items.to_string(index=False),
         )
-        parsed = _clean_json(chat_completion(COVERAGE_IMPROVEMENT_SYSTEM, prompt, provider=provider, model=model))
+        parsed = call_json_completion(
+            COVERAGE_IMPROVEMENT_SYSTEM,
+            prompt,
+            provider=provider,
+            model=model,
+            max_tokens=1800,
+        )
     except Exception as exc:
         return pd.DataFrame([{"llm_error": str(exc)}])
 
@@ -75,6 +72,8 @@ def review_suite_optimization_with_llm(
     provider: str | None = None,
     model: str | None = None,
     use_llm: bool = True,
+    batch_size: int | None = None,
+    concurrency: int | None = None,
 ) -> pd.DataFrame:
     if (
         not use_llm
@@ -92,13 +91,12 @@ def review_suite_optimization_with_llm(
             test_cases.to_string(index=False),
             optimized_test_cases.to_string(index=False),
         )
-        parsed = _clean_json(
-            chat_completion(
-                SUITE_OPTIMIZATION_REVIEW_SYSTEM,
-                prompt,
-                provider=provider,
-                model=model,
-            )
+        parsed = call_json_completion(
+            SUITE_OPTIMIZATION_REVIEW_SYSTEM,
+            prompt,
+            provider=provider,
+            model=model,
+            max_tokens=1000,
         )
     except Exception as exc:
         return pd.DataFrame([{"llm_error": str(exc)}])
@@ -121,10 +119,27 @@ def generate_improved_test_design_with_llm(
     provider: str | None = None,
     model: str | None = None,
     use_llm: bool = True,
+    batch_size: int | None = None,
+    concurrency: int | None = None,
 ) -> dict[str, pd.DataFrame]:
-    missing_coverage = suggest_missing_coverage_with_llm(requirements, coverage_items, provider, model, use_llm)
+    missing_coverage = suggest_missing_coverage_with_llm(
+        requirements,
+        coverage_items,
+        provider,
+        model,
+        use_llm,
+        batch_size=batch_size,
+        concurrency=concurrency,
+    )
     if missing_coverage.empty or "llm_error" in missing_coverage.columns:
-        improved_cases = improve_test_cases_with_llm(existing_test_cases, provider, model, use_llm)
+        improved_cases = improve_test_cases_with_llm(
+            existing_test_cases,
+            provider,
+            model,
+            use_llm,
+            batch_size=batch_size,
+            concurrency=concurrency,
+        )
         optimized_cases = optimize_suite(improved_cases)
         suite_review = review_suite_optimization_with_llm(
             improved_cases,
@@ -132,6 +147,8 @@ def generate_improved_test_design_with_llm(
             provider,
             model,
             use_llm,
+            batch_size=batch_size,
+            concurrency=concurrency,
         )
         return {
             "missing_coverage": missing_coverage,
@@ -140,9 +157,32 @@ def generate_improved_test_design_with_llm(
         }
 
     combined_coverage = pd.concat([coverage_items, missing_coverage[coverage_items.columns]], ignore_index=True)
-    strategies = select_strategies(combined_coverage, provider=provider, model=model, use_llm=use_llm)
-    suggested_cases = generate_test_cases(requirements, missing_coverage[coverage_items.columns], strategies, provider=provider, model=model, use_llm=use_llm)
-    improved_cases = improve_test_cases_with_llm(pd.concat([existing_test_cases, suggested_cases], ignore_index=True), provider, model, use_llm)
+    strategies = select_strategies(
+        combined_coverage,
+        provider=provider,
+        model=model,
+        use_llm=use_llm,
+        batch_size=batch_size,
+        concurrency=concurrency,
+    )
+    suggested_cases = generate_test_cases(
+        requirements,
+        missing_coverage[coverage_items.columns],
+        strategies,
+        provider=provider,
+        model=model,
+        use_llm=use_llm,
+        batch_size=batch_size,
+        concurrency=concurrency,
+    )
+    improved_cases = improve_test_cases_with_llm(
+        pd.concat([existing_test_cases, suggested_cases], ignore_index=True),
+        provider,
+        model,
+        use_llm,
+        batch_size=batch_size,
+        concurrency=concurrency,
+    )
     optimized_cases = optimize_suite(improved_cases)
     suite_review = review_suite_optimization_with_llm(
         improved_cases,
@@ -150,6 +190,8 @@ def generate_improved_test_design_with_llm(
         provider,
         model,
         use_llm,
+        batch_size=batch_size,
+        concurrency=concurrency,
     )
     return {
         "missing_coverage": missing_coverage,

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import pandas as pd
 
-from src.ai_client import chat_completion, is_llm_enabled
+from src.ai_client import is_llm_enabled
+from src.llm_execution import call_json_completion, env_int, run_parallel_batches
 from src.prompt_templates import (
     TEST_STRATEGY_REVIEW_SYSTEM,
     test_strategy_review_prompt as build_test_strategy_review_prompt,
@@ -24,17 +24,6 @@ def _as_text(value: Any) -> str:
     if isinstance(value, list):
         return ", ".join(str(item) for item in value)
     return str(value or "")
-
-
-def _clean_json(text: str) -> dict:
-    cleaned = text.strip()
-    if cleaned.startswith("```json"):
-        cleaned = cleaned[7:]
-    if cleaned.startswith("```"):
-        cleaned = cleaned[3:]
-    if cleaned.endswith("```"):
-        cleaned = cleaned[:-3]
-    return json.loads(cleaned.strip())
 
 
 def _coverage_text(row: pd.Series) -> str:
@@ -100,16 +89,44 @@ def _llm_refine_strategies(
     strategies: pd.DataFrame,
     provider: str,
     model: str | None = None,
+    batch_size: int | None = None,
+    concurrency: int | None = None,
 ) -> pd.DataFrame:
-    prompt = build_test_strategy_review_prompt(
-        coverage_items.to_string(index=False),
-        strategies.to_string(index=False),
+    coverage_records = coverage_items.to_dict("records")
+    strategy_by_coverage = strategies.set_index("coverage_id").to_dict("index")
+
+    def review_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
+        batch_coverage = pd.DataFrame(batch)
+        batch_strategies = pd.DataFrame(
+            [
+                {"coverage_id": row.get("coverage_id"), **strategy_by_coverage.get(row.get("coverage_id"), {})}
+                for row in batch
+            ]
+        )
+        prompt = build_test_strategy_review_prompt(
+            batch_coverage.to_string(index=False),
+            batch_strategies.to_string(index=False),
+        )
+        parsed = call_json_completion(
+            TEST_STRATEGY_REVIEW_SYSTEM,
+            prompt,
+            provider=provider,
+            model=model,
+            max_tokens=max(600, 180 * len(batch)),
+        )
+        return parsed.get("strategy_reviews", [])
+
+    def fallback_batch(_batch_index: int, _batch: list[dict], _exc: Exception) -> list[dict]:
+        return []
+
+    review_batches, _ = run_parallel_batches(
+        coverage_records,
+        batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
+        concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
+        process_batch=review_batch,
+        fallback_batch=fallback_batch,
     )
-    response = chat_completion(TEST_STRATEGY_REVIEW_SYSTEM, prompt, provider=provider, model=model)
-    parsed = _clean_json(response)
-    reviews = parsed.get("strategy_reviews", [])
-    if not reviews:
-        return strategies
+    reviews = [review for batch_reviews in review_batches for review in batch_reviews]
 
     refined = strategies.copy()
     for review in reviews:
@@ -132,11 +149,20 @@ def select_strategies(
     provider: str | None = None,
     model: str | None = None,
     use_llm: bool = True,
+    batch_size: int | None = None,
+    concurrency: int | None = None,
 ) -> pd.DataFrame:
     strategies = _fallback_strategies(coverage_items)
     if use_llm and provider and is_llm_enabled(provider):
         try:
-            return _llm_refine_strategies(coverage_items, strategies, provider=provider, model=model)
+            return _llm_refine_strategies(
+                coverage_items,
+                strategies,
+                provider=provider,
+                model=model,
+                batch_size=batch_size,
+                concurrency=concurrency,
+            )
         except Exception as exc:
             strategies["llm_error"] = str(exc)
     return strategies

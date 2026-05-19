@@ -1,41 +1,146 @@
 import pandas as pd
 from typing import List
 
-from src.nlp_processor import extract_requirement_parts
+from src.llm_execution import call_json_completion, env_int, run_parallel_batches
+from src.nlp_processor import (
+    extract_requirement_parts,
+    extract_requirement_parts_local,
+    is_requirement_structure_sufficient,
+)
 from src.models import Requirement
+from src.prompt_templates import REQUIREMENT_STRUCTURING_SYSTEM
 
 
 def structure_requirements(
-    requirements: pd.DataFrame, provider: str = "openai"
+    requirements: pd.DataFrame,
+    provider: str = "openai",
+    batch_size: int | None = None,
+    concurrency: int | None = None,
 ) -> pd.DataFrame:
     """
     为 DataFrame 显示/调试用途，结构化需求文本。
     注意：此函数主要用于展示，实际解析建议使用 parse_requirements。
     """
-    rows = []
-    for _, row in requirements.iterrows():
+    structured_rows: list[dict] = []
+    llm_needed: list[dict] = []
+
+    for output_index, (_, row) in enumerate(requirements.iterrows()):
         requirement_text = row.get("requirement_text", "")
         if requirement_text is None or requirement_text != requirement_text:
             requirement_text = ""
         requirement_text = str(requirement_text).strip()
         if not requirement_text:
             continue
-        parts = extract_requirement_parts(requirement_text, provider=provider)
-        
-        # 保留原始列表格式（推荐），仅在需要展示时才转字符串
-        row_dict = row.to_dict()
-        row_dict["requirement_text"] = requirement_text
-        row_dict.update({
-            "input_fields": parts.get("input_fields", []),
-            "data_ranges": parts.get("data_ranges", []),
-            "conditions": parts.get("conditions", []),
-            "actions": parts.get("actions", []),
-            "expected_results": parts.get("expected_results", [])
-        })
-        rows.append(row_dict)
-    
-    return pd.DataFrame(rows)
 
+        parts = extract_requirement_parts_local(requirement_text)
+        row_dict = _structured_row(row, requirement_text, parts)
+        structured_rows.append(row_dict)
+
+        if not is_requirement_structure_sufficient(parts):
+            llm_needed.append(
+                {
+                    "output_index": len(structured_rows) - 1,
+                    "requirement_id": str(row.get("requirement_id", output_index + 1)),
+                    "requirement_text": requirement_text,
+                    "local_parts": parts,
+                }
+            )
+
+    if llm_needed:
+        def structure_llm_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
+            parsed = call_json_completion(
+                REQUIREMENT_STRUCTURING_SYSTEM,
+                _requirement_structuring_batch_prompt(batch),
+                provider=provider,
+                max_tokens=max(800, 450 * len(batch)),
+            )
+            by_id = {
+                str(item.get("requirement_id", "")).strip(): item
+                for item in parsed.get("requirements", [])
+                if isinstance(item, dict)
+            }
+            results = []
+            for item in batch:
+                parts = by_id.get(str(item["requirement_id"]), {})
+                results.append(
+                    {
+                        "output_index": item["output_index"],
+                        "parts": _normalise_parts(parts) if parts else item["local_parts"],
+                    }
+                )
+            return results
+
+        def fallback_llm_batch(
+            _batch_index: int, batch: list[dict], _exc: Exception
+        ) -> list[dict]:
+            return [
+                {"output_index": item["output_index"], "parts": item["local_parts"]}
+                for item in batch
+            ]
+
+        llm_batch_results, _ = run_parallel_batches(
+            llm_needed,
+            batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
+            concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
+            process_batch=structure_llm_batch,
+            fallback_batch=fallback_llm_batch,
+        )
+
+        for batch_result in llm_batch_results:
+            for item in batch_result:
+                structured_rows[item["output_index"]].update(item["parts"])
+
+    return pd.DataFrame(structured_rows)
+
+
+def _structured_row(row: pd.Series, requirement_text: str, parts: dict) -> dict:
+    row_dict = row.to_dict()
+    row_dict["requirement_text"] = requirement_text
+    row_dict.update(_normalise_parts(parts))
+    return row_dict
+
+
+def _normalise_parts(parts: dict) -> dict:
+    return {
+        "input_fields": parts.get("input_fields", []),
+        "data_ranges": parts.get("data_ranges", []),
+        "conditions": parts.get("conditions", []),
+        "actions": parts.get("actions", []),
+        "expected_results": parts.get("expected_results", []),
+    }
+
+
+def _requirement_structuring_batch_prompt(batch: list[dict]) -> str:
+    lines = []
+    for item in batch:
+        lines.append(
+            f"Requirement ID: {item['requirement_id']}\n"
+            f"Requirement: {item['requirement_text']}"
+        )
+    return (
+        "Analyze these requirements and extract the fields used by the "
+        "AutoTestDesign requirement parser.\n\n"
+        + "\n---\n".join(lines)
+        + "\n\nReturn exactly this JSON shape:\n"
+        "{\n"
+        '  "requirements": [\n'
+        "    {\n"
+        '      "requirement_id": "...",\n'
+        '      "input_fields": ["..."],\n'
+        '      "data_ranges": ["..."],\n'
+        '      "conditions": ["..."],\n'
+        '      "actions": ["..."],\n'
+        '      "expected_results": ["..."]\n'
+        "    }\n"
+        "  ]\n"
+        "}\n\n"
+        "Rules:\n"
+        "- Return exactly one item for every input requirement_id.\n"
+        "- Use empty lists when a field is not present.\n"
+        "- Keep values short and directly grounded in the requirement text.\n"
+        "- Do not invent requirement_id or module values.\n"
+        "- Extract only information explicitly supported by each requirement text."
+    )
 
 def parse_requirements(
     requirements_data: List[dict], provider: str = "openai"

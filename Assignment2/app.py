@@ -249,10 +249,10 @@ def init_state() -> None:
         st.session_state.coverage_ai_improvement = None
     if "ai_improvement_result" not in st.session_state:
         st.session_state.ai_improvement_result = None
-    if "risk_batch_size" not in st.session_state:
-        st.session_state.risk_batch_size = 25
-    if "risk_concurrency" not in st.session_state:
-        st.session_state.risk_concurrency = 4
+    if "llm_batch_size" not in st.session_state:
+        st.session_state.llm_batch_size = 25
+    if "llm_concurrency" not in st.session_state:
+        st.session_state.llm_concurrency = 4
     for key in [
         "structured_requirements",
         "risk_analysis",
@@ -462,6 +462,8 @@ def structure_current_requirements() -> None:
         structure_requirements,
         st.session_state.requirements,
         provider=st.session_state.selected_provider,
+        batch_size=int(st.session_state.get("llm_batch_size", 25)),
+        concurrency=int(st.session_state.get("llm_concurrency", 4)),
     )
     st.session_state.structured_requirements = structured
     set_performance("requirement_structuring_seconds", structuring_time)
@@ -478,8 +480,8 @@ def analyze_current_risks() -> None:
         st.session_state.structured_requirements,
         st.session_state.selected_provider,
         st.session_state.selected_model,
-        batch_size=int(st.session_state.get("risk_batch_size", 25)),
-        concurrency=int(st.session_state.get("risk_concurrency", 4)),
+        batch_size=int(st.session_state.get("llm_batch_size", 25)),
+        concurrency=int(st.session_state.get("llm_concurrency", 4)),
         fast_mode=True,
     )
     risk_time = time.time() - t_start
@@ -763,18 +765,18 @@ with st.sidebar:
         ),
     )
     with st.expander("Performance Settings", expanded=False):
-        st.session_state.risk_batch_size = st.number_input(
-            "Risk batch size",
+        st.session_state.llm_batch_size = st.number_input(
+            "LLM batch size",
             min_value=1,
             max_value=100,
-            value=int(st.session_state.risk_batch_size),
+            value=int(st.session_state.llm_batch_size),
             step=1,
         )
-        st.session_state.risk_concurrency = st.number_input(
-            "Risk concurrency",
+        st.session_state.llm_concurrency = st.number_input(
+            "LLM concurrency",
             min_value=1,
             max_value=16,
-            value=int(st.session_state.risk_concurrency),
+            value=int(st.session_state.llm_concurrency),
             step=1,
         )
     st.caption("Provider and model are used by optional LLM prompt-based strategy, test case, oracle, and improvement functions.")
@@ -919,6 +921,8 @@ if page == "Coverage & Strategy":
                     artifacts["coverage_items"],
                     st.session_state.selected_provider,
                     st.session_state.selected_model,
+                    batch_size=int(st.session_state.get("llm_batch_size", 25)),
+                    concurrency=int(st.session_state.get("llm_concurrency", 4)),
                 )
                 st.session_state.coverage_ai_improvement = coverage_improvement
                 set_performance("llm_coverage_improvement_seconds", llm_time)
@@ -1005,6 +1009,8 @@ if page == "Test Cases":
                     artifacts["test_cases"],
                     st.session_state.selected_provider,
                     st.session_state.selected_model,
+                    batch_size=int(st.session_state.get("llm_batch_size", 25)),
+                    concurrency=int(st.session_state.get("llm_concurrency", 4)),
                 )
                 st.session_state.ai_improvement_result = improvement_result
                 set_performance("llm_test_design_improvement_seconds", llm_time)

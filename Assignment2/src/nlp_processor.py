@@ -1,8 +1,7 @@
-import json
 import re
 from typing import Dict, List
 
-from src.ai_client import chat_completion
+from src.llm_execution import call_json_completion
 from src.prompt_templates import (
     REQUIREMENT_STRUCTURING_SYSTEM,
     requirement_structuring_prompt,
@@ -36,47 +35,51 @@ def extract_requirement_parts(
         return _empty_structure()
 
     if not force_llm:
-        local_result = _spacy_rule_based_structure(requirement_text)
+        local_result = extract_requirement_parts_local(requirement_text)
         # 简单检查本地识别是否足够丰富，比如有action和expected_results，若满足则直接返回，无需请求LLM
-        if (
-            local_result["actions"]
-            or local_result["conditions"]
-            or local_result["data_ranges"]
-        ):
+        if is_requirement_structure_sufficient(local_result):
             return local_result
 
     # LLM兜底
-    response_text = ""
     try:
-        response_text = chat_completion(
-            system_prompt=REQUIREMENT_STRUCTURING_SYSTEM,
-            user_prompt=requirement_structuring_prompt(requirement_text),
-            provider=provider,
-        )
-
-        cleaned = response_text.strip()
-        if cleaned.startswith("```json"):
-            cleaned = cleaned[7:]
-        if cleaned.startswith("```"):
-            cleaned = cleaned[3:]
-        if cleaned.endswith("```"):
-            cleaned = cleaned[:-3]
-
-        parsed = json.loads(cleaned.strip())
-
-        return {
-            "input_fields": parsed.get("input_fields", []),
-            "data_ranges": parsed.get("data_ranges", []),
-            "conditions": parsed.get("conditions", []),
-            "actions": parsed.get("actions", []),
-            "expected_results": parsed.get("expected_results", []),
-        }
+        return extract_requirement_parts_with_llm(requirement_text, provider=provider)
 
     except Exception as exc:
         print(f"[Warning] Failed to parse requirement structure: {exc}")
-        if response_text:
-            print(f"Raw response: {response_text[:300]}...")
-        return _spacy_rule_based_structure(requirement_text)
+        return extract_requirement_parts_local(requirement_text)
+
+
+def extract_requirement_parts_local(requirement_text: str) -> Dict[str, List[str]]:
+    if requirement_text is None:
+        return _empty_structure()
+    return _spacy_rule_based_structure(str(requirement_text).strip())
+
+
+def is_requirement_structure_sufficient(parts: Dict[str, List[str]]) -> bool:
+    return bool(
+        parts.get("actions")
+        or parts.get("conditions")
+        or parts.get("data_ranges")
+    )
+
+
+def extract_requirement_parts_with_llm(
+    requirement_text: str, provider: str = "openai"
+) -> Dict[str, List[str]]:
+    parsed = call_json_completion(
+        system_prompt=REQUIREMENT_STRUCTURING_SYSTEM,
+        user_prompt=requirement_structuring_prompt(requirement_text),
+        provider=provider,
+        max_tokens=600,
+    )
+
+    return {
+        "input_fields": parsed.get("input_fields", []),
+        "data_ranges": parsed.get("data_ranges", []),
+        "conditions": parsed.get("conditions", []),
+        "actions": parsed.get("actions", []),
+        "expected_results": parsed.get("expected_results", []),
+    }
 
 
 def _spacy_rule_based_structure(requirement_text: str) -> Dict[str, List[str]]:

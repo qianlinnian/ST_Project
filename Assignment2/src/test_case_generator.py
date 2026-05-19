@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import json
 import re
 from typing import Any
 
 import pandas as pd
 
-from src.ai_client import chat_completion, is_llm_enabled
+from src.ai_client import is_llm_enabled
+from src.llm_execution import call_json_completion, env_int, run_parallel_batches
 from src.oracle_generator import generate_expected_result, improve_oracles_with_llm
 from src.prompt_templates import (
     TEST_CASE_GENERATION_SYSTEM,
@@ -28,17 +28,6 @@ REQUIRED_COLUMNS = [
 
 def _as_text(value: Any) -> str:
     return ", ".join(str(item) for item in value) if isinstance(value, list) else str(value or "")
-
-
-def _clean_json(text: str) -> dict:
-    cleaned = text.strip()
-    if cleaned.startswith("```json"):
-        cleaned = cleaned[7:]
-    if cleaned.startswith("```"):
-        cleaned = cleaned[3:]
-    if cleaned.endswith("```"):
-        cleaned = cleaned[:-3]
-    return json.loads(cleaned.strip())
 
 
 def _find_requirement(requirements: pd.DataFrame, requirement_id: str) -> dict:
@@ -167,28 +156,135 @@ def _fallback(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd
     return pd.DataFrame(rows, columns=REQUIRED_COLUMNS)
 
 
-def _llm_generate(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame, provider: str, model: str | None) -> pd.DataFrame:
-    prompt = build_test_case_generation_prompt(requirements.to_string(index=False), coverage.to_string(index=False), strategies.to_string(index=False))
-    parsed = _clean_json(chat_completion(TEST_CASE_GENERATION_SYSTEM, prompt, provider=provider, model=model))
-    data = pd.DataFrame(parsed.get("test_cases", []))
+def _normalise_test_case_frame(data: pd.DataFrame) -> pd.DataFrame:
     if data.empty:
-        raise ValueError("LLM returned no test_cases")
+        return pd.DataFrame(columns=REQUIRED_COLUMNS)
     for col in REQUIRED_COLUMNS:
         if col not in data.columns:
             data[col] = ""
-    return data[REQUIRED_COLUMNS]
+    extra_columns = [col for col in data.columns if col not in REQUIRED_COLUMNS]
+    return data[REQUIRED_COLUMNS + extra_columns]
 
 
-def improve_test_cases_with_llm(test_cases: pd.DataFrame, provider: str | None = None, model: str | None = None, use_llm: bool = True) -> pd.DataFrame:
+def _renumber_test_cases(test_cases: pd.DataFrame) -> pd.DataFrame:
+    if test_cases.empty:
+        return test_cases
+    renumbered = test_cases.copy()
+    renumbered["test_case_id"] = [f"TC-{index:03d}" for index in range(1, len(renumbered) + 1)]
+    return renumbered
+
+
+def _llm_generate(
+    requirements: pd.DataFrame,
+    coverage: pd.DataFrame,
+    strategies: pd.DataFrame,
+    provider: str,
+    model: str | None,
+    batch_size: int | None = None,
+    concurrency: int | None = None,
+) -> pd.DataFrame:
+    coverage_records = coverage.to_dict("records")
+    strategy_map = strategies.set_index("coverage_id").to_dict("index") if not strategies.empty else {}
+
+    def generate_batch(_batch_index: int, batch: list[dict]) -> pd.DataFrame:
+        batch_coverage = pd.DataFrame(batch)
+        requirement_ids = {
+            str(row.get("requirement_id", ""))
+            for row in batch
+            if str(row.get("requirement_id", "")).strip()
+        }
+        batch_requirements = requirements[
+            requirements["requirement_id"].astype(str).isin(requirement_ids)
+        ] if "requirement_id" in requirements.columns else requirements
+        batch_strategies = pd.DataFrame(
+            [
+                {"coverage_id": row.get("coverage_id"), **strategy_map.get(row.get("coverage_id"), {})}
+                for row in batch
+            ]
+        )
+        prompt = build_test_case_generation_prompt(
+            batch_requirements.to_string(index=False),
+            batch_coverage.to_string(index=False),
+            batch_strategies.to_string(index=False),
+        )
+        parsed = call_json_completion(
+            TEST_CASE_GENERATION_SYSTEM,
+            prompt,
+            provider=provider,
+            model=model,
+            max_tokens=max(1200, 450 * len(batch)),
+        )
+        data = _normalise_test_case_frame(pd.DataFrame(parsed.get("test_cases", [])))
+        if data.empty:
+            raise ValueError("LLM returned no test_cases")
+        return data
+
+    def fallback_batch(_batch_index: int, batch: list[dict], exc: Exception) -> pd.DataFrame:
+        batch_coverage = pd.DataFrame(batch)
+        batch_cases = _fallback(requirements, batch_coverage, strategies, include_state=False)
+        batch_cases["llm_error"] = str(exc)
+        batch_cases["source"] = batch_cases["source"].astype(str) + " after LLM batch fallback"
+        return batch_cases
+
+    generated_batches, _ = run_parallel_batches(
+        coverage_records,
+        batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
+        concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
+        process_batch=generate_batch,
+        fallback_batch=fallback_batch,
+    )
+    data = pd.concat(generated_batches, ignore_index=True) if generated_batches else pd.DataFrame()
+    data = _normalise_test_case_frame(data)
+    if data.empty:
+        raise ValueError("LLM returned no test_cases")
+    return _renumber_test_cases(data)
+
+
+def improve_test_cases_with_llm(
+    test_cases: pd.DataFrame,
+    provider: str | None = None,
+    model: str | None = None,
+    use_llm: bool = True,
+    batch_size: int | None = None,
+    concurrency: int | None = None,
+) -> pd.DataFrame:
     if test_cases.empty or not use_llm or not provider or not is_llm_enabled(provider):
         return test_cases.copy()
     improved = test_cases.copy()
-    try:
-        parsed = _clean_json(chat_completion(TEST_CASE_IMPROVEMENT_SYSTEM, build_test_case_improvement_prompt(improved.to_string(index=False)), provider=provider, model=model))
-    except Exception as exc:
-        improved["improvement_llm_error"] = str(exc)
-        return improved
-    reviews = {r.get("test_case_id"): r for r in parsed.get("case_reviews", [])}
+
+    def review_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
+        prompt = build_test_case_improvement_prompt(pd.DataFrame(batch).to_string(index=False))
+        parsed = call_json_completion(
+            TEST_CASE_IMPROVEMENT_SYSTEM,
+            prompt,
+            provider=provider,
+            model=model,
+            max_tokens=max(800, 180 * len(batch)),
+        )
+        return parsed.get("case_reviews", [])
+
+    def fallback_batch(_batch_index: int, batch: list[dict], exc: Exception) -> list[dict]:
+        return [
+            {
+                "test_case_id": row.get("test_case_id", ""),
+                "issue": f"LLM review failed: {exc}",
+                "suggested_revision": "",
+            }
+            for row in batch
+        ]
+
+    review_batches, _ = run_parallel_batches(
+        improved.to_dict("records"),
+        batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
+        concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
+        process_batch=review_batch,
+        fallback_batch=fallback_batch,
+    )
+    reviews = {
+        r.get("test_case_id"): r
+        for batch_reviews in review_batches
+        for r in batch_reviews
+    }
     improved["llm_review_issue"] = improved["test_case_id"].map(lambda cid: reviews.get(cid, {}).get("issue", ""))
     improved["llm_suggested_revision"] = improved["test_case_id"].map(lambda cid: reviews.get(cid, {}).get("suggested_revision", ""))
     return improved
@@ -196,11 +292,28 @@ def improve_test_cases_with_llm(test_cases: pd.DataFrame, provider: str | None =
 
 def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame,
                         include_state_tests: bool = True, provider: str | None = None,
-                        model: str | None = None, use_llm: bool = True) -> pd.DataFrame:
+                        model: str | None = None, use_llm: bool = True,
+                        batch_size: int | None = None,
+                        concurrency: int | None = None) -> pd.DataFrame:
     if use_llm and provider and is_llm_enabled(provider):
         try:
-            generated = _llm_generate(requirements, coverage, strategies, provider, model)
-            return improve_oracles_with_llm(generated, provider=provider, model=model, use_llm=True)
+            generated = _llm_generate(
+                requirements,
+                coverage,
+                strategies,
+                provider,
+                model,
+                batch_size=batch_size,
+                concurrency=concurrency,
+            )
+            return improve_oracles_with_llm(
+                generated,
+                provider=provider,
+                model=model,
+                use_llm=True,
+                batch_size=batch_size,
+                concurrency=concurrency,
+            )
         except Exception as exc:
             fallback = _fallback(requirements, coverage, strategies, include_state_tests)
             fallback["llm_error"] = str(exc)

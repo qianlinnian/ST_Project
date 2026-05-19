@@ -791,14 +791,14 @@ def analyze_requirements_risks(
         raise ValueError("provider is required for LLM risk analysis")
 
     batch_size = batch_size or _env_int(
-        "AUTOTESTDESIGN_RISK_BATCH_SIZE",
+        "AUTOTESTDESIGN_LLM_BATCH_SIZE",
         default=25,
         min_value=1,
         max_value=100,
     )
 
     concurrency = concurrency or _env_int(
-        "AUTOTESTDESIGN_RISK_CONCURRENCY",
+        "AUTOTESTDESIGN_LLM_CONCURRENCY",
         default=4,
         min_value=1,
         max_value=16,

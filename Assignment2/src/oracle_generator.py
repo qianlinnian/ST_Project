@@ -1,27 +1,16 @@
 from __future__ import annotations
 
-import json
 from typing import Any
 
 import pandas as pd
 
-from src.ai_client import chat_completion, is_llm_enabled
+from src.ai_client import is_llm_enabled
+from src.llm_execution import call_json_completion, env_int, run_parallel_batches
 from src.prompt_templates import ORACLE_REVIEW_SYSTEM, oracle_review_prompt
 
 
 def _normalise(value: Any) -> str:
     return str(value or "").strip().lower()
-
-
-def _clean_json(text: str) -> dict:
-    cleaned = text.strip()
-    if cleaned.startswith("```json"):
-        cleaned = cleaned[7:]
-    if cleaned.startswith("```"):
-        cleaned = cleaned[3:]
-    if cleaned.endswith("```"):
-        cleaned = cleaned[:-3]
-    return json.loads(cleaned.strip())
 
 
 def generate_expected_result(
@@ -67,20 +56,44 @@ def improve_oracles_with_llm(
     provider: str | None = None,
     model: str | None = None,
     use_llm: bool = True,
+    batch_size: int | None = None,
+    concurrency: int | None = None,
 ) -> pd.DataFrame:
     if test_cases.empty or not use_llm or not provider or not is_llm_enabled(provider):
         return test_cases.copy()
 
     improved = test_cases.copy()
-    try:
-        prompt = oracle_review_prompt(improved.to_string(index=False))
-        response = chat_completion(ORACLE_REVIEW_SYSTEM, prompt, provider=provider, model=model)
-        parsed = _clean_json(response)
-    except Exception as exc:
-        improved["oracle_llm_error"] = str(exc)
-        return improved
 
-    for review in parsed.get("oracle_reviews", []):
+    def review_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
+        prompt = oracle_review_prompt(pd.DataFrame(batch).to_string(index=False))
+        parsed = call_json_completion(
+            ORACLE_REVIEW_SYSTEM,
+            prompt,
+            provider=provider,
+            model=model,
+            max_tokens=max(800, 180 * len(batch)),
+        )
+        return parsed.get("oracle_reviews", [])
+
+    def fallback_batch(_batch_index: int, batch: list[dict], exc: Exception) -> list[dict]:
+        return [
+            {
+                "test_case_id": row.get("test_case_id", ""),
+                "improved_expected_result": "",
+                "reason": f"LLM oracle review failed: {exc}",
+            }
+            for row in batch
+        ]
+
+    review_batches, _ = run_parallel_batches(
+        improved.to_dict("records"),
+        batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
+        concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
+        process_batch=review_batch,
+        fallback_batch=fallback_batch,
+    )
+
+    for review in [item for batch in review_batches for item in batch]:
         test_case_id = review.get("test_case_id")
         improved_result = review.get("improved_expected_result")
         if not test_case_id or not improved_result:
