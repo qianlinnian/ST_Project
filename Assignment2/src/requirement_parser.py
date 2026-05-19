@@ -93,6 +93,84 @@ def structure_requirements(
     return pd.DataFrame(structured_rows)
 
 
+def enhance_requirements_with_llm(
+    requirements: pd.DataFrame,
+    provider: str,
+    batch_size: int | None = None,
+    concurrency: int | None = None,
+) -> pd.DataFrame:
+    """Structure every requirement with LLM, falling back to local extraction per failed batch."""
+    llm_items: list[dict] = []
+    structured_rows: list[dict] = []
+
+    for output_index, (_, row) in enumerate(requirements.iterrows()):
+        requirement_text = row.get("requirement_text", "")
+        if requirement_text is None or requirement_text != requirement_text:
+            requirement_text = ""
+        requirement_text = str(requirement_text).strip()
+        if not requirement_text:
+            continue
+
+        local_parts = extract_requirement_parts_local(requirement_text)
+        structured_rows.append(_structured_row(row, requirement_text, local_parts))
+        llm_items.append(
+            {
+                "output_index": len(structured_rows) - 1,
+                "requirement_id": str(row.get("requirement_id", output_index + 1)),
+                "requirement_text": requirement_text,
+                "local_parts": local_parts,
+            }
+        )
+
+    if not llm_items:
+        return pd.DataFrame(structured_rows)
+
+    def enhance_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
+        parsed = call_json_completion(
+            REQUIREMENT_STRUCTURING_SYSTEM,
+            _requirement_structuring_batch_prompt(batch),
+            provider=provider,
+            max_tokens=max(800, 450 * len(batch)),
+        )
+        by_id = {
+            str(item.get("requirement_id", "")).strip(): item
+            for item in parsed.get("requirements", [])
+            if isinstance(item, dict)
+        }
+        results = []
+        for item in batch:
+            parts = by_id.get(str(item["requirement_id"]), {})
+            results.append(
+                {
+                    "output_index": item["output_index"],
+                    "parts": _normalise_parts(parts) if parts else item["local_parts"],
+                }
+            )
+        return results
+
+    def fallback_batch(
+        _batch_index: int, batch: list[dict], _exc: Exception
+    ) -> list[dict]:
+        return [
+            {"output_index": item["output_index"], "parts": item["local_parts"]}
+            for item in batch
+        ]
+
+    llm_batch_results, _ = run_parallel_batches(
+        llm_items,
+        batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
+        concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
+        process_batch=enhance_batch,
+        fallback_batch=fallback_batch,
+    )
+
+    for batch_result in llm_batch_results:
+        for item in batch_result:
+            structured_rows[item["output_index"]].update(item["parts"])
+
+    return pd.DataFrame(structured_rows)
+
+
 def _structured_row(row: pd.Series, requirement_text: str, parts: dict) -> dict:
     row_dict = row.to_dict()
     row_dict["requirement_text"] = requirement_text

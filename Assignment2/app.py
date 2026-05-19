@@ -24,7 +24,7 @@ from src.persistence import (
     save_project,
 )
 from src.requirement_loader import load_sample_requirements
-from src.requirement_parser import structure_requirements
+from src.requirement_parser import enhance_requirements_with_llm, structure_requirements
 from src.risk_analyzer import analyze_risks_with_llm_fallback
 from src.state_modeler import (
     generate_optimized_transition_sequence,
@@ -470,6 +470,32 @@ def structure_current_requirements() -> None:
     reset_downstream("structured")
 
 
+def enhance_current_requirements_with_llm() -> None:
+    normalized, messages = normalize_requirements(st.session_state.requirements)
+    st.session_state.requirements = normalized
+    for message in messages:
+        st.toast(message)
+
+    if st.session_state.requirements.empty:
+        st.warning("Please enter, upload, or load requirements first.")
+        return
+
+    if not is_llm_enabled(st.session_state.selected_provider):
+        st.warning("Selected LLM provider is not configured.")
+        return
+
+    structuring_time, structured = measure_time(
+        enhance_requirements_with_llm,
+        st.session_state.requirements,
+        provider=st.session_state.selected_provider,
+        batch_size=int(st.session_state.get("llm_batch_size", 25)),
+        concurrency=int(st.session_state.get("llm_concurrency", 4)),
+    )
+    st.session_state.structured_requirements = structured
+    set_performance("llm_requirement_structuring_seconds", structuring_time)
+    reset_downstream("structured")
+
+
 def analyze_current_risks() -> None:
     if st.session_state.structured_requirements.empty:
         st.warning("Please structure requirements first.")
@@ -852,12 +878,25 @@ if page == "Requirement Input":
             save_requirements(st.session_state.requirements_draft)
             st.toast("Edited requirements saved.")
 
-        if st.button("Structure Requirements", type="primary"):
-            with st.spinner("Structuring requirements..."):
-                save_requirements(st.session_state.requirements_draft)
-                structure_current_requirements()
-            if not st.session_state.structured_requirements.empty:
-                st.toast("Requirement structuring completed.")
+        local_col, llm_col = st.columns([1, 1], gap="medium")
+        with local_col:
+            if st.button("Structure Requirements", type="primary"):
+                with st.spinner("Structuring requirements..."):
+                    save_requirements(st.session_state.requirements_draft)
+                    structure_current_requirements()
+                if not st.session_state.structured_requirements.empty:
+                    st.toast("Requirement structuring completed.")
+        with llm_col:
+            structure_llm_disabled = not is_llm_enabled(st.session_state.selected_provider)
+            if st.button(
+                "Improve Structuring With LLM",
+                disabled=structure_llm_disabled,
+            ):
+                with st.spinner("Enhancing requirement structuring with LLM..."):
+                    save_requirements(st.session_state.requirements_draft)
+                    enhance_current_requirements_with_llm()
+                if not st.session_state.structured_requirements.empty:
+                    st.toast("LLM requirement structuring completed.")
 
         if not st.session_state.structured_requirements.empty:
             section_header("Structured Requirement Preview", "file")
