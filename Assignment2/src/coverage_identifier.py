@@ -7,7 +7,7 @@ from src.models import Requirement, RiskRecord, CoverageItem
 def identify_coverage_items(
     structured_requirements: pd.DataFrame, risks: pd.DataFrame
 ) -> pd.DataFrame:
-    """DataFrame版本，主要用于界面展示和调试"""
+    """DataFrame版本，供 Streamlit UI 直接使用。"""
     rows = []
 
     # 创建 risk 快速查找表
@@ -15,48 +15,122 @@ def identify_coverage_items(
     if not risks.empty:
         risk_dict = risks.set_index("requirement_id")["risk_level"].to_dict()
 
+    cov_counter = 1
+
     for index, row in structured_requirements.iterrows():
         req_id = row["requirement_id"]
         risk_level = risk_dict.get(req_id, "Medium")
+        requirement_text = str(row.get("requirement_text", ""))
+        actions = _as_list(row.get("actions"))
+        input_fields = _as_list(row.get("input_fields"))
+        conditions = _as_list(row.get("conditions"))
+        data_ranges = _as_list(row.get("data_ranges"))
+        expected_results = _as_list(row.get("expected_results"))
 
-        # 基础覆盖项
+        # 1. 核心功能覆盖
+        actions_desc = actions[0] if actions else requirement_text[:120]
         rows.append(
             {
-                "coverage_id": f"COV-{index + 1:03d}",
+                "coverage_id": f"COV-{cov_counter:03d}",
                 "requirement_id": req_id,
-                "description": f"Verify core functionality: {row.get('requirement_text', '')[:120]}...",
+                "description": f"Verify core behavior: {actions_desc}",
                 "coverage_type": "Functional",
                 "risk_level": risk_level,
+                "related_techniques": ["Equivalence Partitioning"],
+                "tags": ["core"],
+                "notes": _expected_note(expected_results),
             }
         )
+        cov_counter += 1
 
-        # 如果有结构化数据，生成更多覆盖项
-        cond_val = row.get("conditions")
-        conditions = []
-        if isinstance(cond_val, list):
-            conditions = cond_val
-        else:
-            try:
-                if pd.notna(cond_val) and str(cond_val).strip():
-                    conditions = str(cond_val).split(", ")
-            except ValueError:
-                if len(cond_val) > 0:
-                    conditions = list(cond_val)
+        # 2. 输入字段覆盖
+        for field in input_fields:
+            field_text = str(field).strip()
+            if not field_text:
+                continue
+            rows.append(
+                {
+                    "coverage_id": f"COV-{cov_counter:03d}",
+                    "requirement_id": req_id,
+                    "description": f"Test input field '{field_text}' with valid and invalid data",
+                    "coverage_type": "Input",
+                    "risk_level": risk_level,
+                    "related_techniques": ["Equivalence Partitioning", "Boundary Value Analysis"],
+                    "tags": ["input"],
+                    "notes": _expected_note(expected_results),
+                }
+            )
+            cov_counter += 1
 
-        for i, cond in enumerate(conditions):
+        # 3. 业务条件覆盖
+        for cond in conditions:
             cond_str = str(cond).strip()
             if cond_str:
                 rows.append(
                     {
-                        "coverage_id": f"COV-{index + 1:03d}-C{i+1}",
+                        "coverage_id": f"COV-{cov_counter:03d}",
                         "requirement_id": req_id,
                         "description": f"Validate condition: {cond_str}",
                         "coverage_type": "Condition",
                         "risk_level": risk_level,
+                        "related_techniques": ["Decision Table Testing"],
+                        "tags": ["condition"],
+                        "notes": _expected_note(expected_results),
                     }
                 )
+                cov_counter += 1
+
+        # 4. 数据范围 / 边界覆盖
+        for data_range in data_ranges:
+            range_text = str(data_range).strip()
+            if not range_text:
+                continue
+            rows.append(
+                {
+                    "coverage_id": f"COV-{cov_counter:03d}",
+                    "requirement_id": req_id,
+                    "description": f"Test data range and boundaries: {range_text}",
+                    "coverage_type": "Boundary",
+                    "risk_level": risk_level,
+                    "related_techniques": ["Boundary Value Analysis", "Equivalence Partitioning"],
+                    "tags": ["boundary"],
+                    "notes": _expected_note(expected_results),
+                }
+            )
+            cov_counter += 1
 
     return pd.DataFrame(rows)
+
+
+def _as_list(value) -> list:
+    if isinstance(value, list):
+        return value
+    if value is None:
+        return []
+    try:
+        if pd.isna(value):
+            return []
+    except (TypeError, ValueError):
+        pass
+    text = str(value).strip()
+    if not text:
+        return []
+    if text.startswith("[") and text.endswith("]"):
+        try:
+            import ast
+
+            parsed = ast.literal_eval(text)
+            if isinstance(parsed, list):
+                return parsed
+        except (SyntaxError, ValueError):
+            pass
+    return [item.strip() for item in text.split(",") if item.strip()]
+
+
+def _expected_note(expected_results: list) -> str:
+    if not expected_results:
+        return ""
+    return "Expected result basis: " + "; ".join(str(item) for item in expected_results)
 
 
 def identify_coverage(
