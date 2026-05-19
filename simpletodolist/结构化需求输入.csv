@@ -1,0 +1,27 @@
+ID,Module,Type,Description
+FR-01,Login,Functional,The system shall allow users to perform Admin login using username and password
+FR-02,Login,Functional,Upon successful login the system shall redirect to adminview.html; upon failure it shall display an error message
+FR-03,Login,Functional,The system shall support a Remember Me option that maintains login state for 10 days via Cookie max-age
+FR-04,Login,Functional,When an already-logged-in user navigates to adminlogin.html the system shall automatically redirect them to adminview.html
+FR-05,Login,Functional,The system shall allow users to log out and immediately invalidate the login Cookie
+FR-06,AdminView,Functional,When an unauthenticated user accesses adminview.html the system shall redirect them to the login page
+FR-07,AdminView,Functional,The Admin view shall display all Todo List names together with their item counts including active completed and total
+FR-08,ListManagement,Functional,Users shall be able to create a new Todo List by entering a name where spaces are automatically replaced with hyphens
+FR-09,ListManagement,Functional,Users shall be able to delete a Todo List after confirming via a dialog prompt
+FR-10,ListManagement,Functional,Users shall be able to rename a Todo List by double-clicking; the operation shall fail if the new name already exists or the original does not exist
+FR-11,TodoItem,Functional,Users shall be able to add a new Todo item to a specified List; input consisting only of whitespace shall not create an item
+FR-12,TodoItem,Functional,Users shall be able to mark or unmark a Todo item as completed
+FR-13,TodoItem,Functional,Users shall be able to edit the text of a Todo item by double-clicking; saving an empty title shall delete the item
+FR-14,TodoItem,Functional,Users shall be able to delete a single Todo item
+FR-15,TodoItem,Functional,Users shall be able to toggle all Todo items to completed or active using a single control
+FR-16,TodoItem,Functional,Users shall be able to filter Todo items by All Active or Completed status
+FR-17,TodoItem,Functional,Users shall be able to clear all completed Todo items at once
+FR-18,Persistence,Functional,All Todo data shall be stored in browser localStorage and persist across page refreshes
+NFR-01,Security,NonFunctional,Admin credentials shall not be exposed in client-side source code in any reversibly encoded form
+NFR-02,Security,NonFunctional,The login state Cookie shall have HttpOnly and Secure flags set to prevent XSS-based theft
+NFR-03,Security,NonFunctional,All Todo content shall be HTML-escaped before rendering to prevent XSS injection
+NFR-04,Reliability,NonFunctional,Data shall persist across normal browser sessions and shall not be lost on page refresh
+NFR-05,Reliability,NonFunctional,The system shall handle localStorage quota exhaustion gracefully without data corruption
+NFR-06,Usability,NonFunctional,Destructive operations such as deleting a List shall require user confirmation to prevent accidental loss
+NFR-07,Usability,NonFunctional,When an operation fails such as a rename conflict the system shall display a visible error message to the user
+NFR-08,Performance,NonFunctional,All interactive operations shall respond within an acceptable time under normal usage conditions
