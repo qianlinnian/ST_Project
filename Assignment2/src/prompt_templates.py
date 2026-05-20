@@ -117,9 +117,13 @@ Rules:
 - "m" must be an array.
 - Each item must be:
   [requirement_id, coverage_id, technique, test_data, steps, expected_result, priority, risk_level, reason]
+- Return at most 8 items total for this batch.
+- Return at most 1 item for each coverage_id.
 - Return only missing test cases not already covered by existing cases.
 - Preserve existing requirement_id and coverage_id values.
-- Keep fields concise and executable.
+- Keep fields concise and executable; each string should be under 90 characters.
+- Use numbered steps in one short sentence.
+- reason must be no more than 6 English words.
 - Use priority and risk_level values: High, Medium, or Low.
 """.strip()
 

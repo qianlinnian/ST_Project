@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import json
 import re
 from typing import Any
 
 import pandas as pd
 
-from src.ai_client import is_llm_enabled
-from src.llm_execution import call_json_completion, env_int, run_parallel_batches
+from src.ai_client import chat_completion, is_llm_enabled
+from src.llm_execution import call_json_completion, env_int, repair_json_tail, run_parallel_batches
 from src.oracle_generator import generate_expected_result, improve_oracles_with_llm
 from src.prompt_templates import (
     COMPACT_TEST_CASE_IMPROVEMENT_SYSTEM,
@@ -261,24 +262,27 @@ def suggest_missing_test_cases_with_llm(
 
     coverage_records = coverage.to_dict("records")
     strategy_map = strategies.set_index("coverage_id").to_dict("index") if not strategies.empty else {}
+    configured_batch_size = batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100)
+    missing_case_batch_size = env_int("AUTOTESTDESIGN_MISSING_TEST_CASE_BATCH_SIZE", 8, 1, 25)
+    effective_batch_size = min(configured_batch_size, missing_case_batch_size)
 
     def review_batch(_batch_index: int, batch: list[dict]) -> pd.DataFrame:
         prompt = _missing_test_case_prompt(batch, requirements, strategy_map, existing_test_cases)
-        parsed = call_json_completion(
+        response_text = chat_completion(
             COMPACT_TEST_CASE_IMPROVEMENT_SYSTEM,
             prompt,
             provider=provider,
             model=model,
-            max_tokens=max(600, 90 * len(batch) + 300),
+            max_tokens=min(1800, max(700, 120 * len(batch) + 300)),
         )
-        return _parse_missing_test_cases(parsed, len(batch))
+        return _parse_missing_test_case_response(response_text, len(batch))
 
     def fallback_batch(_batch_index: int, _batch: list[dict], exc: Exception) -> pd.DataFrame:
         return pd.DataFrame([{"llm_error": str(exc)}])
 
     suggested_batches, _ = run_parallel_batches(
         coverage_records,
-        batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
+        batch_size=effective_batch_size,
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
@@ -384,6 +388,83 @@ def _parse_missing_test_cases(parsed: dict, batch_size: int) -> pd.DataFrame:
                 }
             )
     return pd.DataFrame(rows)
+
+
+def _parse_missing_test_case_response(text: str, batch_size: int) -> pd.DataFrame:
+    try:
+        return _parse_missing_test_cases(_quiet_clean_json(text), batch_size)
+    except Exception as exc:
+        items = _extract_complete_missing_case_items(text)
+        if not items:
+            raise exc
+        print(
+            "[AutoTestDesign][TestCase][JSON_REPAIR] "
+            f"extracted {len(items)} complete missing test cases from truncated response",
+            flush=True,
+        )
+        return _parse_missing_test_cases({"m": items}, batch_size)
+
+
+def _quiet_clean_json(text: str) -> dict:
+    cleaned = str(text or "").strip()
+    if cleaned.startswith("```json"):
+        cleaned = cleaned[7:]
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:]
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3]
+    cleaned = cleaned.strip()
+    for candidate in _json_candidates(cleaned):
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            pass
+        try:
+            return json.loads(repair_json_tail(candidate))
+        except json.JSONDecodeError:
+            pass
+    return json.loads(cleaned)
+
+
+def _json_candidates(cleaned: str) -> list[str]:
+    candidates = [cleaned]
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidates.append(cleaned[start : end + 1])
+    return candidates
+
+
+def _extract_complete_missing_case_items(text: str) -> list[list]:
+    decoder = json.JSONDecoder()
+    items = []
+    seen = set()
+    raw = str(text or "")
+    for index, char in enumerate(raw):
+        if char != "[":
+            continue
+        try:
+            value, _ = decoder.raw_decode(raw[index:])
+        except json.JSONDecodeError:
+            continue
+        if not _looks_like_compact_missing_case(value):
+            continue
+        key = tuple(str(part) for part in value[:4])
+        if key in seen:
+            continue
+        seen.add(key)
+        items.append(value)
+    return items
+
+
+def _looks_like_compact_missing_case(value: Any) -> bool:
+    return (
+        isinstance(value, list)
+        and len(value) >= 6
+        and all(not isinstance(part, (list, dict)) for part in value[:6])
+        and str(value[0]).startswith("REQ")
+        and str(value[1]).startswith("COV")
+    )
 
 
 def renumber_test_case_ids(test_cases: pd.DataFrame, prefix: str = "TC") -> pd.DataFrame:
