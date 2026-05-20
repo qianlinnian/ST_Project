@@ -76,7 +76,17 @@ def build_traceability_matrix(
     ]
     cov_cols = [
         column
-        for column in ["coverage_id", "requirement_id", "description", "coverage_item", "coverage_type", "risk_level"]
+        for column in [
+            "coverage_id",
+            "requirement_id",
+            "description",
+            "coverage_item",
+            "coverage_type",
+            "risk_level",
+            "related_techniques",
+            "tags",
+            "notes",
+        ]
         if column in coverage_items.columns
     ]
     strategy_cols = [
@@ -86,7 +96,19 @@ def build_traceability_matrix(
     ]
     tc_cols = [
         column
-        for column in ["test_case_id", "requirement_id", "coverage_id", "technique", "priority", "risk_level", "source"]
+        for column in [
+            "test_case_id",
+            "requirement_id",
+            "coverage_id",
+            "technique",
+            "priority",
+            "risk_level",
+            "source",
+            "test_data",
+            "expected_result",
+            "design_basis",
+            "llm_reason",
+        ]
         if column in test_cases.columns
     ]
 
@@ -118,13 +140,20 @@ def build_traceability_matrix(
         "coverage_id",
         "coverage_description",
         "coverage_type",
+        "related_techniques",
+        "tags",
+        "notes",
         "technique",
         "technique_standard",
         "test_case_id",
+        "test_data",
+        "expected_result",
         "priority",
         "risk_level",
         "coverage_risk_level",
         "source",
+        "design_basis",
+        "llm_reason",
         "strategy_reason",
     ]
     ordered = [column for column in desired_order if column in matrix.columns]
@@ -192,6 +221,9 @@ def export_selenium_pytest_draft(
         "steps",
         "expected_result",
         "priority",
+        "risk_level",
+        "source",
+        "design_basis",
     ]
     records = [
         {field: _clean_value(case.get(field, "")) for field in fields}
