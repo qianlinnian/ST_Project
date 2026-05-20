@@ -49,14 +49,78 @@ def clean_json(text: str) -> dict:
         cleaned = cleaned[:-3]
 
     cleaned = cleaned.strip()
+    errors = []
     try:
         return json.loads(cleaned)
-    except json.JSONDecodeError:
-        start = cleaned.find("{")
-        end = cleaned.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            return json.loads(cleaned[start : end + 1])
-        raise
+    except json.JSONDecodeError as exc:
+        errors.append(exc)
+
+    repaired = repair_json_tail(cleaned)
+    try:
+        parsed = json.loads(repaired)
+        print("[AutoTestDesign][LLM][JSON_REPAIR] repaired JSON tail", flush=True)
+        return parsed
+    except json.JSONDecodeError as exc:
+        errors.append(exc)
+
+    candidate = cleaned
+    start = cleaned.find("{")
+    end = cleaned.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = cleaned[start : end + 1]
+
+    try:
+        return json.loads(candidate)
+    except json.JSONDecodeError as exc:
+        errors.append(exc)
+
+    repaired = repair_json_tail(candidate)
+    try:
+        parsed = json.loads(repaired)
+        print("[AutoTestDesign][LLM][JSON_REPAIR] repaired JSON tail", flush=True)
+        return parsed
+    except json.JSONDecodeError as exc:
+        errors.append(exc)
+        positions = ", ".join(
+            f"pos={error.pos}, line={error.lineno}, col={error.colno}"
+            for error in errors
+        )
+        print(
+            "[AutoTestDesign][LLM][JSON_ERROR] "
+            f"len={len(cleaned)}, attempts={len(errors)}, {positions}",
+            flush=True,
+        )
+        print("[AutoTestDesign][LLM][JSON_TAIL]", flush=True)
+        print(cleaned[-800:], flush=True)
+        raise exc
+
+
+def repair_json_tail(text: str) -> str:
+    repaired = str(text or "").strip()
+    while repaired.endswith("```"):
+        repaired = repaired[:-3].rstrip()
+    while repaired.endswith(","):
+        repaired = repaired[:-1].rstrip()
+
+    open_square = repaired.count("[")
+    close_square = repaired.count("]")
+    open_curly = repaired.count("{")
+    close_curly = repaired.count("}")
+
+    missing_square = open_square - close_square
+    missing_curly = open_curly - close_curly
+
+    if missing_square > 0 and repaired.endswith("}"):
+        repaired = repaired[:-1] + ("]" * missing_square) + "}"
+        missing_square = 0
+
+    if missing_square > 0:
+        repaired += "]" * missing_square
+
+    if missing_curly > 0:
+        repaired += "}" * missing_curly
+
+    return repaired
 
 
 def call_json_completion(
