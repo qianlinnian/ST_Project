@@ -36,6 +36,7 @@ from src.test_case_generator import generate_test_cases
 from src.test_strategy_selector import select_strategies
 from src.improvement_engine import (
     generate_improved_test_design_with_llm,
+    improve_optimized_suite_with_llm,
     suggest_missing_coverage_with_llm,
 )
 
@@ -250,6 +251,8 @@ def init_state() -> None:
         st.session_state.coverage_ai_improvement = None
     if "ai_improvement_result" not in st.session_state:
         st.session_state.ai_improvement_result = None
+    if "suite_minimization_result" not in st.session_state:
+        st.session_state.suite_minimization_result = None
     if "llm_batch_size" not in st.session_state:
         st.session_state.llm_batch_size = 25
     if "llm_concurrency" not in st.session_state:
@@ -510,8 +513,10 @@ def reset_downstream(from_step: str) -> None:
     if from_step in {"requirements", "structured", "risk"}:
         st.session_state.coverage_ai_improvement = None
         st.session_state.ai_improvement_result = None
+        st.session_state.suite_minimization_result = None
     if from_step == "strategy":
         st.session_state.ai_improvement_result = None
+        st.session_state.suite_minimization_result = None
 
 
 def structure_current_requirements() -> None:
@@ -728,7 +733,37 @@ def generate_current_test_cases() -> None:
     st.session_state.optimized_test_cases = optimized_cases
     st.session_state.traceability_matrix = traceability
     st.session_state.ai_improvement_result = None
+    st.session_state.suite_minimization_result = None
     set_performance("test_case_generation_seconds", generation_time)
+
+
+def improve_current_optimized_suite_with_llm() -> None:
+    if st.session_state.optimized_test_cases.empty:
+        st.warning("Please generate an optimized test suite first.")
+        return
+    if not is_llm_enabled(st.session_state.selected_provider):
+        st.warning("Selected LLM provider is not configured.")
+        return
+
+    llm_time, result = measure_time(
+        improve_optimized_suite_with_llm,
+        st.session_state.optimized_test_cases,
+        provider=st.session_state.selected_provider,
+        model=st.session_state.selected_model,
+        batch_size=int(st.session_state.get("llm_batch_size", 25)),
+        concurrency=int(st.session_state.get("llm_concurrency", 4)),
+    )
+    optimized_cases = result.get("optimized_test_cases", pd.DataFrame())
+    if not optimized_cases.empty:
+        st.session_state.optimized_test_cases = optimized_cases
+        st.session_state.traceability_matrix = build_traceability_matrix(
+            st.session_state.structured_requirements,
+            st.session_state.coverage_items,
+            st.session_state.test_strategies,
+            st.session_state.optimized_test_cases,
+        )
+    st.session_state.suite_minimization_result = result
+    set_performance("llm_suite_minimization_seconds", llm_time)
 
 
 def save_test_cases(test_cases: pd.DataFrame) -> None:
@@ -736,6 +771,7 @@ def save_test_cases(test_cases: pd.DataFrame) -> None:
     st.session_state.test_cases_draft = test_cases.copy()
     st.session_state.optimized_test_cases = optimize_suite(st.session_state.test_cases)
     st.session_state.ai_improvement_result = None
+    st.session_state.suite_minimization_result = None
     st.session_state.traceability_matrix = build_traceability_matrix(
         st.session_state.structured_requirements,
         st.session_state.coverage_items,
@@ -763,6 +799,7 @@ def save_test_strategies(test_strategies: pd.DataFrame) -> None:
     st.session_state.test_strategies = test_strategies.copy()
     st.session_state.test_strategies_draft = test_strategies.copy()
     st.session_state.ai_improvement_result = None
+    st.session_state.suite_minimization_result = None
     reset_downstream("strategy")
 
 
@@ -1291,6 +1328,7 @@ if page == "Test Cases":
                         "optimized_test_cases",
                         optimize_suite(enhanced_cases),
                     )
+                    st.session_state.suite_minimization_result = None
                     st.session_state.traceability_matrix = build_traceability_matrix(
                         st.session_state.structured_requirements,
                         st.session_state.coverage_items,
@@ -1323,7 +1361,24 @@ if page == "Test Cases":
         st.dataframe(artifacts["traceability_matrix"])
     if not artifacts["optimized_test_cases"].empty:
         with st.expander("Optimized test suite"):
+            improve_suite_disabled = not is_llm_enabled(st.session_state.selected_provider)
+            if st.button(
+                "Improve Optimized Suite With LLM",
+                disabled=improve_suite_disabled,
+            ):
+                with st.spinner("Reviewing optimized suite with LLM..."):
+                    improve_current_optimized_suite_with_llm()
+                artifacts = current_artifacts()
+                st.toast("LLM optimized suite improvement completed.")
             st.dataframe(artifacts["optimized_test_cases"])
+            suite_result = st.session_state.get("suite_minimization_result")
+            if suite_result:
+                decisions = suite_result.get("suite_minimization_decisions", pd.DataFrame())
+                render_llm_dataframe(
+                    "LLM suite minimization decisions",
+                    decisions,
+                    "LLM did not suggest further minimization.",
+                )
     if not artifacts["state_transition_sequences"].empty:
         with st.expander("Standalone state transition tests"):
             st.dataframe(artifacts["state_transition_sequences"])

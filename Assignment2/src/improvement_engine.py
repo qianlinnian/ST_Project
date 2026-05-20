@@ -8,6 +8,7 @@ from src.ai_client import is_llm_enabled
 from src.llm_execution import call_json_completion, env_int, run_parallel_batches
 from src.prompt_templates import (
     COMPACT_COVERAGE_IMPROVEMENT_SYSTEM,
+    COMPACT_SUITE_MINIMIZATION_SYSTEM,
     SUITE_OPTIMIZATION_REVIEW_SYSTEM,
     suite_optimization_review_prompt,
 )
@@ -219,6 +220,178 @@ def review_suite_optimization_with_llm(
             }
         ]
     )
+
+
+def improve_optimized_suite_with_llm(
+    optimized_test_cases: pd.DataFrame,
+    provider: str | None = None,
+    model: str | None = None,
+    use_llm: bool = True,
+    batch_size: int | None = None,
+    concurrency: int | None = None,
+) -> dict[str, pd.DataFrame]:
+    if (
+        optimized_test_cases.empty
+        or not use_llm
+        or not provider
+        or not is_llm_enabled(provider)
+    ):
+        return {
+            "optimized_test_cases": optimized_test_cases.copy(),
+            "suite_minimization_decisions": pd.DataFrame(),
+        }
+
+    local_suite = optimize_suite(optimized_test_cases)
+    records = local_suite.to_dict("records")
+
+    def review_batch(_batch_index: int, batch: list[dict]) -> dict[str, Any]:
+        parsed = call_json_completion(
+            COMPACT_SUITE_MINIMIZATION_SYSTEM,
+            _compact_suite_minimization_prompt(batch),
+            provider=provider,
+            model=model,
+            max_tokens=max(700, 80 * len(batch) + 300),
+            task_label="Suite LLM Minimization",
+        )
+        return parsed
+
+    def fallback_batch(_batch_index: int, _batch: list[dict], exc: Exception) -> dict[str, Any]:
+        return {"keep": [], "drop": [], "llm_error": str(exc)}
+
+    batch_results, _ = run_parallel_batches(
+        records,
+        batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
+        concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
+        process_batch=review_batch,
+        fallback_batch=fallback_batch,
+        task_label="Suite LLM Minimization",
+    )
+
+    decisions = _parse_suite_minimization_decisions(batch_results)
+    minimized = _apply_suite_minimization(local_suite, decisions)
+    decisions = _annotate_suite_minimization_decisions(decisions, local_suite, minimized)
+    return {
+        "optimized_test_cases": minimized,
+        "suite_minimization_decisions": decisions,
+    }
+
+
+def _compact_suite_minimization_prompt(batch: list[dict]) -> str:
+    lines = ["id|req|cov|tech|priority|risk|data|expected|basis"]
+    for row in batch:
+        lines.append(
+            "|".join(
+                [
+                    _compact_text(row.get("test_case_id", ""), 40),
+                    _compact_text(row.get("requirement_id", ""), 60),
+                    _compact_text(row.get("coverage_id", ""), 60),
+                    _compact_text(row.get("technique", ""), 80),
+                    _compact_text(row.get("priority", "Medium"), 20),
+                    _compact_text(row.get("risk_level", "Medium"), 20),
+                    _compact_text(row.get("test_data", ""), 120),
+                    _compact_text(row.get("expected_result", ""), 160),
+                    _compact_text(row.get("design_basis", ""), 120),
+                ]
+            )
+        )
+    return "\n".join(lines)
+
+
+def _parse_suite_minimization_decisions(batch_results: list[dict]) -> pd.DataFrame:
+    rows = []
+    for parsed in batch_results:
+        if parsed.get("llm_error"):
+            rows.append(
+                {
+                    "test_case_id": "",
+                    "decision": "error",
+                    "reason": parsed.get("llm_error", ""),
+                }
+            )
+            continue
+        for test_case_id in parsed.get("keep", []):
+            rows.append(
+                {
+                    "test_case_id": test_case_id,
+                    "decision": "keep",
+                    "reason": "LLM marked as useful",
+                }
+            )
+        for item in parsed.get("drop", []):
+            if isinstance(item, list) and item:
+                rows.append(
+                    {
+                        "test_case_id": item[0],
+                        "decision": "drop",
+                        "reason": item[1] if len(item) > 1 else "",
+                    }
+                )
+    return pd.DataFrame(rows)
+
+
+def _apply_suite_minimization(
+    optimized_test_cases: pd.DataFrame, decisions: pd.DataFrame
+) -> pd.DataFrame:
+    if optimized_test_cases.empty or decisions.empty:
+        return optimized_test_cases.copy()
+
+    drop_ids = {
+        str(row.get("test_case_id", ""))
+        for _, row in decisions.iterrows()
+        if row.get("decision") == "drop" and str(row.get("test_case_id", "")).strip()
+    }
+    if not drop_ids:
+        return optimized_test_cases.copy()
+
+    protected_ids = _protected_test_case_ids(optimized_test_cases)
+    safe_drop_ids = drop_ids - protected_ids
+    minimized = optimized_test_cases[
+        ~optimized_test_cases["test_case_id"].astype(str).isin(safe_drop_ids)
+    ].copy()
+    return optimize_suite(minimized)
+
+
+def _annotate_suite_minimization_decisions(
+    decisions: pd.DataFrame,
+    before: pd.DataFrame,
+    after: pd.DataFrame,
+) -> pd.DataFrame:
+    if decisions.empty:
+        return decisions
+    annotated = decisions.copy()
+    before_ids = set(before.get("test_case_id", pd.Series(dtype=str)).astype(str))
+    after_ids = set(after.get("test_case_id", pd.Series(dtype=str)).astype(str))
+
+    def status(row: pd.Series) -> str:
+        test_case_id = str(row.get("test_case_id", "")).strip()
+        if row.get("decision") == "error":
+            return "error"
+        if not test_case_id or test_case_id not in before_ids:
+            return "not_found"
+        if row.get("decision") == "drop":
+            return "applied" if test_case_id not in after_ids else "protected"
+        return "kept"
+
+    annotated["status"] = annotated.apply(status, axis=1)
+    return annotated
+
+
+def _protected_test_case_ids(test_cases: pd.DataFrame) -> set[str]:
+    protected = set()
+    if test_cases.empty or "test_case_id" not in test_cases.columns:
+        return protected
+    if "risk_level" in test_cases.columns:
+        protected.update(
+            test_cases[test_cases["risk_level"] == "High"]["test_case_id"].astype(str)
+        )
+    if "priority" in test_cases.columns:
+        protected.update(
+            test_cases[test_cases["priority"] == "High"]["test_case_id"].astype(str)
+        )
+    if "coverage_id" in test_cases.columns:
+        coverage_counts = test_cases.groupby("coverage_id")["test_case_id"].transform("count")
+        protected.update(test_cases[coverage_counts <= 1]["test_case_id"].astype(str))
+    return protected
 
 
 def generate_improved_test_design_with_llm(
