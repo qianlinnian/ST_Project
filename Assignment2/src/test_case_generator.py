@@ -19,6 +19,12 @@ from src.test_strategy_selector import TECHNIQUE_STANDARDS
 
 PRIORITY_BY_RISK = {"High": "High", "Medium": "Medium", "Low": "Low"}
 RISK_SCORE_BY_LEVEL = {"High": 5.0, "Medium": 3.0, "Low": 1.0}
+TECHNIQUE_CASE_LIMITS = {
+    "Boundary Value Analysis": 4,
+    "Decision Table Testing": 2,
+    "Equivalence Partitioning": 2,
+    "State Transition Testing": 1,
+}
 REQUIRED_COLUMNS = [
     "test_case_id", "requirement_id", "coverage_id", "technique", "technique_standard",
     "precondition", "test_data", "steps", "expected_result", "priority", "risk_score",
@@ -130,13 +136,21 @@ def _decision(start: int, req_id: str, cov_id: str, cov: dict, req: dict) -> lis
 
 
 def _state(start: int, req_id: str, cov_id: str, cov: dict, state_model: dict) -> list[dict]:
-    rows = generate_state_transition_tests(req_id, cov_id, start, state_model=state_model).to_dict("records")
-    for row in rows:
-        risk = cov.get("risk_level", row.get("risk_level", "Medium"))
-        row.update({"coverage_type": cov.get("coverage_type", "State Transition"), "risk_level": risk,
-                    "priority": PRIORITY_BY_RISK.get(risk, row.get("priority", "High")),
-                    "risk_score": RISK_SCORE_BY_LEVEL.get(risk, row.get("risk_score", 3.0))})
-    return rows
+    basis = _as_text(cov.get("description", "")) or "State transition coverage"
+    return [
+        _case(
+            start,
+            req_id,
+            cov_id,
+            "State Transition Testing",
+            cov,
+            {},
+            f"Transition scenario for: {basis}",
+            "1. Establish the source state\n2. Trigger the transition event\n3. Verify the target state",
+            source="Rule fallback - State Transition",
+            basis=basis,
+        )
+    ]
 
 
 def _fallback(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame, include_state: bool) -> pd.DataFrame:
@@ -149,11 +163,68 @@ def _fallback(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd
         req = _find_requirement(requirements, req_id)
         tech = strategy_map.get(cov_id, {}).get("technique", "Equivalence Partitioning")
         generated = _bva(counter, req_id, cov_id, cov, req) if tech == "Boundary Value Analysis" else _decision(counter, req_id, cov_id, cov, req) if tech == "Decision Table Testing" else _state(counter, req_id, cov_id, cov, state_model) if tech == "State Transition Testing" else _ep(counter, req_id, cov_id, cov, req)
+        generated = _limit_cases_for_coverage(generated, tech)
         rows.extend(generated)
         counter += len(generated)
     if include_state and not any(r.get("technique") == "State Transition Testing" for r in rows):
         rows.extend(generate_state_transition_tests(start_index=counter, state_model=state_model).to_dict("records"))
-    return pd.DataFrame(rows, columns=REQUIRED_COLUMNS)
+    return _limit_test_case_volume(pd.DataFrame(rows, columns=REQUIRED_COLUMNS))
+
+
+def _limit_cases_for_coverage(rows: list[dict], technique: str) -> list[dict]:
+    if not rows:
+        return rows
+    default_limit = TECHNIQUE_CASE_LIMITS.get(str(technique), 2)
+    max_per_coverage = env_int("AUTOTESTDESIGN_MAX_TEST_CASES_PER_COVERAGE", 4, 1, 20)
+    return rows[: min(default_limit, max_per_coverage)]
+
+
+def _limit_test_case_volume(test_cases: pd.DataFrame) -> pd.DataFrame:
+    if test_cases.empty:
+        return test_cases
+
+    data = _normalise_test_case_frame(test_cases)
+    max_per_coverage = env_int("AUTOTESTDESIGN_MAX_TEST_CASES_PER_COVERAGE", 4, 1, 20)
+    max_total = env_int("AUTOTESTDESIGN_MAX_GENERATED_TEST_CASES", 1000, 1, 10000)
+
+    limited_groups = []
+    group_key = "coverage_id" if "coverage_id" in data.columns else None
+    if group_key:
+        for _, group in data.groupby(group_key, sort=False):
+            technique = str(group.iloc[0].get("technique", ""))
+            technique_limit = TECHNIQUE_CASE_LIMITS.get(technique, max_per_coverage)
+            limited_groups.append(group.head(min(technique_limit, max_per_coverage)))
+        data = pd.concat(limited_groups, ignore_index=True) if limited_groups else data
+
+    if len(data) <= max_total:
+        return data.reset_index(drop=True)
+
+    first_per_coverage = data.drop_duplicates(subset=[group_key], keep="first") if group_key else data.head(0)
+    first_per_coverage = _sort_by_execution_value(first_per_coverage)
+    if len(first_per_coverage) >= max_total:
+        return first_per_coverage.head(max_total).reset_index(drop=True)
+
+    used_indexes = set(first_per_coverage.index)
+    remaining = data.loc[[idx for idx in data.index if idx not in used_indexes]]
+    remaining = _sort_by_execution_value(remaining)
+    selected = pd.concat(
+        [first_per_coverage, remaining.head(max_total - len(first_per_coverage))],
+        ignore_index=True,
+    )
+    return selected.reset_index(drop=True)
+
+
+def _sort_by_execution_value(test_cases: pd.DataFrame) -> pd.DataFrame:
+    if test_cases.empty:
+        return test_cases
+    data = test_cases.copy()
+    data["_priority_order"] = data.get("priority", "Medium").map({"High": 0, "Medium": 1, "Low": 2}).fillna(3)
+    data["_risk_level_order"] = data.get("risk_level", "Medium").map({"High": 0, "Medium": 1, "Low": 2}).fillna(3)
+    data["_risk_score_order"] = pd.to_numeric(data.get("risk_score", 0), errors="coerce").fillna(0)
+    return data.sort_values(
+        ["_priority_order", "_risk_level_order", "_risk_score_order"],
+        ascending=[True, True, False],
+    ).drop(columns=["_priority_order", "_risk_level_order", "_risk_score_order"])
 
 
 def _normalise_test_case_frame(data: pd.DataFrame) -> pd.DataFrame:
@@ -237,7 +308,7 @@ def _llm_generate(
     data = _normalise_test_case_frame(data)
     if data.empty:
         raise ValueError("LLM returned no test_cases")
-    return _renumber_test_cases(data)
+    return _renumber_test_cases(_limit_test_case_volume(data))
 
 
 def suggest_missing_test_cases_with_llm(
