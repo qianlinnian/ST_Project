@@ -519,7 +519,7 @@ def analyze_current_risks() -> None:
     reset_downstream("risk")
 
 
-def generate_current_strategy() -> None:
+def generate_current_coverage() -> None:
     if st.session_state.structured_requirements.empty:
         st.warning("Please structure requirements first.")
         return
@@ -527,33 +527,87 @@ def generate_current_strategy() -> None:
         st.warning("Please analyze risks first.")
         return
 
-    def build_strategy_artifacts() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-        coverage_items = identify_coverage_items(
-            st.session_state.structured_requirements,
-            st.session_state.risk_analysis,
-        )
-        provider = st.session_state.selected_provider
-        model = st.session_state.selected_model
+    coverage_time, coverage_items = measure_time(
+        identify_coverage_items,
+        st.session_state.structured_requirements,
+        st.session_state.risk_analysis,
+    )
+    st.session_state.coverage_items = coverage_items
+    st.session_state.coverage_items_draft = coverage_items.copy()
+    st.session_state.coverage_ai_improvement = None
+    set_performance("coverage_generation_seconds", coverage_time)
+    reset_downstream("strategy")
+
+
+def improve_current_coverage_with_llm() -> None:
+    if st.session_state.structured_requirements.empty:
+        st.warning("Please structure requirements first.")
+        return
+    if st.session_state.coverage_items.empty:
+        st.warning("Please generate coverage first.")
+        return
+    if not is_llm_enabled(st.session_state.selected_provider):
+        st.warning("Selected LLM provider is not configured.")
+        return
+
+    llm_time, missing_coverage = measure_time(
+        suggest_missing_coverage_with_llm,
+        st.session_state.structured_requirements,
+        st.session_state.coverage_items,
+        st.session_state.selected_provider,
+        st.session_state.selected_model,
+        batch_size=int(st.session_state.get("llm_batch_size", 25)),
+        concurrency=int(st.session_state.get("llm_concurrency", 4)),
+    )
+    st.session_state.coverage_ai_improvement = missing_coverage
+    set_performance("llm_coverage_improvement_seconds", llm_time)
+
+    if missing_coverage.empty or "llm_error" in missing_coverage.columns:
+        return
+
+    base_columns = list(st.session_state.coverage_items.columns)
+    additions = missing_coverage.copy()
+    for column in base_columns:
+        if column not in additions.columns:
+            additions[column] = ""
+    additions = additions[base_columns]
+    enhanced = pd.concat(
+        [st.session_state.coverage_items, additions],
+        ignore_index=True,
+    )
+    st.session_state.coverage_items = enhanced
+    st.session_state.coverage_items_draft = enhanced.copy()
+    reset_downstream("strategy")
+
+
+def generate_current_strategy(use_llm: bool = False) -> None:
+    if st.session_state.coverage_items.empty:
+        st.warning("Please generate coverage first.")
+        return
+
+    def build_strategy_artifacts() -> tuple[pd.DataFrame, pd.DataFrame]:
         strategies = select_strategies(
-            coverage_items,
-            provider=provider,
-            model=model,
-            use_llm=False,
+            st.session_state.coverage_items,
+            provider=st.session_state.selected_provider,
+            model=st.session_state.selected_model,
+            use_llm=use_llm,
+            batch_size=int(st.session_state.get("llm_batch_size", 25)),
+            concurrency=int(st.session_state.get("llm_concurrency", 4)),
         )
         state_sequences = generate_optimized_transition_sequence(
             infer_state_model_from_requirements(st.session_state.structured_requirements)
         )
-        return coverage_items, strategies, state_sequences
+        return strategies, state_sequences
 
     strategy_time, artifacts = measure_time(build_strategy_artifacts)
-    coverage_items, strategies, state_sequences = artifacts
-    st.session_state.coverage_items = coverage_items
+    strategies, state_sequences = artifacts
     st.session_state.test_strategies = strategies
-    st.session_state.coverage_items_draft = coverage_items.copy()
     st.session_state.test_strategies_draft = strategies.copy()
     st.session_state.state_transition_sequences = state_sequences
-    st.session_state.coverage_ai_improvement = None
-    set_performance("coverage_strategy_generation_seconds", strategy_time)
+    set_performance(
+        "llm_strategy_improvement_seconds" if use_llm else "strategy_generation_seconds",
+        strategy_time,
+    )
     reset_downstream("strategy")
 
 
@@ -703,6 +757,41 @@ def render_performance_table(artifacts: dict[str, pd.DataFrame]) -> None:
     if not artifacts["performance"].empty:
         st.caption("Performance targets are tracked locally for reporting.")
         st.dataframe(artifacts["performance"], hide_index=True)
+
+
+def state_model_to_dot(state_model: dict) -> str:
+    lines = [
+        "digraph StateModel {",
+        '  rankdir=LR;',
+        '  node [shape=box, style="rounded,filled", fillcolor="#FFFBEB", color="#D97706"];',
+        '  edge [color="#1F2937"];',
+    ]
+    for state in state_model.get("states", []):
+        safe_state = str(state).replace('"', '\\"')
+        lines.append(f'  "{safe_state}";')
+    for transition in state_model.get("transition_details", []):
+        source = str(transition.get("source_state", "")).replace('"', '\\"')
+        target = str(transition.get("target_state", "")).replace('"', '\\"')
+        event = str(transition.get("event", "")).replace('"', '\\"')
+        if len(event) > 60:
+            event = event[:57] + "..."
+        lines.append(f'  "{source}" -> "{target}" [label="{event}"];')
+    lines.append("}")
+    return "\n".join(lines)
+
+
+def render_state_model_section() -> None:
+    if st.session_state.structured_requirements.empty:
+        return
+
+    state_model = infer_state_model_from_requirements(st.session_state.structured_requirements)
+    with st.expander("State Transition Model", expanded=False):
+        st.caption(
+            "Coverage criterion: All Transitions. The optimized sequence covers each selected transition once and resets only when transitions cannot be chained."
+        )
+        st.graphviz_chart(state_model_to_dot(state_model))
+        if not st.session_state.state_transition_sequences.empty:
+            st.dataframe(st.session_state.state_transition_sequences, hide_index=True)
 
 
 def render_risk_timing_details() -> None:
@@ -938,11 +1027,11 @@ if page == "Coverage & Strategy":
     section_header("Coverage Items", "map")
     local_col, llm_col = st.columns([1, 1], gap="medium")
     with local_col:
-        if st.button("Generate Coverage & Strategy", type="primary"):
-            with st.spinner("Generating local coverage items and strategy..."):
+        if st.button("Generate Coverage", type="primary"):
+            with st.spinner("Generating local coverage items..."):
                 if not st.session_state.risk_analysis_draft.empty:
                     save_risk_analysis(st.session_state.risk_analysis_draft)
-                generate_current_strategy()
+                generate_current_coverage()
             artifacts = current_artifacts()
     with llm_col:
         coverage_llm_disabled = (
@@ -953,19 +1042,12 @@ if page == "Coverage & Strategy":
             "Improve Coverage With LLM",
                         disabled=coverage_llm_disabled,
         ):
-            with st.spinner("Reviewing coverage with LLM..."):
-                llm_time, coverage_improvement = measure_time(
-                    suggest_missing_coverage_with_llm,
-                    artifacts["structured_requirements"],
-                    artifacts["coverage_items"],
-                    st.session_state.selected_provider,
-                    st.session_state.selected_model,
-                    batch_size=int(st.session_state.get("llm_batch_size", 25)),
-                    concurrency=int(st.session_state.get("llm_concurrency", 4)),
-                )
-                st.session_state.coverage_ai_improvement = coverage_improvement
-                set_performance("llm_coverage_improvement_seconds", llm_time)
-            st.toast("LLM coverage improvement completed.")
+            with st.spinner("Reviewing and merging missing coverage with LLM..."):
+                before_count = len(st.session_state.coverage_items)
+                improve_current_coverage_with_llm()
+                after_count = len(st.session_state.coverage_items)
+            artifacts = current_artifacts()
+            st.toast(f"LLM coverage improvement completed. Added {max(after_count - before_count, 0)} coverage items.")
     if artifacts["coverage_items"].empty:
         st.info("Run requirement structuring and risk analysis first.")
     else:
@@ -983,7 +1065,42 @@ if page == "Coverage & Strategy":
             save_coverage_items(edited_coverage)
             artifacts = current_artifacts()
             st.toast("Edited coverage items saved. Regenerate strategy before test case generation.")
+
+    coverage_improvement = st.session_state.get("coverage_ai_improvement")
+    if coverage_improvement is not None:
+        with st.expander("LLM Coverage Additions", expanded=False):
+            if coverage_improvement.empty:
+                st.info("LLM did not identify additional missing coverage items.")
+            elif "llm_error" in coverage_improvement.columns:
+                st.error(str(coverage_improvement["llm_error"].dropna().iloc[0]))
+            else:
+                st.metric("Added Items", len(coverage_improvement))
+                st.dataframe(coverage_improvement, hide_index=True)
+
     section_header("Coverage Strategy", "map")
+    strategy_col, strategy_llm_col = st.columns([1, 1], gap="medium")
+    with strategy_col:
+        strategy_disabled = artifacts["coverage_items"].empty
+        if st.button("Generate Strategy", type="primary", disabled=strategy_disabled):
+            with st.spinner("Generating local test strategy..."):
+                if not st.session_state.coverage_items_draft.empty:
+                    save_coverage_items(st.session_state.coverage_items_draft)
+                generate_current_strategy(use_llm=False)
+            artifacts = current_artifacts()
+            st.toast("Coverage strategy generated.")
+    with strategy_llm_col:
+        strategy_llm_disabled = (
+            not is_llm_enabled(st.session_state.selected_provider)
+            or artifacts["coverage_items"].empty
+        )
+        if st.button("Improve Strategy With LLM", disabled=strategy_llm_disabled):
+            with st.spinner("Reviewing strategy with LLM..."):
+                if not st.session_state.coverage_items_draft.empty:
+                    save_coverage_items(st.session_state.coverage_items_draft)
+                generate_current_strategy(use_llm=True)
+            artifacts = current_artifacts()
+            st.toast("LLM strategy improvement completed.")
+
     if artifacts["test_strategies"].empty:
         st.info("Coverage strategy has not been generated yet.")
     else:
@@ -1001,26 +1118,7 @@ if page == "Coverage & Strategy":
             save_test_strategies(edited_strategies)
             artifacts = current_artifacts()
             st.toast("Edited test strategies saved.")
-    if not artifacts["state_transition_sequences"].empty:
-        with st.expander("State transition model sequences"):
-            st.dataframe(artifacts["state_transition_sequences"])
-
-    coverage_improvement = st.session_state.get("coverage_ai_improvement")
-    if coverage_improvement is not None:
-        section_header("LLM Coverage Improvement", "ai")
-        if coverage_improvement.empty:
-            st.info("LLM did not identify additional missing coverage items.")
-        elif "llm_error" in coverage_improvement.columns:
-            st.error(str(coverage_improvement["llm_error"].dropna().iloc[0]))
-        else:
-            metric_col, note_col = st.columns([1, 3], gap="medium")
-            with metric_col:
-                st.metric("Suggested Items", len(coverage_improvement))
-            with note_col:
-                st.caption(
-                    "Review these LLM suggestions before manually adding them to the baseline coverage table."
-                )
-            st.dataframe(coverage_improvement, hide_index=True)
+    render_state_model_section()
     render_performance_table(artifacts)
 
 if page == "Test Cases":
