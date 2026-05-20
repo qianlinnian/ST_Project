@@ -60,6 +60,8 @@ def is_requirement_structure_sufficient(parts: Dict[str, List[str]]) -> bool:
         parts.get("actions")
         or parts.get("conditions")
         or parts.get("data_ranges")
+        or parts.get("input_fields")
+        or parts.get("expected_results")
     )
 
 

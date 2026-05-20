@@ -10,6 +10,26 @@ from src.nlp_processor import (
 from src.models import Requirement
 from src.prompt_templates import REQUIREMENT_STRUCTURING_SYSTEM
 
+COMPACT_REQUIREMENT_STRUCTURING_SYSTEM = """
+You are a fast software requirement parser.
+
+Return valid JSON only.
+No markdown. No explanation. No trailing comma.
+
+The output must be exactly this JSON object shape:
+{"r":[["REQ-ID",["input"],["range"],["condition"],["action"],["expected"]]]}
+
+Rules:
+- The root object must contain only key "r".
+- "r" must be one array.
+- Each item must be one array:
+  [id,input_fields,data_ranges,conditions,actions,expected_results]
+- Return exactly one item for every input id.
+- Use short strings.
+- Use empty arrays when a field is not present.
+- Do not invent ids.
+""".strip()
+
 
 def structure_requirements(
     requirements: pd.DataFrame,
@@ -49,16 +69,12 @@ def structure_requirements(
     if llm_needed:
         def structure_llm_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
             parsed = call_json_completion(
-                REQUIREMENT_STRUCTURING_SYSTEM,
-                _requirement_structuring_batch_prompt(batch),
+                COMPACT_REQUIREMENT_STRUCTURING_SYSTEM,
+                _compact_requirement_structuring_prompt(batch),
                 provider=provider,
-                max_tokens=max(800, 450 * len(batch)),
+                max_tokens=max(600, 120 * len(batch) + 400),
             )
-            by_id = {
-                str(item.get("requirement_id", "")).strip(): item
-                for item in parsed.get("requirements", [])
-                if isinstance(item, dict)
-            }
+            by_id = _parse_compact_requirement_parts(parsed)
             results = []
             for item in batch:
                 parts = by_id.get(str(item["requirement_id"]), {})
@@ -127,16 +143,12 @@ def enhance_requirements_with_llm(
 
     def enhance_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
         parsed = call_json_completion(
-            REQUIREMENT_STRUCTURING_SYSTEM,
-            _requirement_structuring_batch_prompt(batch),
+            COMPACT_REQUIREMENT_STRUCTURING_SYSTEM,
+            _compact_requirement_structuring_prompt(batch),
             provider=provider,
-            max_tokens=max(800, 450 * len(batch)),
+            max_tokens=max(600, 120 * len(batch) + 400),
         )
-        by_id = {
-            str(item.get("requirement_id", "")).strip(): item
-            for item in parsed.get("requirements", [])
-            if isinstance(item, dict)
-        }
+        by_id = _parse_compact_requirement_parts(parsed)
         results = []
         for item in batch:
             parts = by_id.get(str(item["requirement_id"]), {})
@@ -186,6 +198,51 @@ def _normalise_parts(parts: dict) -> dict:
         "actions": parts.get("actions", []),
         "expected_results": parts.get("expected_results", []),
     }
+
+
+def _parse_compact_requirement_parts(parsed: dict) -> dict[str, dict]:
+    by_id: dict[str, dict] = {}
+
+    if isinstance(parsed.get("r"), list):
+        for item in parsed.get("r", []):
+            if not isinstance(item, list) or len(item) < 6:
+                continue
+            requirement_id = str(item[0]).strip()
+            if not requirement_id:
+                continue
+            by_id[requirement_id] = {
+                "input_fields": _ensure_list(item[1]),
+                "data_ranges": _ensure_list(item[2]),
+                "conditions": _ensure_list(item[3]),
+                "actions": _ensure_list(item[4]),
+                "expected_results": _ensure_list(item[5]),
+            }
+        return by_id
+
+    for item in parsed.get("requirements", []):
+        if isinstance(item, dict):
+            requirement_id = str(item.get("requirement_id", "")).strip()
+            if requirement_id:
+                by_id[requirement_id] = _normalise_parts(item)
+    return by_id
+
+
+def _ensure_list(value) -> list:
+    if isinstance(value, list):
+        return value
+    if value in {None, ""}:
+        return []
+    return [str(value)]
+
+
+def _compact_requirement_structuring_prompt(batch: list[dict]) -> str:
+    lines = ["id|requirement"]
+    for item in batch:
+        text = " ".join(str(item["requirement_text"]).split())
+        if len(text) > 350:
+            text = text[:350]
+        lines.append(f"{item['requirement_id']}|{text}")
+    return "\n".join(lines)
 
 
 def _requirement_structuring_batch_prompt(batch: list[dict]) -> str:
