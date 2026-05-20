@@ -335,9 +335,6 @@ def suggest_missing_test_cases_with_llm(
 
     coverage_records = coverage.to_dict("records")
     strategy_map = strategies.set_index("coverage_id").to_dict("index") if not strategies.empty else {}
-    configured_batch_size = batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100)
-    missing_case_batch_size = env_int("AUTOTESTDESIGN_MISSING_TEST_CASE_BATCH_SIZE", 8, 1, 25)
-    effective_batch_size = min(configured_batch_size, missing_case_batch_size)
 
     def review_batch(_batch_index: int, batch: list[dict]) -> pd.DataFrame:
         prompt = _missing_test_case_prompt(batch, requirements, strategy_map, existing_test_cases)
@@ -356,7 +353,7 @@ def suggest_missing_test_cases_with_llm(
 
     suggested_batches, _ = run_parallel_batches(
         coverage_records,
-        batch_size=effective_batch_size,
+        batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
