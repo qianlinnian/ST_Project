@@ -866,18 +866,47 @@ def requirements_from_text(raw_text: str) -> pd.DataFrame:
 
 
 def render_export_paths(paths: dict[str, object]) -> None:
-    st.code("\n".join(f"{name}: {path}" for name, path in paths.items()))
+    rows = []
+    for name, path in paths.items():
+        path_text = str(path)
+        normalized = path_text.replace("\\", "/")
+        folder, _, filename = normalized.rpartition("/")
+        rows.append(
+            {
+                "artifact": name,
+                "file": filename or normalized,
+                "folder": folder,
+            }
+        )
+    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
 
 
-def render_llm_dataframe(title: str, data: pd.DataFrame, empty_message: str) -> None:
-    with st.expander(title, expanded=True):
-        if data.empty:
-            st.info(empty_message)
-        elif "llm_error" in data.columns:
-            st.error(str(data["llm_error"].dropna().iloc[0]))
-            st.dataframe(data, hide_index=True)
-        else:
-            st.dataframe(data, hide_index=True)
+def render_test_design_llm_summary(result: dict | None) -> None:
+    if not result:
+        return
+    missing_cases = result.get("missing_test_cases", pd.DataFrame())
+    if missing_cases.empty or "llm_error" in missing_cases.columns:
+        st.info("LLM did not add missing test cases.")
+        return
+    st.success(f"Added {len(missing_cases)} missing test cases with LLM.")
+
+
+def render_suite_minimization_summary(result: dict | None) -> None:
+    if not result:
+        return
+    decisions = result.get("suite_minimization_decisions", pd.DataFrame())
+    if decisions.empty:
+        st.info("LLM minimization reviewed the suite; no redundant cases were removed.")
+        return
+    removed = int((decisions.get("status") == "applied").sum()) if "status" in decisions.columns else 0
+    protected = int((decisions.get("status") == "protected").sum()) if "status" in decisions.columns else 0
+    if removed or protected:
+        st.success(
+            f"LLM minimization removed {removed} redundant cases, "
+            f"protected {protected} high-value cases."
+        )
+    else:
+        st.info("LLM minimization reviewed the suite; no safe removals were applied.")
 
 
 def render_performance_table(artifacts: dict[str, pd.DataFrame]) -> None:
@@ -1370,15 +1399,10 @@ if page == "Test Cases":
                     improve_current_optimized_suite_with_llm()
                 artifacts = current_artifacts()
                 st.toast("LLM optimized suite improvement completed.")
+            render_suite_minimization_summary(
+                st.session_state.get("suite_minimization_result")
+            )
             st.dataframe(artifacts["optimized_test_cases"])
-            suite_result = st.session_state.get("suite_minimization_result")
-            if suite_result:
-                decisions = suite_result.get("suite_minimization_decisions", pd.DataFrame())
-                render_llm_dataframe(
-                    "LLM suite minimization decisions",
-                    decisions,
-                    "LLM did not suggest further minimization.",
-                )
     if not artifacts["state_transition_sequences"].empty:
         with st.expander("Standalone state transition tests"):
             st.dataframe(artifacts["state_transition_sequences"])
@@ -1393,25 +1417,7 @@ if page == "Test Cases":
             result = None
 
     if result:
-        section_header("LLM Test Design Improvement", "ai")
-        summary_cols = st.columns(3, gap="medium")
-        with summary_cols[0]:
-            st.metric("Added Cases", len(missing_cases))
-        with summary_cols[1]:
-            st.metric("Enhanced Cases", len(enhanced_cases))
-        with summary_cols[2]:
-            st.metric("Optimized Cases", len(optimized_cases))
-
-        render_llm_dataframe(
-            "LLM added missing test cases",
-            missing_cases,
-            "LLM did not identify missing test cases.",
-        )
-        render_llm_dataframe(
-            "Optimized suite after LLM additions",
-            optimized_cases,
-            "Optimized suite is empty.",
-        )
+        render_test_design_llm_summary(result)
     render_performance_table(artifacts)
 
 if page == "Persistence & Export":
