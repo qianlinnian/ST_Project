@@ -198,6 +198,7 @@ def improve_state_model_with_llm(
         provider=provider,
         model=model,
         max_tokens=1800,
+        task_label="State Model Improvement",
     )
 
     states = parsed.get("states", [])

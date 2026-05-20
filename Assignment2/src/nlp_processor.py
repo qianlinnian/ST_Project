@@ -73,6 +73,7 @@ def extract_requirement_parts_with_llm(
         user_prompt=requirement_structuring_prompt(requirement_text),
         provider=provider,
         max_tokens=600,
+        task_label="Requirement Structuring Fallback",
     )
 
     return {

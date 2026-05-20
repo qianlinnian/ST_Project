@@ -284,6 +284,7 @@ def _llm_generate(
             provider=provider,
             model=model,
             max_tokens=max(1200, 450 * len(batch)),
+            task_label="Test Case Generation",
         )
         data = _normalise_test_case_frame(pd.DataFrame(parsed.get("test_cases", [])))
         if data.empty:
@@ -303,6 +304,7 @@ def _llm_generate(
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=generate_batch,
         fallback_batch=fallback_batch,
+        task_label="Test Case Generation",
     )
     data = pd.concat(generated_batches, ignore_index=True) if generated_batches else pd.DataFrame()
     data = _normalise_test_case_frame(data)
@@ -345,6 +347,7 @@ def suggest_missing_test_cases_with_llm(
             provider=provider,
             model=model,
             max_tokens=min(1800, max(700, 120 * len(batch) + 300)),
+            task_label="Missing Test Case Improvement",
         )
         return _parse_missing_test_case_response(response_text, len(batch))
 
@@ -357,6 +360,7 @@ def suggest_missing_test_cases_with_llm(
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
+        task_label="Missing Test Case Improvement",
     )
     data = pd.concat(suggested_batches, ignore_index=True) if suggested_batches else pd.DataFrame()
     if data.empty:

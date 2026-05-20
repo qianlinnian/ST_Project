@@ -60,6 +60,7 @@ def suggest_missing_coverage_with_llm(
             provider=provider,
             model=model,
             max_tokens=min(4096, max(900, len(batch) * 100 + 500)),
+            task_label="Coverage Improvement",
         )
         return parsed
 
@@ -76,6 +77,7 @@ def suggest_missing_coverage_with_llm(
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
+        task_label="Coverage Improvement",
     )
 
     rows: list[dict[str, Any]] = []
@@ -203,6 +205,7 @@ def review_suite_optimization_with_llm(
             provider=provider,
             model=model,
             max_tokens=1000,
+            task_label="Suite Optimization Review",
         )
     except Exception as exc:
         return pd.DataFrame([{"llm_error": str(exc)}])

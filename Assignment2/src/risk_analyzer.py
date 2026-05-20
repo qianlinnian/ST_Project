@@ -479,6 +479,7 @@ def _analyze_one_batch_with_llm(
         model=model,
         max_tokens=max_tokens,
         response_format=response_format,
+        task_label="Risk Analysis",
     )
 
     batch_time["llm_call_seconds"] = time.perf_counter() - t_llm_start
@@ -640,7 +641,7 @@ def analyze_risks_with_llm_fallback(
         t_transform_start = time.time()
         requirements = _structured_frame_to_requirements(structured_requirements)
         timing_details["data_transformation_seconds"] = time.time() - t_transform_start
-        print(f"[TIMING] 数据转换耗时: {timing_details['data_transformation_seconds']:.3f}s")
+        print(f"[TIMING][Risk Analysis] 数据转换耗时: {timing_details['data_transformation_seconds']:.3f}s")
 
         t_llm_start = time.time()
         records, batch_times = analyze_requirements_risks(
@@ -657,18 +658,18 @@ def analyze_risks_with_llm_fallback(
         timing_details["batch_size"] = batch_size
         timing_details["concurrency"] = concurrency
         timing_details["fast_mode"] = fast_mode
-        print(f"[TIMING] LLM调用总耗时: {timing_details['llm_total_seconds']:.3f}s")
+        print(f"[TIMING][Risk Analysis] LLM调用总耗时: {timing_details['llm_total_seconds']:.3f}s")
         for i, bt in enumerate(batch_times):
             if bt.get("fallback"):
                 print(
-                    f"[TIMING]   Batch {i+1}: LLM失败，使用规则兜底 "
+                    f"[TIMING][Risk Analysis]   Batch {i+1}: LLM失败，使用规则兜底 "
                     f"(处理 {bt['batch_size']} 条需求, "
                     f"fallback耗时 {bt.get('fallback_seconds', 0.0):.3f}s, "
                     f"error={bt.get('error', '')})"
                 )
             else:
                 print(
-                    f"[TIMING]   Batch {i+1}: {bt['llm_call_seconds']:.3f}s "
+                    f"[TIMING][Risk Analysis]   Batch {i+1}: {bt['llm_call_seconds']:.3f}s "
                     f"(处理 {bt['batch_size']} 条需求, "
                     f"response_chars={bt.get('response_chars', 'unknown')}, "
                     f"max_tokens={bt.get('max_tokens', 'unknown')})"
@@ -677,13 +678,13 @@ def analyze_risks_with_llm_fallback(
         t_convert_start = time.time()
         risks = _risk_records_to_frame(records, source="LLM prompt analysis")
         timing_details["frame_conversion_seconds"] = time.time() - t_convert_start
-        print(f"[TIMING] 结果转换DataFrame耗时: {timing_details['frame_conversion_seconds']:.3f}s")
+        print(f"[TIMING][Risk Analysis] 结果转换DataFrame耗时: {timing_details['frame_conversion_seconds']:.3f}s")
 
         if risks.empty:
             raise ValueError("LLM returned no risk_analyses")
 
         timing_details["total_seconds"] = time.time() - t_start
-        print(f"[TIMING] 风险分析总耗时: {timing_details['total_seconds']:.3f}s")
+        print(f"[TIMING][Risk Analysis] 风险分析总耗时: {timing_details['total_seconds']:.3f}s")
         return risks, timing_details
 
     except Exception as exc:
@@ -692,7 +693,7 @@ def analyze_risks_with_llm_fallback(
         timing_details["fallback_after_error_seconds"] = time.time() - t_fallback_start
         timing_details["error"] = str(exc)
         timing_details["method"] = "rule_fallback_after_error"
-        print(f"[TIMING] LLM失败，回调规则方法耗时: {timing_details['fallback_after_error_seconds']:.3f}s")
+        print(f"[TIMING][Risk Analysis] LLM失败，回调规则方法耗时: {timing_details['fallback_after_error_seconds']:.3f}s")
         print(f"[AutoTestDesign][Risk][ERROR] LLM risk analysis failed: {type(exc).__name__}: {exc}")
         fallback["llm_error"] = str(exc)
         fallback["source"] = "Rule fallback after LLM failure"

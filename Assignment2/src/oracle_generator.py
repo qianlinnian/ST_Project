@@ -72,6 +72,7 @@ def improve_oracles_with_llm(
             provider=provider,
             model=model,
             max_tokens=max(800, 180 * len(batch)),
+            task_label="Oracle Review",
         )
         return parsed.get("oracle_reviews", [])
 
@@ -91,6 +92,7 @@ def improve_oracles_with_llm(
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
+        task_label="Oracle Review",
     )
 
     for review in [item for batch in review_batches for item in batch]:

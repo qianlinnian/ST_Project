@@ -160,6 +160,7 @@ def chat_completion(
     model: Optional[str] = None,
     max_tokens: Optional[int] = None,
     response_format: Optional[dict] = None,
+    task_label: Optional[str] = None,
 ) -> str:
     config = load_provider(provider)
     if config is None:
@@ -173,6 +174,7 @@ def chat_completion(
     started = time.perf_counter()
     _log_llm_event(
         "request start "
+        f"{f'task={task_label} ' if task_label else ''}"
         f"provider={config.name} model={selected_model} host={endpoint_host} "
         f"timeout={config.timeout}s system_chars={len(system_prompt)} "
         f"user_chars={len(user_prompt)}"
@@ -203,6 +205,7 @@ def chat_completion(
         elapsed = time.perf_counter() - started
         _log_llm_event(
             "request success "
+            f"{f'task={task_label} ' if task_label else ''}"
             f"provider={config.name} model={selected_model} "
             f"elapsed={elapsed:.2f}s response_chars={len(content)}"
         )

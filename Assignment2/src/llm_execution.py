@@ -130,6 +130,7 @@ def call_json_completion(
     model: str | None = None,
     max_tokens: int | None = None,
     response_format: dict | None = None,
+    task_label: str | None = None,
 ) -> dict:
     if response_format is None and llm_json_mode_enabled():
         response_format = {"type": "json_object"}
@@ -142,6 +143,7 @@ def call_json_completion(
             model=model,
             max_tokens=max_tokens,
             response_format=response_format,
+            task_label=task_label,
         )
     )
 
@@ -156,6 +158,7 @@ def run_parallel_batches(
     concurrency: int,
     process_batch: Callable[[int, list[T]], R],
     fallback_batch: Callable[[int, list[T], Exception], R] | None = None,
+    task_label: str | None = None,
 ) -> tuple[list[R], list[dict[str, Any]]]:
     batches = chunk_items(list(items), max(1, int(batch_size)))
     if not batches:
@@ -164,6 +167,7 @@ def run_parallel_batches(
     max_workers = min(max(1, int(concurrency)), len(batches))
     results_by_index: dict[int, R] = {}
     timings_by_index: dict[int, dict[str, Any]] = {}
+    total_started = time.perf_counter()
 
     def timed_process(batch_index: int, batch: list[T]) -> LLMBatchResult:
         started = time.perf_counter()
@@ -185,6 +189,7 @@ def run_parallel_batches(
                 batch_result = timed_process(batch_index, batch)
                 results_by_index[batch_index] = batch_result.result
                 timings_by_index[batch_index] = batch_result.timing
+                _log_batch_timing(task_label, batch_result.timing)
             except Exception as exc:
                 if fallback_batch is None:
                     raise
@@ -197,6 +202,7 @@ def run_parallel_batches(
                     "fallback_seconds": time.perf_counter() - started,
                     "error": f"{type(exc).__name__}: {exc}",
                 }
+                _log_batch_timing(task_label, timings_by_index[batch_index])
     else:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             future_to_batch = {
@@ -209,6 +215,7 @@ def run_parallel_batches(
                     batch_result = future.result()
                     results_by_index[batch_index] = batch_result.result
                     timings_by_index[batch_index] = batch_result.timing
+                    _log_batch_timing(task_label, batch_result.timing)
                 except Exception as exc:
                     if fallback_batch is None:
                         raise
@@ -221,7 +228,34 @@ def run_parallel_batches(
                         "fallback_seconds": time.perf_counter() - started,
                         "error": f"{type(exc).__name__}: {exc}",
                     }
+                    _log_batch_timing(task_label, timings_by_index[batch_index])
 
     ordered_results = [results_by_index[i] for i in range(len(batches))]
     ordered_timings = [timings_by_index[i] for i in range(len(batches))]
+    if task_label:
+        print(
+            f"[TIMING][{task_label}] total: {time.perf_counter() - total_started:.3f}s "
+            f"(batches={len(batches)}, batch_size={batch_size}, concurrency={max_workers})",
+            flush=True,
+        )
     return ordered_results, ordered_timings
+
+
+def _log_batch_timing(task_label: str | None, timing: dict[str, Any]) -> None:
+    if not task_label:
+        return
+    batch_no = int(timing.get("batch_index", 0)) + 1
+    batch_size = int(timing.get("batch_size", 0))
+    if timing.get("fallback"):
+        print(
+            f"[TIMING][{task_label}] Batch {batch_no}: fallback "
+            f"{timing.get('fallback_seconds', 0):.3f}s "
+            f"(处理 {batch_size} 条, error={timing.get('error', '')})",
+            flush=True,
+        )
+        return
+    print(
+        f"[TIMING][{task_label}] Batch {batch_no}: "
+        f"{timing.get('batch_total_seconds', 0):.3f}s (处理 {batch_size} 条)",
+        flush=True,
+    )

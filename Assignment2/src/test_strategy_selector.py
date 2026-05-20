@@ -113,6 +113,7 @@ def _llm_refine_strategies(
             provider=provider,
             model=model,
             max_tokens=max(600, 180 * len(batch)),
+            task_label="Strategy Review",
         )
         return parsed.get("strategy_reviews", [])
 
@@ -125,6 +126,7 @@ def _llm_refine_strategies(
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
+        task_label="Strategy Review",
     )
     reviews = [review for batch_reviews in review_batches for review in batch_reviews]
 

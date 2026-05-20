@@ -53,6 +53,7 @@ def structure_requirements(
                 _compact_requirement_structuring_prompt(batch),
                 provider=provider,
                 max_tokens=max(600, 120 * len(batch) + 400),
+                task_label="Requirement Structuring Fallback",
             )
             by_id = _parse_compact_requirement_parts(parsed)
             results = []
@@ -80,6 +81,7 @@ def structure_requirements(
             concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
             process_batch=structure_llm_batch,
             fallback_batch=fallback_llm_batch,
+            task_label="Requirement Structuring Fallback",
         )
 
         for batch_result in llm_batch_results:
@@ -127,6 +129,7 @@ def enhance_requirements_with_llm(
             _compact_requirement_structuring_prompt(batch),
             provider=provider,
             max_tokens=max(600, 120 * len(batch) + 400),
+            task_label="Requirement Structuring Enhancement",
         )
         by_id = _parse_compact_requirement_parts(parsed)
         results = []
@@ -154,6 +157,7 @@ def enhance_requirements_with_llm(
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=enhance_batch,
         fallback_batch=fallback_batch,
+        task_label="Requirement Structuring Enhancement",
     )
 
     for batch_result in llm_batch_results:
