@@ -4,7 +4,10 @@ from typing import Any
 
 import pandas as pd
 
+from src.ai_client import is_llm_enabled
+from src.llm_execution import call_json_completion
 from src.oracle_generator import generate_expected_result
+from src.prompt_templates import STATE_MODEL_IMPROVEMENT_SYSTEM
 
 
 DEFAULT_GENERIC_STATE_MODEL = {
@@ -172,6 +175,57 @@ def infer_state_model_from_requirements(structured_requirements: pd.DataFrame) -
             states.append(fallback["target_state"])
 
     return build_state_model(states=states, transitions=transitions)
+
+
+def improve_state_model_with_llm(
+    structured_requirements: pd.DataFrame,
+    provider: str | None = None,
+    model: str | None = None,
+    use_llm: bool = True,
+) -> dict:
+    if (
+        structured_requirements.empty
+        or not use_llm
+        or not provider
+        or not is_llm_enabled(provider)
+    ):
+        return infer_state_model_from_requirements(structured_requirements)
+
+    prompt = _state_model_improvement_prompt(structured_requirements)
+    parsed = call_json_completion(
+        STATE_MODEL_IMPROVEMENT_SYSTEM,
+        prompt,
+        provider=provider,
+        model=model,
+        max_tokens=1800,
+    )
+
+    states = parsed.get("states", [])
+    transitions = parsed.get("transitions", [])
+    if not states or not transitions:
+        raise ValueError("LLM returned incomplete state model")
+
+    return build_state_model(states=states, transitions=transitions)
+
+
+def _state_model_improvement_prompt(structured_requirements: pd.DataFrame) -> str:
+    lines = ["id|requirement|conditions|actions|expected"]
+    for _, row in structured_requirements.iterrows():
+        req_id = _compact_text(row.get("requirement_id", ""), 80)
+        req_text = _compact_text(row.get("requirement_text", ""), 260)
+        conditions = _compact_text(row.get("conditions", ""), 180)
+        actions = _compact_text(row.get("actions", ""), 160)
+        expected = _compact_text(row.get("expected_results", ""), 180)
+        lines.append(f"{req_id}|{req_text}|{conditions}|{actions}|{expected}")
+    return "\n".join(lines)
+
+
+def _compact_text(value: Any, limit: int) -> str:
+    text = _as_text(value)
+    text = " ".join(text.split())
+    if len(text) > limit:
+        text = text[:limit]
+    return text
 
 
 def generate_all_states_sequence(state_model: dict | None = None) -> pd.DataFrame:

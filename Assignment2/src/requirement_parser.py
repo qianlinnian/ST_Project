@@ -8,27 +8,7 @@ from src.nlp_processor import (
     is_requirement_structure_sufficient,
 )
 from src.models import Requirement
-from src.prompt_templates import REQUIREMENT_STRUCTURING_SYSTEM
-
-COMPACT_REQUIREMENT_STRUCTURING_SYSTEM = """
-You are a fast software requirement parser.
-
-Return valid JSON only.
-No markdown. No explanation. No trailing comma.
-
-The output must be exactly this JSON object shape:
-{"r":[["REQ-ID",["input"],["range"],["condition"],["action"],["expected"]]]}
-
-Rules:
-- The root object must contain only key "r".
-- "r" must be one array.
-- Each item must be one array:
-  [id,input_fields,data_ranges,conditions,actions,expected_results]
-- Return exactly one item for every input id.
-- Use short strings.
-- Use empty arrays when a field is not present.
-- Do not invent ids.
-""".strip()
+from src.prompt_templates import COMPACT_REQUIREMENT_STRUCTURING_SYSTEM
 
 
 def structure_requirements(

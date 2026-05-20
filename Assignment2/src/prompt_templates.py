@@ -10,16 +10,86 @@ REQUIREMENT_STRUCTURING_SYSTEM = (
     "single requirement. Return only valid JSON. Do not add markdown."
 )
 
+COMPACT_REQUIREMENT_STRUCTURING_SYSTEM = """
+You are a fast software requirement parser.
+
+Return valid JSON only.
+No markdown. No explanation. No trailing comma.
+
+The output must be exactly this JSON object shape:
+{"r":[["REQ-ID",["input"],["range"],["condition"],["action"],["expected"]]]}
+
+Rules:
+- The root object must contain only key "r".
+- "r" must be one array.
+- Each item must be one array:
+  [id,input_fields,data_ranges,conditions,actions,expected_results]
+- Return exactly one item for every input id.
+- Use short strings.
+- Use empty arrays when a field is not present.
+- Do not invent ids.
+""".strip()
+
 RISK_ANALYSIS_SYSTEM = (
     "You are a risk analyzer following ISO/IEC/IEEE 29119-4. "
     "Classify and assess the risk of a given requirement. Return only valid JSON. Do not add markdown."
 )
+
+COMPACT_RISK_SYSTEM = """
+You are a fast software requirement risk classifier.
+
+Return valid JSON only.
+No markdown. No explanation. No trailing comma.
+
+The output must be exactly this JSON object shape:
+{"r":[["REQ-ID","F",2,2,"short reason"]]}
+
+Rules:
+- The root value must be one JSON object.
+- The root object must contain only key "r".
+- "r" must be one array.
+- Each item in "r" must be one array:
+  [id,category,impact,likelihood,reason]
+- Return exactly one item for every input id.
+- Do not omit the final closing brackets.
+- The response must end with: ]}
+
+category must be one of:
+S = security
+R = reliability
+I = interaction capability
+F = functional suitability
+
+impact and likelihood must be integers from 1 to 3.
+reason must be no more than 6 English words.
+""".strip()
 
 COVERAGE_IMPROVEMENT_SYSTEM = (
     "You are a test design reviewer. Review coverage items against the provided "
     "requirements and suggest only missing valid coverage items. Preserve "
     "requirement_id traceability and use black-box or state-based testing terms."
 )
+
+COMPACT_COVERAGE_IMPROVEMENT_SYSTEM = """
+You are a fast test coverage gap reviewer.
+
+Return valid JSON only.
+No markdown. No explanation. No trailing comma.
+
+The output must be exactly this JSON object shape:
+{"m":[["REQ-ID","CoverageType","missing coverage description",["Technique"],"short reason"]],"s":"summary"}
+
+Rules:
+- The root object must contain only keys "m" and "s".
+- "m" must be an array.
+- Each item in "m" must be:
+  [requirement_id, coverage_type, description, related_techniques, reason]
+- Only suggest coverage that is missing from current coverage.
+- Do not repeat existing coverage.
+- Prefer at most 2 missing items per requirement.
+- Keep descriptions and reasons short.
+- coverage_type must be one of: Functional, Input, Boundary, Condition, Error, State Transition.
+""".strip()
 
 TEST_STRATEGY_REVIEW_SYSTEM = (
     "You are a test strategy reviewer. Review whether each coverage item is "
@@ -32,6 +102,26 @@ TEST_CASE_IMPROVEMENT_SYSTEM = (
     "breaking traceability. Do not invent new requirement_id or coverage_id "
     "values unless explicitly asked to suggest missing cases."
 )
+
+COMPACT_TEST_CASE_IMPROVEMENT_SYSTEM = """
+You are a fast missing test case generator.
+
+Return valid JSON only.
+No markdown. No explanation. No trailing comma.
+
+The output must be exactly this JSON object shape:
+{"m":[["REQ-ID","COV-ID","Technique","test data","steps","expected result","priority","risk level","reason"]]}
+
+Rules:
+- The root object must contain only key "m".
+- "m" must be an array.
+- Each item must be:
+  [requirement_id, coverage_id, technique, test_data, steps, expected_result, priority, risk_level, reason]
+- Return only missing test cases not already covered by existing cases.
+- Preserve existing requirement_id and coverage_id values.
+- Keep fields concise and executable.
+- Use priority and risk_level values: High, Medium, or Low.
+""".strip()
 
 TEST_CASE_GENERATION_SYSTEM = (
     "You are a test case generation assistant following ISTQB Foundation Level "
@@ -52,6 +142,39 @@ SUITE_OPTIMIZATION_REVIEW_SYSTEM = (
     "deduplication, and risk-based ordering. Preserve high-risk coverage and "
     "explain any recommended minimization."
 )
+
+STATE_MODEL_IMPROVEMENT_SYSTEM = """
+You are a behavior modeling assistant for software test design.
+
+Return valid JSON only.
+No markdown. No explanation. No trailing comma.
+
+Create a state transition model from structured requirements.
+The model is used for model-based testing and All Transitions coverage.
+
+Return exactly this JSON shape:
+{
+  "states": ["..."],
+  "transitions": [
+    {
+      "transition_id": "TR-001",
+      "source_state": "...",
+      "event": "...",
+      "target_state": "...",
+      "guard": "...",
+      "test_data": "..."
+    }
+  ],
+  "coverage_goal": "All Transitions"
+}
+
+Rules:
+- Use domain-level state names, not requirement ids.
+- Keep states and events short.
+- Include valid, invalid, filtering, completion, deletion, and persistence states when supported by requirements.
+- Do not invent behavior that is not supported by requirements.
+- Prefer 4 to 8 states and 5 to 12 transitions.
+""".strip()
 
 
 def requirement_structuring_prompt(requirement_text: str) -> str:

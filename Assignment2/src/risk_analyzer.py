@@ -5,7 +5,11 @@ import time
 
 from src.models import Requirement, RiskRecord
 from src.ai_client import chat_completion, is_llm_enabled
-from src.prompt_templates import RISK_ANALYSIS_SYSTEM, risk_analysis_batch_prompt
+from src.prompt_templates import (
+    COMPACT_RISK_SYSTEM,
+    RISK_ANALYSIS_SYSTEM,
+    risk_analysis_batch_prompt,
+)
 
 import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -152,36 +156,6 @@ def _risk_level(score: int) -> str:
     if score >= 4:
         return "Medium"
     return "Low"
-
-COMPACT_RISK_SYSTEM = """
-You are a fast software requirement risk classifier.
-
-Return valid JSON only.
-No markdown. No explanation. No trailing comma.
-
-The output must be exactly this JSON object shape:
-{"r":[["REQ-ID","F",2,2,"short reason"]]}
-
-Rules:
-- The root value must be one JSON object.
-- The root object must contain only key "r".
-- "r" must be one array.
-- Each item in "r" must be one array:
-  [id,category,impact,likelihood,reason]
-- Return exactly one item for every input id.
-- Do not omit the final closing brackets.
-- The response must end with: ]}
-
-category must be one of:
-S = security
-R = reliability
-I = interaction capability
-F = functional suitability
-
-impact and likelihood must be integers from 1 to 3.
-reason must be no more than 6 English words.
-""".strip()
-
 
 def _env_int(name: str, default: int, min_value: int, max_value: int) -> int:
     raw = os.getenv(name, "").strip()
