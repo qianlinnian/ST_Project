@@ -1,3 +1,5 @@
+import re
+
 import pandas as pd
 import time
 import streamlit as st
@@ -851,14 +853,34 @@ def render_metrics(artifacts: dict[str, pd.DataFrame]) -> None:
 
 def requirements_from_text(raw_text: str) -> pd.DataFrame:
     rows = []
-    for index, line in enumerate(raw_text.splitlines(), start=1):
+    module_prefix_pattern = re.compile(r"^\s*\[([^\]]+)\]\s*(.*)$")
+    id_prefix_pattern = re.compile(r"^\s*((?:[A-Za-z]+-)+\d+)\s*(?::|\uFF1A|-)\s*(.*)$")
+
+    for line in raw_text.splitlines():
         requirement_text = line.strip()
         if not requirement_text:
             continue
+
+        module = "General"
+        module_match = module_prefix_pattern.match(requirement_text)
+        if module_match:
+            module = module_match.group(1).strip() or "General"
+            requirement_text = module_match.group(2).strip()
+
+        match = id_prefix_pattern.match(requirement_text)
+        if match:
+            requirement_id = match.group(1).strip()
+            requirement_text = match.group(2).strip()
+        else:
+            requirement_id = f"REQ-{len(rows) + 1:03d}"
+
+        if not requirement_text:
+            continue
+
         rows.append(
             {
-                "requirement_id": f"REQ-{index:03d}",
-                "module": "General",
+                "requirement_id": requirement_id,
+                "module": module,
                 "requirement_text": requirement_text,
             }
         )
@@ -1112,7 +1134,19 @@ if page == "Requirement Input":
         with text_col:
             raw_requirements = st.text_area(
                 "Paste plain-text requirements",
-                placeholder="One requirement per line.",
+                placeholder=(
+                    "[Todo Creation] REQ-001: When the todo input is not empty, "
+                    "the user can add a new todo item by clicking Add.\n"
+                    "[Todo Validation] REQ-002: When the todo input is empty or "
+                    "only contains spaces, clicking Add should not create a new todo item.\n"
+                    "[Todo Filtering] REQ-003: The user can filter todos by All, "
+                    "Active, and Completed."
+                ),
+                help=(
+                    "Optional format: [Module] REQ-001: requirement text. "
+                    "If [Module] is omitted, module defaults to General. "
+                    "If REQ-001 is omitted, IDs are generated automatically."
+                ),
                 height=120,
             )
             if st.button("Use Text Requirements"):
