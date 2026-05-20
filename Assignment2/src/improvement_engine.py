@@ -7,34 +7,16 @@ import pandas as pd
 from src.ai_client import is_llm_enabled
 from src.llm_execution import call_json_completion, env_int, run_parallel_batches
 from src.prompt_templates import (
-    COVERAGE_IMPROVEMENT_SYSTEM,
+    COMPACT_COVERAGE_IMPROVEMENT_SYSTEM,
     SUITE_OPTIMIZATION_REVIEW_SYSTEM,
     suite_optimization_review_prompt,
 )
 from src.suite_optimizer import optimize_suite
-from src.test_case_generator import generate_test_cases, improve_test_cases_with_llm
+from src.test_case_generator import (
+    renumber_test_case_ids,
+    suggest_missing_test_cases_with_llm,
+)
 from src.test_strategy_selector import select_strategies
-
-COMPACT_COVERAGE_IMPROVEMENT_SYSTEM = """
-You are a fast test coverage gap reviewer.
-
-Return valid JSON only.
-No markdown. No explanation. No trailing comma.
-
-The output must be exactly this JSON object shape:
-{"m":[["REQ-ID","CoverageType","missing coverage description",["Technique"],"short reason"]],"s":"summary"}
-
-Rules:
-- The root object must contain only keys "m" and "s".
-- "m" must be an array.
-- Each item in "m" must be:
-  [requirement_id, coverage_type, description, related_techniques, reason]
-- Only suggest coverage that is missing from current coverage.
-- Do not repeat existing coverage.
-- Prefer at most 2 missing items per requirement.
-- Keep descriptions and reasons short.
-- coverage_type must be one of: Functional, Input, Boundary, Condition, Error, State Transition.
-""".strip()
 
 
 def _next_coverage_id(existing: pd.DataFrame, offset: int) -> str:
@@ -239,6 +221,7 @@ def review_suite_optimization_with_llm(
 def generate_improved_test_design_with_llm(
     requirements: pd.DataFrame,
     coverage_items: pd.DataFrame,
+    strategies: pd.DataFrame,
     existing_test_cases: pd.DataFrame,
     provider: str | None = None,
     model: str | None = None,
@@ -246,79 +229,32 @@ def generate_improved_test_design_with_llm(
     batch_size: int | None = None,
     concurrency: int | None = None,
 ) -> dict[str, pd.DataFrame]:
-    missing_coverage = suggest_missing_coverage_with_llm(
+    missing_cases = suggest_missing_test_cases_with_llm(
         requirements,
         coverage_items,
-        provider,
-        model,
-        use_llm,
-        batch_size=batch_size,
-        concurrency=concurrency,
-    )
-    if missing_coverage.empty or "llm_error" in missing_coverage.columns:
-        improved_cases = improve_test_cases_with_llm(
-            existing_test_cases,
-            provider,
-            model,
-            use_llm,
-            batch_size=batch_size,
-            concurrency=concurrency,
-        )
-        optimized_cases = optimize_suite(improved_cases)
-        suite_review = review_suite_optimization_with_llm(
-            improved_cases,
-            optimized_cases,
-            provider,
-            model,
-            use_llm,
-            batch_size=batch_size,
-            concurrency=concurrency,
-        )
-        return {
-            "missing_coverage": missing_coverage,
-            "suggested_test_cases": improved_cases,
-            "suite_optimization_review": suite_review,
-        }
-
-    combined_coverage = pd.concat([coverage_items, missing_coverage[coverage_items.columns]], ignore_index=True)
-    strategies = select_strategies(
-        combined_coverage,
-        provider=provider,
-        model=model,
-        use_llm=use_llm,
-        batch_size=batch_size,
-        concurrency=concurrency,
-    )
-    suggested_cases = generate_test_cases(
-        requirements,
-        missing_coverage[coverage_items.columns],
         strategies,
-        provider=provider,
-        model=model,
-        use_llm=use_llm,
-        batch_size=batch_size,
-        concurrency=concurrency,
-    )
-    improved_cases = improve_test_cases_with_llm(
-        pd.concat([existing_test_cases, suggested_cases], ignore_index=True),
+        existing_test_cases,
         provider,
         model,
         use_llm,
         batch_size=batch_size,
         concurrency=concurrency,
     )
-    optimized_cases = optimize_suite(improved_cases)
-    suite_review = review_suite_optimization_with_llm(
-        improved_cases,
-        optimized_cases,
-        provider,
-        model,
-        use_llm,
-        batch_size=batch_size,
-        concurrency=concurrency,
-    )
+    if missing_cases.empty or "llm_error" in missing_cases.columns:
+        enhanced_cases = existing_test_cases.copy()
+    else:
+        base_columns = list(existing_test_cases.columns)
+        additions = missing_cases.copy()
+        for column in base_columns:
+            if column not in additions.columns:
+                additions[column] = ""
+        additions = additions[base_columns + [col for col in additions.columns if col not in base_columns]]
+        enhanced_cases = pd.concat([existing_test_cases, additions], ignore_index=True)
+        enhanced_cases = renumber_test_case_ids(enhanced_cases)
+
+    optimized_cases = optimize_suite(enhanced_cases)
     return {
-        "missing_coverage": missing_coverage,
-        "suggested_test_cases": improved_cases,
-        "suite_optimization_review": suite_review,
+        "missing_test_cases": missing_cases,
+        "enhanced_test_cases": enhanced_cases,
+        "optimized_test_cases": optimized_cases,
     }

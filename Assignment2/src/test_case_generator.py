@@ -9,10 +9,9 @@ from src.ai_client import is_llm_enabled
 from src.llm_execution import call_json_completion, env_int, run_parallel_batches
 from src.oracle_generator import generate_expected_result, improve_oracles_with_llm
 from src.prompt_templates import (
+    COMPACT_TEST_CASE_IMPROVEMENT_SYSTEM,
     TEST_CASE_GENERATION_SYSTEM,
-    TEST_CASE_IMPROVEMENT_SYSTEM,
     test_case_generation_prompt as build_test_case_generation_prompt,
-    test_case_improvement_prompt as build_test_case_improvement_prompt,
 )
 from src.state_modeler import infer_state_model_from_requirements, generate_state_transition_tests
 from src.test_strategy_selector import TECHNIQUE_STANDARDS
@@ -240,54 +239,168 @@ def _llm_generate(
     return _renumber_test_cases(data)
 
 
-def improve_test_cases_with_llm(
-    test_cases: pd.DataFrame,
+def suggest_missing_test_cases_with_llm(
+    requirements: pd.DataFrame,
+    coverage: pd.DataFrame,
+    strategies: pd.DataFrame,
+    existing_test_cases: pd.DataFrame,
     provider: str | None = None,
     model: str | None = None,
     use_llm: bool = True,
     batch_size: int | None = None,
     concurrency: int | None = None,
 ) -> pd.DataFrame:
-    if test_cases.empty or not use_llm or not provider or not is_llm_enabled(provider):
-        return test_cases.copy()
-    improved = test_cases.copy()
+    if (
+        coverage.empty
+        or existing_test_cases.empty
+        or not use_llm
+        or not provider
+        or not is_llm_enabled(provider)
+    ):
+        return pd.DataFrame(columns=REQUIRED_COLUMNS + ["llm_reason"])
 
-    def review_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
-        prompt = build_test_case_improvement_prompt(pd.DataFrame(batch).to_string(index=False))
+    coverage_records = coverage.to_dict("records")
+    strategy_map = strategies.set_index("coverage_id").to_dict("index") if not strategies.empty else {}
+
+    def review_batch(_batch_index: int, batch: list[dict]) -> pd.DataFrame:
+        prompt = _missing_test_case_prompt(batch, requirements, strategy_map, existing_test_cases)
         parsed = call_json_completion(
-            TEST_CASE_IMPROVEMENT_SYSTEM,
+            COMPACT_TEST_CASE_IMPROVEMENT_SYSTEM,
             prompt,
             provider=provider,
             model=model,
-            max_tokens=max(800, 180 * len(batch)),
+            max_tokens=max(600, 90 * len(batch) + 300),
         )
-        return parsed.get("case_reviews", [])
+        return _parse_missing_test_cases(parsed, len(batch))
 
-    def fallback_batch(_batch_index: int, batch: list[dict], exc: Exception) -> list[dict]:
-        return [
-            {
-                "test_case_id": row.get("test_case_id", ""),
-                "issue": f"LLM review failed: {exc}",
-                "suggested_revision": "",
-            }
-            for row in batch
-        ]
+    def fallback_batch(_batch_index: int, _batch: list[dict], exc: Exception) -> pd.DataFrame:
+        return pd.DataFrame([{"llm_error": str(exc)}])
 
-    review_batches, _ = run_parallel_batches(
-        improved.to_dict("records"),
+    suggested_batches, _ = run_parallel_batches(
+        coverage_records,
         batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
     )
-    reviews = {
-        r.get("test_case_id"): r
-        for batch_reviews in review_batches
-        for r in batch_reviews
+    data = pd.concat(suggested_batches, ignore_index=True) if suggested_batches else pd.DataFrame()
+    if data.empty:
+        return pd.DataFrame(columns=REQUIRED_COLUMNS + ["llm_reason"])
+    for col in REQUIRED_COLUMNS:
+        if col not in data.columns:
+            data[col] = ""
+    return data[REQUIRED_COLUMNS + [col for col in data.columns if col not in REQUIRED_COLUMNS]]
+
+
+def _missing_test_case_prompt(
+    coverage_batch: list[dict],
+    requirements: pd.DataFrame,
+    strategy_map: dict,
+    existing_test_cases: pd.DataFrame,
+) -> str:
+    requirement_ids = {
+        str(row.get("requirement_id", "")).strip()
+        for row in coverage_batch
+        if str(row.get("requirement_id", "")).strip()
     }
-    improved["llm_review_issue"] = improved["test_case_id"].map(lambda cid: reviews.get(cid, {}).get("issue", ""))
-    improved["llm_suggested_revision"] = improved["test_case_id"].map(lambda cid: reviews.get(cid, {}).get("suggested_revision", ""))
-    return improved
+    coverage_ids = {
+        str(row.get("coverage_id", "")).strip()
+        for row in coverage_batch
+        if str(row.get("coverage_id", "")).strip()
+    }
+    req_rows = requirements[
+        requirements["requirement_id"].astype(str).isin(requirement_ids)
+    ] if "requirement_id" in requirements.columns else requirements
+    case_rows = existing_test_cases[
+        existing_test_cases["coverage_id"].astype(str).isin(coverage_ids)
+    ] if "coverage_id" in existing_test_cases.columns else existing_test_cases
+
+    lines = ["REQ|id|text"]
+    for _, row in req_rows.iterrows():
+        lines.append(f"REQ|{_compact_text(row.get('requirement_id', ''), 60)}|{_compact_text(row.get('requirement_text', ''), 260)}")
+
+    lines.append("COV|id|req|type|desc|tech|risk")
+    for row in coverage_batch:
+        cov_id = str(row.get("coverage_id", ""))
+        strategy = strategy_map.get(cov_id, {})
+        technique = strategy.get("technique", row.get("related_techniques", ""))
+        lines.append(
+            "|".join(
+                [
+                    "COV",
+                    _compact_text(cov_id, 60),
+                    _compact_text(row.get("requirement_id", ""), 60),
+                    _compact_text(row.get("coverage_type", ""), 60),
+                    _compact_text(row.get("description", ""), 180),
+                    _compact_text(technique, 80),
+                    _compact_text(row.get("risk_level", "Medium"), 40),
+                ]
+            )
+        )
+
+    lines.append("EXISTING|id|cov|tech|data|expected")
+    for _, row in case_rows.iterrows():
+        lines.append(
+            "|".join(
+                [
+                    "EXISTING",
+                    _compact_text(row.get("test_case_id", ""), 40),
+                    _compact_text(row.get("coverage_id", ""), 60),
+                    _compact_text(row.get("technique", ""), 80),
+                    _compact_text(row.get("test_data", ""), 140),
+                    _compact_text(row.get("expected_result", ""), 180),
+                ]
+            )
+        )
+    return "\n".join(lines)
+
+
+def _parse_missing_test_cases(parsed: dict, batch_size: int) -> pd.DataFrame:
+    rows = []
+    if isinstance(parsed.get("m"), list):
+        for index, item in enumerate(parsed.get("m", []), start=1):
+            if not isinstance(item, list) or len(item) < 6:
+                continue
+            risk_level = str(item[7] if len(item) > 7 else "Medium")
+            rows.append(
+                {
+                    "test_case_id": f"TC-AI-{index:03d}",
+                    "requirement_id": item[0],
+                    "coverage_id": item[1],
+                    "technique": item[2],
+                    "technique_standard": TECHNIQUE_STANDARDS.get(str(item[2]), "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4"),
+                    "precondition": "The system under test is available and the relevant feature can be exercised.",
+                    "test_data": item[3],
+                    "steps": item[4],
+                    "expected_result": item[5],
+                    "priority": item[6] if len(item) > 6 else risk_level,
+                    "risk_score": RISK_SCORE_BY_LEVEL.get(risk_level, 3.0),
+                    "risk_level": risk_level,
+                    "coverage_type": "",
+                    "automation_candidate": "Partial",
+                    "source": "LLM missing test case suggestion",
+                    "design_basis": "LLM identified missing coverage in existing test cases.",
+                    "llm_reason": item[8] if len(item) > 8 else "",
+                }
+            )
+    return pd.DataFrame(rows)
+
+
+def renumber_test_case_ids(test_cases: pd.DataFrame, prefix: str = "TC") -> pd.DataFrame:
+    if test_cases.empty:
+        return test_cases.copy()
+    renumbered = test_cases.copy()
+    renumbered["test_case_id"] = [
+        f"{prefix}-{index:03d}" for index in range(1, len(renumbered) + 1)
+    ]
+    return renumbered
+
+
+def _compact_text(value, limit: int) -> str:
+    text = " ".join(str(value or "").split())
+    if len(text) > limit:
+        text = text[:limit]
+    return text
 
 
 def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame,
