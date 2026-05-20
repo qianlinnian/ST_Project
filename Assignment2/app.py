@@ -293,6 +293,7 @@ def current_artifacts() -> dict[str, pd.DataFrame]:
 def compact_structured_requirements() -> pd.DataFrame:
     columns = [
         "requirement_id",
+        "module",
         "requirement_text",
         "input_fields",
         "data_ranges",
@@ -306,6 +307,66 @@ def compact_structured_requirements() -> pd.DataFrame:
         if column in st.session_state.structured_requirements.columns
     ]
     return st.session_state.structured_requirements[available_columns].copy()
+
+
+STRUCTURED_LIST_COLUMNS = {
+    "input_fields",
+    "data_ranges",
+    "conditions",
+    "actions",
+    "expected_results",
+}
+
+
+def editable_structured_requirements() -> pd.DataFrame:
+    editable = compact_structured_requirements()
+    for column in STRUCTURED_LIST_COLUMNS:
+        if column in editable.columns:
+            editable[column] = editable[column].apply(_list_to_editor_text)
+    return editable
+
+
+def save_structured_requirements(edited: pd.DataFrame) -> None:
+    if edited is None or edited.empty:
+        st.warning("No structured requirements to save.")
+        return
+
+    normalized = edited.copy()
+    for column in STRUCTURED_LIST_COLUMNS:
+        if column in normalized.columns:
+            normalized[column] = normalized[column].apply(_parse_editor_list)
+
+    st.session_state.structured_requirements = normalized
+    reset_downstream("structured")
+
+
+def _list_to_editor_text(value) -> str:
+    if isinstance(value, list):
+        return "\n".join(str(item) for item in value if str(item).strip())
+    if _is_empty_cell(value):
+        return ""
+    return str(value)
+
+
+def _parse_editor_list(value) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if _is_empty_cell(value):
+        return []
+    text = str(value).strip()
+    if not text:
+        return []
+    separators = "\n" if "\n" in text else ";"
+    return [item.strip() for item in text.split(separators) if item.strip()]
+
+
+def _is_empty_cell(value) -> bool:
+    if value is None:
+        return True
+    try:
+        return bool(pd.isna(value))
+    except (TypeError, ValueError):
+        return False
 
 
 def display_risk_analysis() -> pd.DataFrame:
@@ -1030,7 +1091,37 @@ if page == "Requirement Input":
 
         if not st.session_state.structured_requirements.empty:
             section_header("Structured Requirement Preview", "file")
-            st.dataframe(compact_structured_requirements())
+            structured_editor = st.data_editor(
+                editable_structured_requirements(),
+                key="structured_requirements_editor",
+                hide_index=True,
+                use_container_width=True,
+                column_config={
+                    "input_fields": st.column_config.TextColumn(
+                        "input_fields",
+                        help="One recognized input field per line.",
+                    ),
+                    "data_ranges": st.column_config.TextColumn(
+                        "data_ranges",
+                        help="One recognized data range or boundary per line.",
+                    ),
+                    "conditions": st.column_config.TextColumn(
+                        "conditions",
+                        help="One recognized condition per line.",
+                    ),
+                    "actions": st.column_config.TextColumn(
+                        "actions",
+                        help="One recognized action per line.",
+                    ),
+                    "expected_results": st.column_config.TextColumn(
+                        "expected_results",
+                        help="One expected result per line.",
+                    ),
+                },
+            )
+            if st.button("Save Edited Structured Requirements"):
+                save_structured_requirements(structured_editor)
+                st.toast("Edited structured requirements saved.")
 
 if page == "Risk Analysis":
     section_header("Risk Analysis", "risk")
