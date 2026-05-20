@@ -29,6 +29,7 @@ from src.risk_analyzer import analyze_risks_with_llm_fallback
 from src.state_modeler import (
     generate_optimized_transition_sequence,
     infer_state_model_from_requirements,
+    improve_state_model_with_llm,
 )
 from src.suite_optimizer import optimize_suite
 from src.test_case_generator import generate_test_cases
@@ -266,6 +267,8 @@ def init_state() -> None:
     ]:
         if key not in st.session_state:
             st.session_state[key] = pd.DataFrame()
+    if "state_model" not in st.session_state:
+        st.session_state.state_model = None
 
 
 def empty_requirements() -> pd.DataFrame:
@@ -442,6 +445,8 @@ def reset_downstream(from_step: str) -> None:
     for key in order.get(from_step, []):
         st.session_state[key] = pd.DataFrame()
     if from_step in {"requirements", "structured", "risk"}:
+        st.session_state.state_model = None
+    if from_step in {"requirements", "structured", "risk"}:
         st.session_state.coverage_ai_improvement = None
         st.session_state.ai_improvement_result = None
     if from_step == "strategy":
@@ -594,9 +599,9 @@ def generate_current_strategy(use_llm: bool = False) -> None:
             batch_size=int(st.session_state.get("llm_batch_size", 25)),
             concurrency=int(st.session_state.get("llm_concurrency", 4)),
         )
-        state_sequences = generate_optimized_transition_sequence(
-            infer_state_model_from_requirements(st.session_state.structured_requirements)
-        )
+        state_model = infer_state_model_from_requirements(st.session_state.structured_requirements)
+        state_sequences = generate_optimized_transition_sequence(state_model)
+        st.session_state.state_model = state_model
         return strategies, state_sequences
 
     strategy_time, artifacts = measure_time(build_strategy_artifacts)
@@ -609,6 +614,30 @@ def generate_current_strategy(use_llm: bool = False) -> None:
         strategy_time,
     )
     reset_downstream("strategy")
+
+
+def improve_current_state_model_with_llm() -> None:
+    if st.session_state.structured_requirements.empty:
+        st.warning("Please structure requirements first.")
+        return
+    if not is_llm_enabled(st.session_state.selected_provider):
+        st.warning("Selected LLM provider is not configured.")
+        return
+
+    model_time, state_model = measure_time(
+        improve_state_model_with_llm,
+        st.session_state.structured_requirements,
+        provider=st.session_state.selected_provider,
+        model=st.session_state.selected_model,
+        use_llm=True,
+    )
+    st.session_state.state_model = state_model
+    st.session_state.state_transition_sequences = generate_optimized_transition_sequence(state_model)
+    set_performance("llm_state_model_improvement_seconds", model_time)
+    st.session_state.test_cases = pd.DataFrame()
+    st.session_state.test_cases_draft = pd.DataFrame()
+    st.session_state.optimized_test_cases = pd.DataFrame()
+    st.session_state.traceability_matrix = pd.DataFrame()
 
 
 def generate_current_test_cases() -> None:
@@ -784,11 +813,23 @@ def render_state_model_section() -> None:
     if st.session_state.structured_requirements.empty:
         return
 
-    state_model = infer_state_model_from_requirements(st.session_state.structured_requirements)
+    state_model = st.session_state.state_model or infer_state_model_from_requirements(
+        st.session_state.structured_requirements
+    )
     with st.expander("State Transition Model", expanded=False):
         st.caption(
             "Coverage criterion: All Transitions. The optimized sequence covers each selected transition once and resets only when transitions cannot be chained."
         )
+        state_col, improve_col = st.columns([1, 1], gap="medium")
+        with state_col:
+            st.metric("States", len(state_model.get("states", [])))
+        with improve_col:
+            disabled = not is_llm_enabled(st.session_state.selected_provider)
+            if st.button("Improve State Model With LLM", disabled=disabled):
+                with st.spinner("Improving state model with LLM..."):
+                    improve_current_state_model_with_llm()
+                st.toast("LLM state model improvement completed.")
+                st.rerun()
         st.graphviz_chart(state_model_to_dot(state_model))
         if not st.session_state.state_transition_sequences.empty:
             st.dataframe(st.session_state.state_transition_sequences, hide_index=True)
@@ -1143,6 +1184,7 @@ if page == "Test Cases":
                     generate_improved_test_design_with_llm,
                     artifacts["structured_requirements"],
                     artifacts["coverage_items"],
+                    artifacts["test_strategies"],
                     artifacts["test_cases"],
                     st.session_state.selected_provider,
                     st.session_state.selected_model,
@@ -1150,6 +1192,20 @@ if page == "Test Cases":
                     concurrency=int(st.session_state.get("llm_concurrency", 4)),
                 )
                 st.session_state.ai_improvement_result = improvement_result
+                enhanced_cases = improvement_result.get("enhanced_test_cases", pd.DataFrame())
+                if not enhanced_cases.empty:
+                    st.session_state.test_cases = enhanced_cases
+                    st.session_state.test_cases_draft = enhanced_cases.copy()
+                    st.session_state.optimized_test_cases = improvement_result.get(
+                        "optimized_test_cases",
+                        optimize_suite(enhanced_cases),
+                    )
+                    st.session_state.traceability_matrix = build_traceability_matrix(
+                        st.session_state.structured_requirements,
+                        st.session_state.coverage_items,
+                        st.session_state.test_strategies,
+                        st.session_state.optimized_test_cases,
+                    )
                 set_performance("llm_test_design_improvement_seconds", llm_time)
             st.toast("LLM test design improvement completed.")
     if artifacts["test_cases"].empty:
@@ -1183,32 +1239,33 @@ if page == "Test Cases":
 
     result = st.session_state.get("ai_improvement_result")
     if result:
+        missing_cases = result.get("missing_test_cases", pd.DataFrame())
+        enhanced_cases = result.get("enhanced_test_cases", pd.DataFrame())
+        optimized_cases = result.get("optimized_test_cases", pd.DataFrame())
+        if missing_cases.empty and enhanced_cases.empty and optimized_cases.empty:
+            st.session_state.ai_improvement_result = None
+            result = None
+
+    if result:
         section_header("LLM Test Design Improvement", "ai")
         summary_cols = st.columns(3, gap="medium")
         with summary_cols[0]:
-            st.metric("Missing Coverage", len(result.get("missing_coverage", [])))
+            st.metric("Added Cases", len(missing_cases))
         with summary_cols[1]:
-            st.metric("Reviewed Cases", len(result.get("suggested_test_cases", [])))
+            st.metric("Enhanced Cases", len(enhanced_cases))
         with summary_cols[2]:
-            suite_review = result.get("suite_optimization_review", pd.DataFrame())
-            st.metric("Suite Reviews", 0 if suite_review.empty else len(suite_review))
+            st.metric("Optimized Cases", len(optimized_cases))
 
         render_llm_dataframe(
-            "Missing coverage suggestions",
-            result["missing_coverage"],
-            "LLM did not identify additional missing coverage.",
+            "LLM added missing test cases",
+            missing_cases,
+            "LLM did not identify missing test cases.",
         )
         render_llm_dataframe(
-            "Improved or additional test cases",
-            result["suggested_test_cases"],
-            "LLM did not return improved test cases.",
+            "Optimized suite after LLM additions",
+            optimized_cases,
+            "Optimized suite is empty.",
         )
-        if "suite_optimization_review" in result:
-            render_llm_dataframe(
-                "Suite optimization review",
-                result["suite_optimization_review"],
-                "LLM did not return suite optimization feedback.",
-            )
     render_performance_table(artifacts)
 
 if page == "Persistence & Export":
