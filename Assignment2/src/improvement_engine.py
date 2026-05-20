@@ -14,6 +14,7 @@ from src.prompt_templates import (
 )
 from src.suite_optimizer import optimize_suite
 from src.test_case_generator import (
+    limit_generated_test_case_volume,
     renumber_test_case_ids,
     suggest_missing_test_cases_with_llm,
 )
@@ -426,7 +427,7 @@ def generate_improved_test_design_with_llm(
                 additions[column] = ""
         additions = additions[base_columns + [col for col in additions.columns if col not in base_columns]]
         enhanced_cases = pd.concat([existing_test_cases, additions], ignore_index=True)
-        enhanced_cases = renumber_test_case_ids(enhanced_cases)
+        enhanced_cases = renumber_test_case_ids(limit_generated_test_case_volume(enhanced_cases))
 
     optimized_cases = optimize_suite(enhanced_cases)
     return {

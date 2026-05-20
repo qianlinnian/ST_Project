@@ -434,7 +434,15 @@ def _missing_test_case_prompt(
 def _parse_missing_test_cases(parsed: dict, batch_size: int) -> pd.DataFrame:
     rows = []
     if isinstance(parsed.get("m"), list):
-        for index, item in enumerate(parsed.get("m", []), start=1):
+        items = parsed.get("m", [])
+        max_items = env_int("AUTOTESTDESIGN_MAX_MISSING_TEST_CASES_PER_BATCH", 8, 1, 50)
+        if len(items) > max_items:
+            print(
+                "[AutoTestDesign][TestCase][LIMIT] "
+                f"selected best {max_items} of {len(items)} LLM missing test cases for this batch",
+                flush=True,
+            )
+        for index, item in enumerate(_select_missing_case_items(items, max_items), start=1):
             if not isinstance(item, list) or len(item) < 6:
                 continue
             risk_level = str(item[7] if len(item) > 7 else "Medium")
@@ -460,6 +468,46 @@ def _parse_missing_test_cases(parsed: dict, batch_size: int) -> pd.DataFrame:
                 }
             )
     return pd.DataFrame(rows)
+
+
+def _select_missing_case_items(items: list, max_items: int) -> list:
+    valid_items = [item for item in items if isinstance(item, list) and len(item) >= 6]
+    if len(valid_items) <= max_items:
+        return valid_items
+
+    selected = []
+    seen_coverage = set()
+    for item in sorted(valid_items, key=_missing_case_score, reverse=True):
+        coverage_id = str(item[1])
+        if coverage_id in seen_coverage and len(seen_coverage) < max_items:
+            continue
+        selected.append(item)
+        seen_coverage.add(coverage_id)
+        if len(selected) >= max_items:
+            return selected
+
+    selected_keys = {id(item) for item in selected}
+    for item in sorted(valid_items, key=_missing_case_score, reverse=True):
+        if id(item) in selected_keys:
+            continue
+        selected.append(item)
+        if len(selected) >= max_items:
+            break
+    return selected
+
+
+def _missing_case_score(item: list) -> tuple[int, int, int]:
+    priority = str(item[6] if len(item) > 6 else "Medium")
+    risk_level = str(item[7] if len(item) > 7 else "Medium")
+    technique = str(item[2] if len(item) > 2 else "")
+    risk_score = {"High": 3, "Medium": 2, "Low": 1}.get(risk_level, 0)
+    priority_score = {"High": 3, "Medium": 2, "Low": 1}.get(priority, 0)
+    technique_score = 2 if technique in {"Boundary Value Analysis", "State Transition Testing"} else 1
+    return risk_score, priority_score, technique_score
+
+
+def limit_generated_test_case_volume(test_cases: pd.DataFrame) -> pd.DataFrame:
+    return _limit_test_case_volume(test_cases)
 
 
 def _parse_missing_test_case_response(text: str, batch_size: int) -> pd.DataFrame:
