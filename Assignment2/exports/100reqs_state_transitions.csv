@@ -1,0 +1,41 @@
+sequence_id,transition_id,coverage_goal,optimization_rule,reset_required,source_state,event,guard,test_data,target_state,precondition,steps,expected_result
+OPT-TRANS-001,TR-001,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Empty List,Create valid todo,"text non-empty, length <= 100, not only spaces",text: 'Buy milk',Active List,The system is in source state: Empty List.,"1. Reset or navigate the system to the source state
+2. Establish source state: Empty List
+3. Apply event/action: Create valid todo
+4. Observe the resulting system state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.
+OPT-TRANS-002,TR-002,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Active List,Create valid todo,"text non-empty, length <= 100, not only spaces",text: 'Write code',Active List,The system is in source state: Active List.,"1. Establish source state: Active List
+2. Apply event/action: Create valid todo
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-003,TR-003,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Active List,Mark completed,todo active,todo: 'Buy milk',Completed List,The system is in source state: Active List.,"1. Establish source state: Active List
+2. Apply event/action: Mark completed
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-004,TR-004,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Completed List,Mark active,todo completed,todo: 'Buy milk',Active List,The system is in source state: Completed List.,"1. Establish source state: Completed List
+2. Apply event/action: Mark active
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-005,TR-005,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Active List,Delete todo,"todo exists, last item",todo: 'Buy milk',Empty List,The system is in source state: Active List.,"1. Establish source state: Active List
+2. Apply event/action: Delete todo
+3. Observe the resulting system state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.
+OPT-TRANS-006,TR-006,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Active List,Delete todo,"todo exists, not last item",todo: 'Buy milk',Active List,The system is in source state: Active List.,"1. Reset or navigate the system to the source state
+2. Establish source state: Active List
+3. Apply event/action: Delete todo
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-007,TR-008,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Active List,Filter active,filter active selected,filter: 'Active',Filtered View,The system is in source state: Active List.,"1. Establish source state: Active List
+2. Apply event/action: Filter active
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-008,TR-009,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Filtered View,Show all,filter all selected,filter: 'All',Active List,The system is in source state: Filtered View.,"1. Establish source state: Filtered View
+2. Apply event/action: Show all
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-009,TR-010,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Active List,Edit todo,todo active,todo: 'Buy milk',Editing,The system is in source state: Active List.,"1. Establish source state: Active List
+2. Apply event/action: Edit todo
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-010,TR-011,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Editing,Save edit,"text non-empty, length <= 100, not only spaces",new text: 'Buy organic milk',Active List,The system is in source state: Editing.,"1. Establish source state: Editing
+2. Apply event/action: Save edit
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-011,TR-007,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Completed List,Delete todo,"todo exists, last item",todo: 'Buy milk',Empty List,The system is in source state: Completed List.,"1. Reset or navigate the system to the source state
+2. Establish source state: Completed List
+3. Apply event/action: Delete todo
+4. Observe the resulting system state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.
+OPT-TRANS-012,TR-012,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Editing,Cancel edit,Escape key pressed,original text restored,Active List,The system is in source state: Editing.,"1. Reset or navigate the system to the source state
+2. Establish source state: Editing
+3. Apply event/action: Cancel edit
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."

@@ -1,0 +1,212 @@
+test_case_id,requirement_id,coverage_id,technique,technique_standard,precondition,test_data,steps,expected_result,priority,risk_score,risk_level,coverage_type,automation_candidate,source,design_basis,llm_reason
+TC-001,FR-1,COV-001,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",item created,Medium,3.0,Medium,Functional,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Verify core behavior: add item to list,
+TC-002,FR-1,COV-001,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",item created,Medium,3.0,Medium,Functional,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Verify core behavior: add item to list,
+TC-003,FR-1,COV-002,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",item created,Medium,3.0,Medium,Input,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Test input field 'listId' with valid and invalid data,
+TC-004,FR-1,COV-002,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",item created,Medium,3.0,Medium,Input,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Test input field 'listId' with valid and invalid data,
+TC-005,FR-1,COV-003,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",item created,Medium,3.0,Medium,Input,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Test input field 'title' with valid and invalid data,
+TC-006,FR-1,COV-003,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",item created,Medium,3.0,Medium,Input,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Test input field 'title' with valid and invalid data,
+TC-007,FR-1,COV-004,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: All required conditions are true,
+TC-008,FR-1,COV-004,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: At least one required condition is false,
+TC-009,FR-1,COV-005,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",item created,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-010,FR-1,COV-005,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",item created,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-011,FR-1,COV-005,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",item created,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-012,FR-1,COV-005,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,"valid listId, single character title",1. Provide valid listId and single char title. 2. Submit.,item created,Medium,3.0,Medium,,Partial,LLM missing test case suggestion,LLM identified missing coverage in existing test cases.,Missing boundary title test
+TC-022,FR-3,COV-010,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",title updated or item deleted,Medium,3.0,Medium,Functional,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Verify core behavior: edit title or delete if empty,
+TC-023,FR-3,COV-010,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",title updated or item deleted,Medium,3.0,Medium,Functional,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Verify core behavior: edit title or delete if empty,
+TC-024,FR-3,COV-011,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",title updated or item deleted,Medium,3.0,Medium,Input,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Test input field 'itemId' with valid and invalid data,
+TC-025,FR-3,COV-011,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",title updated or item deleted,Medium,3.0,Medium,Input,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Test input field 'itemId' with valid and invalid data,
+TC-026,FR-3,COV-012,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",title updated or item deleted,Medium,3.0,Medium,Input,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Test input field 'newTitle' with valid and invalid data,
+TC-027,FR-3,COV-012,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",title updated or item deleted,Medium,3.0,Medium,Input,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Test input field 'newTitle' with valid and invalid data,
+TC-028,FR-3,COV-013,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: All required conditions are true,
+TC-029,FR-3,COV-013,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: At least one required condition is false,
+TC-030,FR-3,COV-014,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",title updated or item deleted,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-031,FR-3,COV-014,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",title updated or item deleted,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-032,FR-3,COV-014,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",title updated or item deleted,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-042,FR-5,COV-019,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",all completed or active,Medium,3.0,Medium,Functional,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Verify core behavior: all items toggled,
+TC-043,FR-5,COV-019,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",all completed or active,Medium,3.0,Medium,Functional,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Verify core behavior: all items toggled,
+TC-044,FR-5,COV-020,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",all completed or active,Medium,3.0,Medium,Input,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Test input field 'control' with valid and invalid data,
+TC-045,FR-5,COV-020,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",all completed or active,Medium,3.0,Medium,Input,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Test input field 'control' with valid and invalid data,
+TC-046,FR-5,COV-021,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: All required conditions are true,
+TC-047,FR-5,COV-021,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: At least one required condition is false,
+TC-048,FR-5,COV-022,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",all completed or active,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-049,FR-5,COV-022,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",all completed or active,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-050,FR-5,COV-022,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",all completed or active,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-060,FR-7,COV-027,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",completed items removed,Medium,3.0,Medium,Functional,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Verify core behavior: delete all completed,
+TC-061,FR-7,COV-027,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",completed items removed,Medium,3.0,Medium,Functional,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Verify core behavior: delete all completed,
+TC-062,FR-7,COV-028,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",completed items removed,Medium,3.0,Medium,Input,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Test input field 'clearButton' with valid and invalid data,
+TC-063,FR-7,COV-028,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",completed items removed,Medium,3.0,Medium,Input,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Test input field 'clearButton' with valid and invalid data,
+TC-064,FR-7,COV-029,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: All required conditions are true,
+TC-065,FR-7,COV-029,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: At least one required condition is false,
+TC-066,FR-7,COV-030,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",completed items removed,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-067,FR-7,COV-030,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",completed items removed,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-068,FR-7,COV-030,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",completed items removed,Medium,3.0,Medium,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-069,FR-1,COV-AI-001,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",item created,Medium,3.0,Medium,Error,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Add item with empty title (whitespace only) should not create item,
+TC-070,FR-1,COV-AI-001,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",item created,Medium,3.0,Medium,Error,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Add item with empty title (whitespace only) should not create item,
+TC-071,FR-3,COV-AI-002,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",title updated or item deleted,Medium,3.0,Medium,Error,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Edit item to empty title should delete item,
+TC-072,FR-3,COV-AI-002,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",title updated or item deleted,Medium,3.0,Medium,Error,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Edit item to empty title should delete item,
+TC-073,FR-5,COV-AI-003,State Transition Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 state transition testing,The system under test is available and the relevant feature can be exercised.,"Transition scenario for: Toggle all from mixed state (some completed, some active)","1. Establish the source state
+2. Trigger the transition event
+3. Verify the target state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state.",Medium,3.0,Medium,State Transition,Partial,Rule fallback - State Transition,"Toggle all from mixed state (some completed, some active)",
+TC-074,FR-7,COV-AI-004,State Transition Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 state transition testing,The system under test is available and the relevant feature can be exercised.,Transition scenario for: Clear completed when no items are completed,"1. Establish the source state
+2. Trigger the transition event
+3. Verify the target state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state.",Medium,3.0,Medium,State Transition,Partial,Rule fallback - State Transition,Clear completed when no items are completed,
+TC-016,FR-2,COV-007,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",completed status toggled,Low,1.0,Low,Input,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Test input field 'itemId' with valid and invalid data,
+TC-017,FR-2,COV-008,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Low,1.0,Low,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: All required conditions are true,
+TC-018,FR-2,COV-008,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Low,1.0,Low,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: At least one required condition is false,
+TC-019,FR-2,COV-009,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",completed status toggled,Low,1.0,Low,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-020,FR-2,COV-009,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",completed status toggled,Low,1.0,Low,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-021,FR-2,COV-009,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",completed status toggled,Low,1.0,Low,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-033,FR-4,COV-015,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",item removed,Low,1.0,Low,Functional,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Verify core behavior: delete item,
+TC-034,FR-4,COV-015,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",item removed,Low,1.0,Low,Functional,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Verify core behavior: delete item,
+TC-035,FR-4,COV-016,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",item removed,Low,1.0,Low,Input,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Test input field 'itemId' with valid and invalid data,
+TC-036,FR-4,COV-016,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",item removed,Low,1.0,Low,Input,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Test input field 'itemId' with valid and invalid data,
+TC-037,FR-4,COV-017,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Low,1.0,Low,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: All required conditions are true,
+TC-038,FR-4,COV-017,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Low,1.0,Low,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: At least one required condition is false,
+TC-039,FR-4,COV-018,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",item removed,Low,1.0,Low,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-040,FR-4,COV-018,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",item removed,Low,1.0,Low,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-041,FR-4,COV-018,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",item removed,Low,1.0,Low,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-051,FR-6,COV-023,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",items filtered by status,Low,1.0,Low,Functional,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Verify core behavior: filter items,
+TC-052,FR-6,COV-023,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",items filtered by status,Low,1.0,Low,Functional,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Verify core behavior: filter items,
+TC-053,FR-6,COV-024,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",items filtered by status,Low,1.0,Low,Input,Partial,Rule fallback - EP valid partition,Valid equivalence partition for: Test input field 'filter' with valid and invalid data,
+TC-054,FR-6,COV-024,Equivalence Partitioning,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",items filtered by status,Low,1.0,Low,Input,Partial,Rule fallback - EP invalid partition,Invalid equivalence partition for: Test input field 'filter' with valid and invalid data,
+TC-055,FR-6,COV-025,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Low,1.0,Low,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: All required conditions are true,
+TC-056,FR-6,COV-025,Decision Table Testing,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Low,1.0,Low,Condition,Partial,Rule fallback - Decision Table,Decision rule based on requirement conditions: At least one required condition is false,
+TC-057,FR-6,COV-026,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",items filtered by status,Low,1.0,Low,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-058,FR-6,COV-026,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",items filtered by status,Low,1.0,Low,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,
+TC-059,FR-6,COV-026,Boundary Value Analysis,ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",items filtered by status,Low,1.0,Low,Boundary,Partial,Rule fallback - BVA,Values are selected on and around identifiable or inferred boundaries.,

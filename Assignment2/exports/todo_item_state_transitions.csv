@@ -1,0 +1,46 @@
+sequence_id,transition_id,coverage_goal,optimization_rule,reset_required,source_state,event,guard,test_data,target_state,precondition,steps,expected_result
+OPT-TRANS-001,TR-001,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Empty List,Add valid item,title is not whitespace only,title: 'Buy milk',Active Items,The system is in source state: Empty List.,"1. Reset or navigate the system to the source state
+2. Establish source state: Empty List
+3. Apply event/action: Add valid item
+4. Observe the resulting system state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.
+OPT-TRANS-002,TR-003,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Active Items,Toggle item completed,item exists,item index: 0,Completed Items,The system is in source state: Active Items.,"1. Establish source state: Active Items
+2. Apply event/action: Toggle item completed
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-003,TR-004,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Completed Items,Toggle item active,item exists,item index: 0,Active Items,The system is in source state: Completed Items.,"1. Establish source state: Completed Items
+2. Apply event/action: Toggle item active
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-004,TR-005,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Active Items,Double-click item,item exists,item index: 0,Editing Item,The system is in source state: Active Items.,"1. Establish source state: Active Items
+2. Apply event/action: Double-click item
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-005,TR-006,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Editing Item,Save non-empty title,title is not empty,new title: 'Buy eggs',Active Items,The system is in source state: Editing Item.,"1. Establish source state: Editing Item
+2. Apply event/action: Save non-empty title
+3. Observe the resulting system state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.
+OPT-TRANS-006,TR-008,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Active Items,Delete item,item exists,item index: 0,Empty List,The system is in source state: Active Items.,"1. Establish source state: Active Items
+2. Apply event/action: Delete item
+3. Observe the resulting system state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.
+OPT-TRANS-007,TR-002,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Empty List,Add invalid item,title is whitespace only,title: '   ',Empty List,The system is in source state: Empty List.,"1. Establish source state: Empty List
+2. Apply event/action: Add invalid item
+3. Observe the resulting system state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.
+OPT-TRANS-008,TR-007,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Editing Item,Save empty title,title is empty,new title: '',Empty List,The system is in source state: Editing Item.,"1. Reset or navigate the system to the source state
+2. Establish source state: Editing Item
+3. Apply event/action: Save empty title
+4. Observe the resulting system state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.
+OPT-TRANS-009,TR-009,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Mixed Items,Toggle all to completed,any active items exist,,Completed Items,The system is in source state: Mixed Items.,"1. Reset or navigate the system to the source state
+2. Establish source state: Mixed Items
+3. Apply event/action: Toggle all to completed
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-010,TR-013,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Completed Items,Clear completed,completed items exist,,Empty List,The system is in source state: Completed Items.,"1. Establish source state: Completed Items
+2. Apply event/action: Clear completed
+3. Observe the resulting system state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.
+OPT-TRANS-011,TR-010,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Mixed Items,Toggle all to active,any completed items exist,,Active Items,The system is in source state: Mixed Items.,"1. Reset or navigate the system to the source state
+2. Establish source state: Mixed Items
+3. Apply event/action: Toggle all to active
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-012,TR-011,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Mixed Items,Filter by Active,filter selected,filter: Active,Active Items,The system is in source state: Mixed Items.,"1. Reset or navigate the system to the source state
+2. Establish source state: Mixed Items
+3. Apply event/action: Filter by Active
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-013,TR-012,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Mixed Items,Filter by Completed,filter selected,filter: Completed,Completed Items,The system is in source state: Mixed Items.,"1. Reset or navigate the system to the source state
+2. Establish source state: Mixed Items
+3. Apply event/action: Filter by Completed
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
