@@ -1,3 +1,4 @@
+import hashlib
 import re
 
 import pandas as pd
@@ -25,7 +26,6 @@ from src.persistence import (
     load_project,
     save_project,
 )
-from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import enhance_requirements_with_llm, structure_requirements
 from src.risk_analyzer import analyze_risks_with_llm_fallback
 from src.state_modeler import (
@@ -180,6 +180,50 @@ def inject_style() -> None:
           height: 18px;
           color: var(--primary);
         }
+        .muted-copy {
+          color: #6f6b63;
+          font-size: 0.94rem;
+          line-height: 1.5;
+          margin: 0 0 1.05rem;
+        }
+        .input-method-title {
+          color: var(--ink);
+          font-size: 0.98rem;
+          font-weight: 560;
+          margin: 0 0 .25rem;
+        }
+        .input-method-help {
+          color: #6f6b63;
+          font-size: 0.88rem;
+          line-height: 1.45;
+          margin: 0 0 .65rem;
+        }
+        .csv-sample {
+          border: 1px solid var(--line);
+          background: rgba(255, 255, 255, 0.58);
+          border-radius: 8px;
+          color: #3f3d38;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-size: 0.78rem;
+          line-height: 1.55;
+          margin: 0 0 .8rem;
+          overflow-x: auto;
+          padding: .72rem .8rem;
+          white-space: pre;
+        }
+        div[data-testid="stMarkdownPre"] {
+          border: 1px solid var(--line);
+          background: rgba(255, 255, 255, 0.58);
+          border-radius: 8px;
+          color: #3f3d38;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+          font-size: 0.78rem;
+          line-height: 1.55;
+          margin: 0 0 .8rem;
+          overflow-x: auto;
+          padding: .72rem .8rem;
+          white-space: pre;
+        }
         .stButton>button, .stDownloadButton>button {
           border-radius: 6px;
           border: 1px solid #cfc8bc;
@@ -197,6 +241,23 @@ def inject_style() -> None:
           border: 1px solid var(--line);
           border-radius: 8px;
           overflow: hidden;
+        }
+        div[data-testid="stFileUploader"] section {
+          background: rgba(255, 255, 255, 0.58);
+          border: 1px solid var(--line);
+          border-radius: 8px;
+        }
+        div[data-testid="stTextArea"] textarea {
+          background: rgba(255, 255, 255, 0.7);
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          color: var(--ink);
+          font-size: 0.92rem;
+          line-height: 1.45;
+        }
+        div[data-testid="stTextArea"] textarea::placeholder {
+          color: #7a766f;
+          opacity: 1;
         }
         @media (max-width: 800px) {
           div.block-container { padding: 1.25rem .9rem 2rem; }
@@ -231,6 +292,10 @@ def section_header(title: str, icon: str) -> None:
 def init_state() -> None:
     if "requirements" not in st.session_state:
         st.session_state.requirements = empty_requirements()
+    if "uploaded_requirements_signature" not in st.session_state:
+        st.session_state.uploaded_requirements_signature = None
+    if "last_export_paths" not in st.session_state:
+        st.session_state.last_export_paths = None
     if "selected_provider" not in st.session_state:
         st.session_state.selected_provider = available_provider_names()[0]
     if "selected_model" not in st.session_state:
@@ -900,7 +965,16 @@ def render_export_paths(paths: dict[str, object]) -> None:
                 "folder": folder,
             }
         )
-    st.dataframe(pd.DataFrame(rows), hide_index=True, use_container_width=True)
+    st.dataframe(
+        pd.DataFrame(rows),
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            "artifact": st.column_config.TextColumn("artifact", width="medium"),
+            "file": st.column_config.TextColumn("file", width="large"),
+            "folder": st.column_config.TextColumn("folder", width="large"),
+        },
+    )
 
 
 def render_test_design_llm_summary(result: dict | None) -> None:
@@ -1105,49 +1179,77 @@ if page != "Requirement Input":
 if page == "Requirement Input":
     with st.container():
         section_header("Requirement Input", "file")
-        st.caption(
-            "Import CSV requirements, paste plain text, or edit the table directly."
+        st.markdown(
+            '<p class="muted-copy">Import CSV requirements, paste plain text, or edit the table directly.</p>',
+            unsafe_allow_html=True,
         )
-
-        if st.button("Load Sample Requirements"):
-            save_requirements(load_sample_requirements())
-            st.toast("Sample requirements loaded.")
 
         upload_col, text_col = st.columns([1, 1], gap="medium")
         with upload_col:
-            uploaded_file = st.file_uploader("Upload CSV requirements", type=["csv"])
+            st.markdown(
+                '<div class="input-method-title">CSV upload</div>'
+                '<p class="input-method-help">Use exactly three columns named '
+                '<code>requirement_id</code>, <code>module</code>, and '
+                '<code>requirement_text</code>.</p>'
+                '<pre class="csv-sample">requirement_id,module,requirement_text\n'
+                'FR-11,TodoItem / Functional,Users shall be able to add a new Todo item\n'
+                'FR-12,TodoItem / Functional,Users shall be able to mark or unmark a Todo item</pre>',
+                unsafe_allow_html=True,
+            )
+            uploaded_file = st.file_uploader(
+                "Upload CSV requirements",
+                type=["csv"],
+                label_visibility="collapsed",
+            )
             if uploaded_file is not None:
-                uploaded_requirements = pd.read_csv(uploaded_file)
-                required_columns = {"requirement_id", "module", "requirement_text"}
-                if required_columns.issubset(uploaded_requirements.columns):
-                    save_requirements(
-                        uploaded_requirements[
-                            ["requirement_id", "module", "requirement_text"]
-                        ].copy()
+                uploaded_bytes = uploaded_file.getvalue()
+                upload_signature = (
+                    uploaded_file.name,
+                    hashlib.sha256(uploaded_bytes).hexdigest(),
+                )
+                if upload_signature != st.session_state.uploaded_requirements_signature:
+                    uploaded_requirements = pd.read_csv(
+                        pd.io.common.BytesIO(uploaded_bytes)
                     )
-                    st.toast("CSV requirements loaded.")
-                else:
-                    st.error(
-                        "CSV must include requirement_id, module, and requirement_text columns."
-                    )
+                    required_columns = [
+                        "requirement_id",
+                        "module",
+                        "requirement_text",
+                    ]
+                    if list(uploaded_requirements.columns) == required_columns and isinstance(
+                        uploaded_requirements.index, pd.RangeIndex
+                    ):
+                        save_requirements(uploaded_requirements[required_columns].copy())
+                        st.session_state.uploaded_requirements_signature = (
+                            upload_signature
+                        )
+                        st.toast("CSV requirements loaded.")
+                    else:
+                        st.error(
+                            "Invalid CSV format. Use exactly three columns named "
+                            "requirement_id,module,requirement_text. If you need "
+                            "a category such as Functional, include it inside module, "
+                            "for example TodoItem / Functional."
+                        )
 
         with text_col:
+            st.markdown(
+                '<div class="input-method-title">Plain text input</div>'
+                '<p class="input-method-help">Optional format: '
+                '<code>[Module] REQ-001: requirement text</code>. Missing modules '
+                'default to General, and missing IDs are generated automatically.</p>',
+                unsafe_allow_html=True,
+            )
             raw_requirements = st.text_area(
                 "Paste plain-text requirements",
                 placeholder=(
                     "[Todo Creation] REQ-001: When the todo input is not empty, "
                     "the user can add a new todo item by clicking Add.\n"
-                    "[Todo Validation] REQ-002: When the todo input is empty or "
-                    "only contains spaces, clicking Add should not create a new todo item.\n"
-                    "[Todo Filtering] REQ-003: The user can filter todos by All, "
+                    "[Todo Filtering] REQ-002: The user can filter todos by All, "
                     "Active, and Completed."
                 ),
-                help=(
-                    "Optional format: [Module] REQ-001: requirement text. "
-                    "If [Module] is omitted, module defaults to General. "
-                    "If REQ-001 is omitted, IDs are generated automatically."
-                ),
-                height=120,
+                label_visibility="collapsed",
+                height=110,
             )
             if st.button("Use Text Requirements"):
                 parsed_requirements = requirements_from_text(raw_requirements)
@@ -1550,11 +1652,14 @@ if page == "Persistence & Export":
                 state_sequences=artifacts["state_transition_sequences"],
                 prefix=st.session_state.project_name,
             )
+            st.session_state.last_export_paths = paths
             st.toast("Full artifact export completed.")
-            render_export_paths(paths)
     with row2_cols[2]:
         if st.button("Export Selenium/PyTest Draft"):
             path = export_selenium_pytest_draft(artifacts["optimized_test_cases"])
             st.toast(f"Saved to {path}")
 
-    st.dataframe(artifacts["performance"])
+    if st.session_state.last_export_paths:
+        render_export_paths(st.session_state.last_export_paths)
+
+    st.dataframe(artifacts["performance"], use_container_width=True)
