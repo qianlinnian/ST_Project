@@ -451,6 +451,43 @@ def display_risk_analysis() -> pd.DataFrame:
     ).copy()
 
 
+def sort_risk_analysis(risk_analysis: pd.DataFrame, sort_option: str) -> pd.DataFrame:
+    if risk_analysis is None or risk_analysis.empty:
+        return pd.DataFrame()
+
+    sorted_risks = risk_analysis.copy()
+    level_order = {"High": 0, "Medium": 1, "Low": 2}
+
+    if sort_option == "Risk level (High first)" and "risk_level" in sorted_risks.columns:
+        sorted_risks["_risk_level_order"] = (
+            sorted_risks["risk_level"].map(level_order).fillna(99)
+        )
+        sort_columns = ["_risk_level_order"]
+        ascending = [True]
+        if "risk_score" in sorted_risks.columns:
+            sort_columns.append("risk_score")
+            ascending.append(False)
+        sorted_risks = sorted_risks.sort_values(
+            sort_columns,
+            ascending=ascending,
+            kind="stable",
+        ).drop(columns=["_risk_level_order"])
+    elif sort_option == "Risk score (High first)" and "risk_score" in sorted_risks.columns:
+        sorted_risks = sorted_risks.sort_values(
+            "risk_score",
+            ascending=False,
+            kind="stable",
+        )
+    elif sort_option == "Risk score (Low first)" and "risk_score" in sorted_risks.columns:
+        sorted_risks = sorted_risks.sort_values(
+            "risk_score",
+            ascending=True,
+            kind="stable",
+        )
+
+    return sorted_risks.reset_index(drop=True)
+
+
 def normalize_requirements(requirements: pd.DataFrame) -> tuple[pd.DataFrame, list[str]]:
     messages = []
     rows = []
@@ -1334,11 +1371,26 @@ if page == "Risk Analysis":
     if artifacts["risk_analysis"].empty:
         st.info("Structure requirements on the Requirement Input page, then run risk analysis.")
     else:
+        sort_option = st.selectbox(
+            "Sort risk table",
+            [
+                "Original order",
+                "Risk level (High first)",
+                "Risk score (High first)",
+                "Risk score (Low first)",
+            ],
+            index=0,
+        )
+        st.session_state.risk_analysis_draft = sort_risk_analysis(
+            st.session_state.risk_analysis_draft,
+            sort_option,
+        )
         edited_risks = st.data_editor(
             display_risk_analysis(),
             num_rows="dynamic",
-            key="risk_analysis_editor",
-                        hide_index=True,
+            key=f"risk_analysis_editor_{sort_option}",
+            hide_index=True,
+            width="stretch",
         )
         preserved = st.session_state.risk_analysis_draft[
             [

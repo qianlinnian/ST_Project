@@ -151,9 +151,9 @@ def _clean_json(text: str) -> dict:
 
 
 def _risk_level(score: int) -> str:
-    if score >= 7:
+    if score >= 6:
         return "High"
-    if score >= 4:
+    if score >= 3:
         return "Medium"
     return "Low"
 
