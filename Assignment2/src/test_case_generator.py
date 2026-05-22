@@ -15,6 +15,7 @@ from src.prompt_templates import (
     test_case_generation_prompt as build_test_case_generation_prompt,
 )
 from src.state_modeler import infer_state_model_from_requirements, generate_state_transition_tests
+from src.test_suite_designer import assign_test_suites_to_cases
 from src.test_strategy_selector import TECHNIQUE_STANDARDS
 
 PRIORITY_BY_RISK = {"High": "High", "Medium": "Medium", "Low": "Low"}
@@ -26,9 +27,9 @@ TECHNIQUE_CASE_LIMITS = {
     "State Transition Testing": 1,
 }
 REQUIRED_COLUMNS = [
-    "test_case_id", "requirement_id", "coverage_id", "technique", "technique_standard",
+    "test_case_id", "suite_id", "suite_name", "requirement_id", "coverage_id", "technique", "technique_standard",
     "precondition", "test_data", "steps", "expected_result", "priority", "risk_score",
-    "risk_level", "coverage_type", "automation_candidate", "source", "design_basis",
+    "risk_level", "suite_risk_level", "suite_priority", "coverage_type", "automation_candidate", "source", "design_basis",
 ]
 
 
@@ -72,6 +73,8 @@ def _case(idx: int, req_id: str, cov_id: str, tech: str, cov: dict, req: dict, d
     cov_text = _as_text(cov.get("description", ""))
     return {
         "test_case_id": f"TC-{idx:03d}",
+        "suite_id": "",
+        "suite_name": "",
         "requirement_id": req_id,
         "coverage_id": cov_id,
         "technique": tech,
@@ -83,6 +86,8 @@ def _case(idx: int, req_id: str, cov_id: str, tech: str, cov: dict, req: dict, d
         "priority": PRIORITY_BY_RISK.get(risk, "Medium"),
         "risk_score": RISK_SCORE_BY_LEVEL.get(risk, 3.0),
         "risk_level": risk,
+        "suite_risk_level": "",
+        "suite_priority": "",
         "coverage_type": cov.get("coverage_type", "Functional"),
         "automation_candidate": "Partial",
         "source": source,
@@ -605,6 +610,7 @@ def _compact_text(value, limit: int) -> str:
 
 
 def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame,
+                        test_suites: pd.DataFrame | None = None,
                         include_state_tests: bool = True, provider: str | None = None,
                         model: str | None = None, use_llm: bool = True,
                         batch_size: int | None = None,
@@ -621,7 +627,7 @@ def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, stra
                 concurrency=concurrency,
             )
             return improve_oracles_with_llm(
-                generated,
+                assign_test_suites_to_cases(generated, test_suites) if test_suites is not None else generated,
                 provider=provider,
                 model=model,
                 use_llm=True,
@@ -630,7 +636,10 @@ def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, stra
             )
         except Exception as exc:
             fallback = _fallback(requirements, coverage, strategies, include_state_tests)
+            if test_suites is not None:
+                fallback = assign_test_suites_to_cases(fallback, test_suites)
             fallback["llm_error"] = str(exc)
             fallback["source"] = fallback["source"].astype(str) + " after LLM fallback"
             return fallback
-    return _fallback(requirements, coverage, strategies, include_state_tests)
+    generated = _fallback(requirements, coverage, strategies, include_state_tests)
+    return assign_test_suites_to_cases(generated, test_suites) if test_suites is not None else generated

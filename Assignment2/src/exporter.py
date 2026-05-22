@@ -98,6 +98,8 @@ def build_traceability_matrix(
         column
         for column in [
             "test_case_id",
+            "suite_id",
+            "suite_name",
             "requirement_id",
             "coverage_id",
             "technique",
@@ -138,6 +140,8 @@ def build_traceability_matrix(
         "requirement_text",
         "module",
         "coverage_id",
+        "suite_id",
+        "suite_name",
         "coverage_description",
         "coverage_type",
         "related_techniques",
@@ -166,21 +170,33 @@ def export_test_artifacts(
     coverage_items: pd.DataFrame,
     strategies: pd.DataFrame,
     test_cases: pd.DataFrame,
+    optimized_test_cases: pd.DataFrame | None = None,
     state_sequences: pd.DataFrame | None = None,
     prefix: str = "autotestdesign",
+    test_suites: pd.DataFrame | None = None,
 ) -> dict[str, Path]:
+    final_suite = optimized_test_cases if optimized_test_cases is not None else test_cases
     traceability = build_traceability_matrix(
         structured_requirements,
         coverage_items,
         strategies,
-        test_cases,
+        final_suite,
     )
     artifacts = {
         "requirements_csv": export_csv(structured_requirements, f"{prefix}_requirements_structured.csv"),
         "coverage_csv": export_csv(coverage_items, f"{prefix}_coverage_items.csv"),
         "strategies_csv": export_csv(strategies, f"{prefix}_test_strategies.csv"),
+        "test_suites_csv": export_csv(test_suites if test_suites is not None else pd.DataFrame(), f"{prefix}_test_suites.csv"),
         "test_cases_csv": export_csv(test_cases, f"{prefix}_test_cases.csv"),
-        "test_suite_json": export_json(test_cases, f"{prefix}_test_suite.json"),
+        "optimized_test_suite_csv": export_csv(final_suite, f"{prefix}_optimized_test_suite.csv"),
+        "test_suite_json": export_json(
+            {
+                "test_suites": (test_suites if test_suites is not None else pd.DataFrame()).to_dict("records"),
+                "test_cases": test_cases.to_dict("records"),
+                "optimized_test_cases": final_suite.to_dict("records"),
+            },
+            f"{prefix}_test_suite.json",
+        ),
         "traceability_excel": export_excel(traceability, f"{prefix}_traceability_matrix.xlsx"),
     }
 
@@ -188,7 +204,9 @@ def export_test_artifacts(
         "Requirements": structured_requirements,
         "Coverage": coverage_items,
         "Strategies": strategies,
+        "Test Suites": test_suites if test_suites is not None else pd.DataFrame(),
         "Test Cases": test_cases,
+        "Optimized Test Suite": final_suite,
         "Traceability": traceability,
     }
 
@@ -214,6 +232,8 @@ def export_selenium_pytest_draft(
     path = EXPORT_DIR / _safe_filename(filename)
     fields = [
         "test_case_id",
+        "suite_id",
+        "suite_name",
         "requirement_id",
         "coverage_id",
         "technique",

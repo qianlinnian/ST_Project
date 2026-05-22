@@ -58,13 +58,14 @@ def prioritize_suite(test_cases: pd.DataFrame) -> pd.DataFrame:
     data = test_cases.copy()
     
     # 创建排序辅助列
+    data["_suite_risk_order"] = data.get("suite_risk_level", data.get("risk_level", "Medium")).map(RISK_LEVEL_ORDER).fillna(3)
     data["_priority_order"] = data.get("priority", "Medium").map(PRIORITY_ORDER).fillna(3)
     data["_risk_level_order"] = data.get("risk_level", "Medium").map(RISK_LEVEL_ORDER).fillna(3)
     data["_risk_score_order"] = pd.to_numeric(data.get("risk_score", 0), errors="coerce").fillna(0)
     
     # 按优先级、风险等级、风险分数排序
-    sort_columns = ["_priority_order", "_risk_level_order", "_risk_score_order"]
-    data = data.sort_values(sort_columns, ascending=[True, True, False])
+    sort_columns = ["_suite_risk_order", "_priority_order", "_risk_level_order", "_risk_score_order"]
+    data = data.sort_values(sort_columns, ascending=[True, True, True, False])
     
     # 删除辅助列并重置索引
     return data.drop(columns=sort_columns).reset_index(drop=True)

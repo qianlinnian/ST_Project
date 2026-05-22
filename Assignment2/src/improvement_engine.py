@@ -13,6 +13,7 @@ from src.prompt_templates import (
     suite_optimization_review_prompt,
 )
 from src.suite_optimizer import optimize_suite
+from src.test_suite_designer import assign_test_suites_to_cases
 from src.test_case_generator import (
     limit_generated_test_case_volume,
     renumber_test_case_ids,
@@ -225,6 +226,8 @@ def review_suite_optimization_with_llm(
 
 def improve_optimized_suite_with_llm(
     optimized_test_cases: pd.DataFrame,
+    test_suites: pd.DataFrame | None = None,
+    coverage_items: pd.DataFrame | None = None,
     provider: str | None = None,
     model: str | None = None,
     use_llm: bool = True,
@@ -243,15 +246,16 @@ def improve_optimized_suite_with_llm(
         }
 
     local_suite = optimize_suite(optimized_test_cases)
-    records = local_suite.to_dict("records")
+    suite_batches = _suite_minimization_groups(local_suite, test_suites, coverage_items)
 
     def review_batch(_batch_index: int, batch: list[dict]) -> dict[str, Any]:
+        suite_payload = batch[0]
         parsed = call_json_completion(
             COMPACT_SUITE_MINIMIZATION_SYSTEM,
-            _compact_suite_minimization_prompt(batch),
+            _compact_suite_minimization_prompt(suite_payload),
             provider=provider,
             model=model,
-            max_tokens=max(700, 80 * len(batch) + 300),
+            max_tokens=max(700, 80 * len(suite_payload.get("test_cases", [])) + 300),
             task_label="Suite LLM Minimization",
         )
         return parsed
@@ -260,8 +264,8 @@ def improve_optimized_suite_with_llm(
         return {"keep": [], "drop": [], "llm_error": str(exc)}
 
     batch_results, _ = run_parallel_batches(
-        records,
-        batch_size=batch_size or env_int("AUTOTESTDESIGN_LLM_BATCH_SIZE", 25, 1, 100),
+        suite_batches,
+        batch_size=1,
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
@@ -277,12 +281,73 @@ def improve_optimized_suite_with_llm(
     }
 
 
-def _compact_suite_minimization_prompt(batch: list[dict]) -> str:
-    lines = ["id|req|cov|tech|priority|risk|data|expected|basis"]
-    for row in batch:
+def _suite_minimization_groups(
+    test_cases: pd.DataFrame,
+    test_suites: pd.DataFrame | None = None,
+    coverage_items: pd.DataFrame | None = None,
+) -> list[dict[str, Any]]:
+    if test_cases.empty:
+        return []
+    suite_lookup = (
+        test_suites.set_index("suite_id").to_dict("index")
+        if test_suites is not None and not test_suites.empty and "suite_id" in test_suites.columns
+        else {}
+    )
+    coverage_lookup = (
+        coverage_items.set_index("coverage_id").to_dict("index")
+        if coverage_items is not None and not coverage_items.empty and "coverage_id" in coverage_items.columns
+        else {}
+    )
+    group_column = "suite_id" if "suite_id" in test_cases.columns and test_cases["suite_id"].astype(str).str.strip().any() else None
+    groups = test_cases.groupby(group_column, sort=False) if group_column else [("UNASSIGNED", test_cases)]
+    payloads = []
+    for suite_id, group in groups:
+        suite_id = str(suite_id)
+        suite = suite_lookup.get(suite_id, {})
+        coverage_ids = sorted(set(group.get("coverage_id", pd.Series(dtype=str)).astype(str)))
+        payloads.append(
+            {
+                "suite_id": suite_id,
+                "suite_name": suite.get("suite_name", group.iloc[0].get("suite_name", "") if "suite_name" in group.columns else ""),
+                "suite_objective": suite.get("suite_objective", ""),
+                "suite_risk_level": suite.get("risk_level", group.iloc[0].get("suite_risk_level", "") if "suite_risk_level" in group.columns else ""),
+                "coverage_items": [
+                    {"coverage_id": coverage_id, **coverage_lookup.get(coverage_id, {})}
+                    for coverage_id in coverage_ids
+                ],
+                "test_cases": group.to_dict("records"),
+            }
+        )
+    return payloads
+
+
+def _compact_suite_minimization_prompt(suite_payload: dict[str, Any]) -> str:
+    lines = [
+        f"SUITE|{_compact_text(suite_payload.get('suite_id', ''), 40)}|"
+        f"{_compact_text(suite_payload.get('suite_name', ''), 100)}|"
+        f"{_compact_text(suite_payload.get('suite_risk_level', ''), 20)}|"
+        f"{_compact_text(suite_payload.get('suite_objective', ''), 220)}",
+        "COV|id|req|type|risk|desc",
+    ]
+    for coverage in suite_payload.get("coverage_items", []):
         lines.append(
             "|".join(
                 [
+                    "COV",
+                    _compact_text(coverage.get("coverage_id", ""), 40),
+                    _compact_text(coverage.get("requirement_id", ""), 60),
+                    _compact_text(coverage.get("coverage_type", ""), 60),
+                    _compact_text(coverage.get("risk_level", "Medium"), 20),
+                    _compact_text(coverage.get("description", ""), 180),
+                ]
+            )
+        )
+    lines.append("CASE|id|req|cov|tech|priority|risk|data|expected|basis")
+    for row in suite_payload.get("test_cases", []):
+        lines.append(
+            "|".join(
+                [
+                    "CASE",
                     _compact_text(row.get("test_case_id", ""), 40),
                     _compact_text(row.get("requirement_id", ""), 60),
                     _compact_text(row.get("coverage_id", ""), 60),
@@ -349,6 +414,13 @@ def _apply_suite_minimization(
     minimized = optimized_test_cases[
         ~optimized_test_cases["test_case_id"].astype(str).isin(safe_drop_ids)
     ].copy()
+    if "suite_id" in optimized_test_cases.columns and "suite_id" in minimized.columns:
+        missing_suite_ids = set(optimized_test_cases["suite_id"].astype(str)) - set(minimized["suite_id"].astype(str))
+        if missing_suite_ids:
+            rescue = optimized_test_cases[
+                optimized_test_cases["suite_id"].astype(str).isin(missing_suite_ids)
+            ].groupby("suite_id", sort=False).head(1)
+            minimized = pd.concat([minimized, rescue], ignore_index=True)
     return optimize_suite(minimized)
 
 
@@ -405,6 +477,7 @@ def generate_improved_test_design_with_llm(
     use_llm: bool = True,
     batch_size: int | None = None,
     concurrency: int | None = None,
+    test_suites: pd.DataFrame | None = None,
 ) -> dict[str, pd.DataFrame]:
     missing_cases = suggest_missing_test_cases_with_llm(
         requirements,
@@ -428,6 +501,8 @@ def generate_improved_test_design_with_llm(
         additions = additions[base_columns + [col for col in additions.columns if col not in base_columns]]
         enhanced_cases = pd.concat([existing_test_cases, additions], ignore_index=True)
         enhanced_cases = renumber_test_case_ids(limit_generated_test_case_volume(enhanced_cases))
+    if test_suites is not None:
+        enhanced_cases = assign_test_suites_to_cases(enhanced_cases, test_suites)
 
     optimized_cases = optimize_suite(enhanced_cases)
     return {
