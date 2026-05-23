@@ -1,8 +1,0 @@
-requirement_id,module,requirement_text,input_fields,data_ranges,conditions,actions,expected_results
-FR-1,TodoItem,Users shall be able to add a new Todo item to a specified List; input consisting only of whitespace shall not create an item,"['listId', 'title']",['title:non-whitespace'],['title is not whitespace only'],['add item to list'],['item created']
-FR-2,TodoItem,Users shall be able to mark or unmark a Todo item as completed,['itemId'],['itemId:valid'],['item exists'],['toggle completed'],['completed status toggled']
-FR-3,TodoItem,Users shall be able to edit the text of a Todo item by double-clicking; saving an empty title shall delete the item,"['itemId', 'newTitle']",['newTitle:non-empty'],['double-click on item'],['edit title or delete if empty'],['title updated or item deleted']
-FR-4,TodoItem,Users shall be able to delete a single Todo item,['itemId'],['itemId:valid'],['item exists'],['delete item'],['item removed']
-FR-5,TodoItem,Users shall be able to toggle all Todo items to completed or active using a single control,['control'],['control:click'],['toggle all'],['all items toggled'],['all completed or active']
-FR-6,TodoItem,Users shall be able to filter Todo items by All Active or Completed status,['filter'],['filter:All|Active|Completed'],['select filter'],['filter items'],['items filtered by status']
-FR-7,TodoItem,Users shall be able to clear all completed Todo items at once,['clearButton'],['clearButton:click'],['clear completed'],['delete all completed'],['completed items removed']
