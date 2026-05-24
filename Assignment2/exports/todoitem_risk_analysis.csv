@@ -1,0 +1,8 @@
+risk_id,impact,likelihood,requirement_id,risk_description,risk_category,risk_score,risk_level,reason,test_suggestion,source
+RSK-1,2,2,REQ-1,The feature may not satisfy the required Todo behavior or input validation rule.,functional suitability,4,Medium,whitespace input validation missing,"Include valid, invalid, and boundary input tests.",LLM prompt analysis
+RSK-2,1,1,REQ-2,The feature may not satisfy the required Todo behavior or input validation rule.,functional suitability,1,Low,basic toggle functionality,"Include valid, invalid, and boundary input tests.",LLM prompt analysis
+RSK-3,2,2,REQ-3,The feature may not satisfy the required Todo behavior or input validation rule.,functional suitability,4,Medium,double-click edit risk,"Include valid, invalid, and boundary input tests.",LLM prompt analysis
+RSK-4,1,1,REQ-4,The feature may not satisfy the required Todo behavior or input validation rule.,functional suitability,1,Low,simple delete operation,"Include valid, invalid, and boundary input tests.",LLM prompt analysis
+RSK-5,2,2,REQ-5,The feature may not satisfy the required Todo behavior or input validation rule.,functional suitability,4,Medium,bulk toggle complexity,"Include valid, invalid, and boundary input tests.",LLM prompt analysis
+RSK-6,2,2,REQ-6,The feature may not satisfy the required Todo behavior or input validation rule.,functional suitability,4,Medium,filter logic risk,"Include valid, invalid, and boundary input tests.",LLM prompt analysis
+RSK-7,2,2,REQ-7,The feature may not satisfy the required Todo behavior or input validation rule.,functional suitability,4,Medium,bulk delete risk,"Include valid, invalid, and boundary input tests.",LLM prompt analysis

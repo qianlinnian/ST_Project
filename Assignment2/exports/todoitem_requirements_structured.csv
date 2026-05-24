@@ -1,0 +1,8 @@
+requirement_id,module,requirement_text,input_fields,data_ranges,conditions,actions,expected_results
+REQ-1,TodoItem,Users shall be able to add a new Todo item to a specified List; input consisting only of whitespace shall not create an item,['input'],['whitespace only'],['input is whitespace'],['add item'],['no item created']
+REQ-2,TodoItem,Users shall be able to mark or unmark a Todo item as completed,['item'],['completed status'],['user action'],['toggle completed'],['status changed']
+REQ-3,TodoItem,Users shall be able to edit the text of a Todo item by double-clicking; saving an empty title shall delete the item,"['item', 'title']",['empty title'],"['double-click', 'save empty']","['edit title', 'delete item']",['title updated or item deleted']
+REQ-4,TodoItem,Users shall be able to delete a single Todo item,['item'],[],['user action'],['delete item'],['item removed']
+REQ-5,TodoItem,Users shall be able to toggle all Todo items to completed or active using a single control,['control'],[],['user action'],['toggle all'],['all toggled']
+REQ-6,TodoItem,Users shall be able to filter Todo items by All Active or Completed status,['filter'],"['All', 'Active', 'Completed']",['select filter'],['apply filter'],['filtered list shown']
+REQ-7,TodoItem,Users shall be able to clear all completed Todo items at once,['completed items'],[],['user action'],['clear completed'],['completed items removed']
