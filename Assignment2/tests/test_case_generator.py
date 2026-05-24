@@ -196,6 +196,7 @@ def test_traceability_matrix_links_requirement_coverage_strategy_and_cases():
 
 def test_export_names_candidate_cases_and_optimized_suite_separately():
     structured, coverage, strategies, suites, test_cases = _pipeline()
+    risks = analyze_risks(structured)
     state_sequences = generate_optimized_transition_sequence(
         infer_state_model_from_requirements(structured)
     )
@@ -207,17 +208,30 @@ def test_export_names_candidate_cases_and_optimized_suite_separately():
         strategies,
         test_cases,
         optimized_test_cases=optimized,
+        risk_analysis=risks,
         test_suites=suites,
         state_sequences=state_sequences,
         state_model=state_model,
         prefix="pytest_suite_contract",
     )
+    assert paths["risk_analysis_csv"].name.endswith("_risk_analysis.csv")
+    assert paths["state_transitions_csv"].name.endswith("_state_transitions.csv")
     assert paths["test_cases_csv"].name.endswith("_test_cases.csv")
     assert paths["optimized_test_suite_csv"].name.endswith("_optimized_test_suite.csv")
+    exported_risks = pd.read_csv(paths["risk_analysis_csv"])
     exported_candidates = pd.read_csv(paths["test_cases_csv"])
     exported_optimized = pd.read_csv(paths["optimized_test_suite_csv"])
+    assert len(exported_risks) == len(risks)
     assert len(exported_candidates) == len(test_cases)
     assert len(exported_optimized) == len(optimized)
     payload = json.loads(paths["test_suite_json"].read_text(encoding="utf-8"))
-    assert {"test_suites", "test_cases", "optimized_test_cases", "state_transition_sequences", "state_model"}.issubset(payload)
+    assert {
+        "risk_analysis",
+        "test_suites",
+        "test_cases",
+        "optimized_test_cases",
+        "state_transition_sequences",
+        "state_model",
+    }.issubset(payload)
+    assert len(payload["risk_analysis"]) == len(risks)
     assert len(payload["state_transition_sequences"]) == len(state_sequences)

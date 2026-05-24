@@ -1,15 +1,42 @@
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
-from pprint import pformat
 from typing import Any, Mapping
+
+import json
 
 import pandas as pd
 
 
 EXPORT_DIR = Path(__file__).resolve().parents[1] / "exports"
+RISK_ANALYSIS_COLUMNS = [
+    "risk_id",
+    "requirement_id",
+    "risk_description",
+    "risk_category",
+    "impact",
+    "likelihood",
+    "risk_score",
+    "risk_level",
+    "reason",
+    "test_suggestion",
+]
+STATE_TRANSITION_COLUMNS = [
+    "sequence_id",
+    "transition_id",
+    "coverage_goal",
+    "optimization_rule",
+    "reset_required",
+    "source_state",
+    "event",
+    "guard",
+    "test_data",
+    "target_state",
+    "precondition",
+    "steps",
+    "expected_result",
+]
 
 
 def _ensure_export_dir() -> None:
@@ -20,14 +47,10 @@ def _safe_filename(filename: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
 
 
-def _clean_value(value: Any) -> Any:
-    if isinstance(value, (list, tuple)):
-        return [_clean_value(item) for item in value]
-    if isinstance(value, dict):
-        return {str(key): _clean_value(item) for key, item in value.items()}
-    if pd.isna(value):
-        return ""
-    return value
+def _with_default_columns(data: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    if data.empty and len(data.columns) == 0:
+        return pd.DataFrame(columns=columns)
+    return data
 
 
 def export_csv(data: pd.DataFrame, filename: str) -> Path:
@@ -171,6 +194,7 @@ def export_test_artifacts(
     strategies: pd.DataFrame,
     test_cases: pd.DataFrame,
     optimized_test_cases: pd.DataFrame | None = None,
+    risk_analysis: pd.DataFrame | None = None,
     state_sequences: pd.DataFrame | None = None,
     prefix: str = "autotestdesign",
     test_suites: pd.DataFrame | None = None,
@@ -185,23 +209,31 @@ def export_test_artifacts(
         final_suite,
     )
     test_suites = test_suites if test_suites is not None else pd.DataFrame()
-    state_sequences = state_sequences if state_sequences is not None else pd.DataFrame()
+    risk_analysis = _with_default_columns(
+        risk_analysis if risk_analysis is not None else pd.DataFrame(),
+        RISK_ANALYSIS_COLUMNS,
+    )
+    state_sequences = _with_default_columns(
+        state_sequences if state_sequences is not None else pd.DataFrame(),
+        STATE_TRANSITION_COLUMNS,
+    )
     export_format = str(export_format or "mixed").lower()
 
     excel_sheets = {
         "Requirements": structured_requirements,
-        "Coverage": coverage_items,
-        "Strategies": strategies,
+        "Risk Analysis": risk_analysis,
+        "Coverage Items": coverage_items,
+        "Test Strategies": strategies,
         "Test Suites": test_suites,
         "Test Cases": test_cases,
         "Optimized Test Suite": final_suite,
         "Traceability": traceability,
+        "State Transitions": state_sequences,
     }
-    if not state_sequences.empty:
-        excel_sheets["State Transitions"] = state_sequences
 
     json_payload = {
         "requirements": structured_requirements.to_dict("records"),
+        "risk_analysis": risk_analysis.to_dict("records"),
         "coverage_items": coverage_items.to_dict("records"),
         "test_strategies": strategies.to_dict("records"),
         "test_suites": test_suites.to_dict("records"),
@@ -230,28 +262,23 @@ def export_test_artifacts(
 
     artifacts = {
         "requirements_csv": export_csv(structured_requirements, f"{prefix}_requirements_structured.csv"),
+        "risk_analysis_csv": export_csv(risk_analysis, f"{prefix}_risk_analysis.csv"),
         "coverage_csv": export_csv(coverage_items, f"{prefix}_coverage_items.csv"),
         "strategies_csv": export_csv(strategies, f"{prefix}_test_strategies.csv"),
         "test_suites_csv": export_csv(test_suites, f"{prefix}_test_suites.csv"),
         "test_cases_csv": export_csv(test_cases, f"{prefix}_test_cases.csv"),
         "optimized_test_suite_csv": export_csv(final_suite, f"{prefix}_optimized_test_suite.csv"),
         "traceability_csv": export_csv(traceability, f"{prefix}_traceability_matrix.csv"),
+        "state_transitions_csv": export_csv(state_sequences, f"{prefix}_state_transitions.csv"),
     }
-
-    if not state_sequences.empty:
-        artifacts["state_transitions_csv"] = export_csv(
-            state_sequences,
-            f"{prefix}_state_transitions.csv",
-        )
 
     if export_format == "csv":
         return artifacts
 
     artifacts["test_suite_json"] = export_json(
         json_payload,
-        f"{prefix}_test_suite.json",
+        f"{prefix}_test_suite_artifacts.json",
     )
-    artifacts["traceability_excel"] = export_excel(traceability, f"{prefix}_traceability_matrix.xlsx")
     artifacts["test_design_excel"] = export_excel(
         excel_sheets,
         f"{prefix}_test_design_artifacts.xlsx",
@@ -259,63 +286,3 @@ def export_test_artifacts(
     return artifacts
 
 
-def export_selenium_pytest_draft(
-    test_cases: pd.DataFrame,
-    filename: str = "test_todolist_selenium_draft.py",
-) -> Path:
-    _ensure_export_dir()
-    path = EXPORT_DIR / _safe_filename(filename)
-    fields = [
-        "test_case_id",
-        "suite_id",
-        "suite_name",
-        "requirement_id",
-        "coverage_id",
-        "technique",
-        "test_data",
-        "steps",
-        "expected_result",
-        "priority",
-        "risk_level",
-        "source",
-        "design_basis",
-    ]
-    records = [
-        {field: _clean_value(case.get(field, "")) for field in fields}
-        for case in test_cases.to_dict("records")
-    ]
-
-    lines = [
-        '"""Selenium + PyTest draft generated by AutoTestDesign.',
-        "",
-        "This file maps generated test design cases to a future browser automation script.",
-        "It is not executable until the simpletodolist URL, selectors, actions, and assertions",
-        "are completed manually.",
-        '"""',
-        "",
-        "import pytest",
-        "",
-        'BASE_URL = "http://localhost:3000"',
-        f"GENERATED_CASES = {pformat(records, width=100, sort_dicts=False)}",
-        "",
-        "",
-        '@pytest.mark.parametrize("case", GENERATED_CASES)',
-        "def test_todolist_generated_case(case):",
-        "    pytest.skip(",
-        '        "Complete Selenium browser setup, selectors, actions, and assertions "',
-        '        "for simpletodolist before executing this draft."',
-        "    )",
-        "",
-        "    # TODO: Open BASE_URL with Selenium.",
-        "    # TODO: Convert case['steps'] into browser actions.",
-        "    # TODO: Use case['test_data'] as input data.",
-        "    # TODO: Assert observable UI behavior using case['expected_result'].",
-        "    assert case['test_case_id']",
-        "",
-    ]
-    path.write_text("\n".join(lines), encoding="utf-8")
-    return path
-
-
-def export_pytest_draft(test_cases: pd.DataFrame, filename: str = "test_todolist_selenium_draft.py") -> Path:
-    return export_selenium_pytest_draft(test_cases, filename)

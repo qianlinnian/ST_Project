@@ -1,6 +1,5 @@
 import hashlib
 import json
-from pathlib import Path
 import re
 
 import pandas as pd
@@ -15,19 +14,9 @@ from src.ai_client import (
 from src.coverage_identifier import identify_coverage_items
 from src.exporter import (
     build_traceability_matrix,
-    export_csv,
-    export_excel,
-    export_json,
-    export_selenium_pytest_draft,
     export_test_artifacts,
 )
 from src.performance_tracker import measure_time
-from src.persistence import (
-    build_project_state,
-    list_projects,
-    load_project,
-    save_project,
-)
 from src.requirement_parser import enhance_requirements_with_llm, structure_requirements
 from src.risk_analyzer import analyze_risks_with_llm_fallback
 from src.state_modeler import (
@@ -1307,53 +1296,6 @@ def render_risk_timing_details() -> None:
             st.metric("Fallback Time", f"{timing.get('fallback_after_error_seconds', 0):.3f}s")
 
 
-def build_current_project_state() -> dict:
-    state = build_project_state(
-        st.session_state.project_name,
-        st.session_state.selected_provider,
-        st.session_state.selected_model,
-        current_artifacts(),
-    )
-    state["state_model"] = st.session_state.state_model
-    return state
-
-
-def export_selected_artifact(
-    artifact_label: str,
-    export_format_label: str,
-    artifacts: dict[str, pd.DataFrame],
-) -> Path:
-    artifact_map = {
-        "Risk Analysis": ("risk_analysis", artifacts["risk_analysis"]),
-        "Test Suites": ("test_suites", artifacts["test_suites"]),
-        "Candidate Test Cases": ("test_cases", artifacts["test_cases"]),
-        "Optimized Test Suite": ("optimized_test_suite", artifacts["optimized_test_cases"]),
-        "Traceability Matrix": ("traceability_matrix", artifacts["traceability_matrix"]),
-        "State Transition Sequences": (
-            "state_transition_sequences",
-            artifacts["state_transition_sequences"],
-        ),
-        "Project State": ("test_suite_artifacts", build_current_project_state()),
-    }
-    base_name, data = artifact_map[artifact_label]
-    if export_format_label == "XLSX":
-        if isinstance(data, pd.DataFrame):
-            return export_excel({base_name: data}, f"{base_name}.xlsx")
-        return export_excel(
-            {
-                key[:31]: pd.DataFrame(value)
-                for key, value in data.get("artifacts", {}).items()
-                if isinstance(value, list)
-            },
-            f"{base_name}.xlsx",
-        )
-    if export_format_label == "CSV":
-        if not isinstance(data, pd.DataFrame):
-            raise ValueError("Project State cannot be exported as CSV. Choose JSON or XLSX.")
-        return export_csv(data, f"{base_name}.csv")
-    return export_json(data, f"{base_name}.json")
-
-
 inject_style()
 init_state()
 
@@ -1769,7 +1711,12 @@ if page == "Test Cases":
     section_header("Candidate Test Cases", "case")
     local_col, llm_col = st.columns([1, 1], gap="medium")
     with local_col:
-        if st.button("Generate Test Cases", type="primary"):
+        test_case_disabled = (
+            artifacts["coverage_items"].empty
+            or artifacts["test_strategies"].empty
+            or artifacts["test_suites"].empty
+        )
+        if st.button("Generate Test Cases", type="primary", disabled=test_case_disabled):
             with st.spinner("Generating local test cases..."):
                 generate_current_test_cases()
             artifacts = current_artifacts()
@@ -1779,7 +1726,7 @@ if page == "Test Cases":
             or artifacts["test_cases"].empty
         )
         if st.button(
-            "Improve Test Design With LLM",
+            "Improve Test Suite Metadata With LLM",
                         disabled=test_llm_disabled,
         ):
             with st.spinner("Generating LLM improvement suggestions..."):
@@ -1822,7 +1769,10 @@ if page == "Test Cases":
                 set_performance("llm_test_design_improvement_seconds", llm_time)
             st.toast("LLM test design improvement completed.")
     if artifacts["test_cases"].empty:
-        st.info("Generate coverage and strategy first, then generate test cases.")
+        if artifacts["test_suites"].empty:
+            st.info("Generate coverage, strategy, and test suites first, then generate test cases.")
+        else:
+            st.info("Generate test cases to continue.")
     else:
         with st.form("test_cases_edit_form"):
             edited_cases = st.data_editor(
@@ -1873,152 +1823,42 @@ if page == "Test Cases":
     render_performance_table(artifacts)
 
 if page == "Export":
-    section_header("Local Project Persistence", "save")
-    left, right = st.columns([1, 1], gap="medium")
-    with left:
-        if st.button("Save Project"):
-            state = build_current_project_state()
-            path = save_project(state, f"{st.session_state.project_name}_project.json")
-            st.toast(f"Saved to {path}")
-    with right:
-        projects = list_projects()
-        selected_project = (
-            st.selectbox("Saved projects", projects) if projects else None
-        )
-        if selected_project and st.button("Load Project"):
-            loaded = load_project(selected_project)
-            st.session_state.project_name = loaded.get(
-                "project_name", st.session_state.project_name
-            )
-            st.session_state.selected_provider = loaded.get(
-                "selected_provider", st.session_state.selected_provider
-            )
-            st.session_state.selected_model = loaded.get(
-                "selected_model", st.session_state.selected_model
-            )
-            st.session_state.state_model = loaded.get("state_model")
-            requirements_records = loaded.get("artifacts", {}).get("requirements", [])
-            if requirements_records:
-                save_requirements(pd.DataFrame(requirements_records))
-            for artifact_key in [
-                "structured_requirements",
-                "risk_analysis",
-                "coverage_items",
-                "test_strategies",
-                "test_suites",
-                "test_cases",
-                "optimized_test_cases",
-                "state_transition_sequences",
-                "traceability_matrix",
-                "performance",
-            ]:
-                records = loaded.get("artifacts", {}).get(artifact_key, [])
-                st.session_state[artifact_key] = pd.DataFrame(records or [])
-            st.session_state.risk_analysis_draft = st.session_state.risk_analysis.copy()
-            st.session_state.coverage_items_draft = st.session_state.coverage_items.copy()
-            st.session_state.test_strategies_draft = st.session_state.test_strategies.copy()
-            st.session_state.test_suites_draft = st.session_state.test_suites.copy()
-            st.session_state.test_cases_draft = st.session_state.test_cases.copy()
-            st.session_state.state_transition_sequences_draft = st.session_state.state_transition_sequences.copy()
-            if (
-                st.session_state.traceability_matrix.empty
-                and not st.session_state.optimized_test_cases.empty
-            ):
-                st.session_state.traceability_matrix = build_traceability_matrix(
-                    st.session_state.structured_requirements,
-                    st.session_state.coverage_items,
-                    st.session_state.test_strategies,
-                    st.session_state.optimized_test_cases,
-                )
-            if st.session_state.state_model is None and not st.session_state.structured_requirements.empty:
-                st.session_state.state_model = infer_state_model_from_requirements(
-                    st.session_state.structured_requirements
-                )
-            st.session_state.coverage_ai_improvement = None
-            st.session_state.ai_improvement_result = None
-            st.session_state.suite_design_improvement = None
-            st.session_state.suite_minimization_result = None
-            st.session_state.last_export_paths = None
-            st.toast(f"Loaded {selected_project}")
-
     section_header("Export Artifacts", "save")
     artifacts = current_artifacts()
     if artifacts["test_cases"].empty:
         st.info("Generate test cases before exporting test design artifacts.")
 
-    export_cols = st.columns([1.4, 1.2, 1.2, 0.8], gap="medium")
-    artifact_label = None
-    with export_cols[0]:
-        export_scope = st.selectbox(
-            "Export scope",
-            ["Full artifacts", "Selected artifact", "Selenium/PyTest draft"],
-            key="export_scope",
+    format_map = {
+        "XLSX workbook": "xlsx",
+        "CSV package": "csv",
+        "JSON artifact": "json",
+        "Full package": "mixed",
+    }
+    artifact_cols = st.columns([1.8, 0.8], gap="medium", vertical_alignment="bottom")
+    with artifact_cols[0]:
+        selected_format = st.selectbox(
+            "Test artifact format",
+            list(format_map.keys()),
+            key="test_artifact_export_format",
         )
-    with export_cols[1]:
-        if export_scope == "Selected artifact":
-            artifact_label = st.selectbox(
-                "Artifact",
-                [
-                    "Risk Analysis",
-                    "Test Suites",
-                    "Candidate Test Cases",
-                    "Optimized Test Suite",
-                    "Traceability Matrix",
-                    "State Transition Sequences",
-                    "Project State",
-                ],
-                key="single_export_artifact",
+    with artifact_cols[1]:
+        if st.button("Export Test Design Artifacts", type="primary", use_container_width=True):
+            paths = export_test_artifacts(
+                structured_requirements=artifacts["structured_requirements"],
+                risk_analysis=artifacts["risk_analysis"],
+                coverage_items=artifacts["coverage_items"],
+                strategies=artifacts["test_strategies"],
+                test_suites=artifacts["test_suites"],
+                test_cases=artifacts["test_cases"],
+                optimized_test_cases=artifacts["optimized_test_cases"],
+                state_sequences=artifacts["state_transition_sequences"],
+                state_model=st.session_state.state_model,
+                prefix=st.session_state.project_name,
+                export_format=format_map[selected_format],
             )
-        else:
-            st.caption("Exports the complete current test design package.")
-    with export_cols[2]:
-        if export_scope == "Selenium/PyTest draft":
-            selected_format = "PY"
-            st.caption("Format: PY")
-        else:
-            format_options = ["XLSX", "CSV", "JSON"]
-            if artifact_label == "Project State":
-                format_options = ["JSON", "XLSX"]
-            selected_format = st.selectbox(
-                "Format",
-                format_options,
-                key="export_format",
-            )
-    with export_cols[3]:
-        if st.button("Export", type="primary"):
-            if export_scope == "Selenium/PyTest draft":
-                path = export_selenium_pytest_draft(artifacts["optimized_test_cases"])
-                st.toast(f"Saved to {path}")
-            elif export_scope == "Selected artifact":
-                try:
-                    path = export_selected_artifact(
-                        artifact_label or "Risk Analysis",
-                        selected_format,
-                        artifacts,
-                    )
-                    st.toast(f"Saved to {path}")
-                except ValueError as exc:
-                    st.warning(str(exc))
-            else:
-                format_map = {
-                    "XLSX": "xlsx",
-                    "CSV": "csv",
-                    "JSON": "json",
-                }
-                paths = export_test_artifacts(
-                    structured_requirements=artifacts["structured_requirements"],
-                    coverage_items=artifacts["coverage_items"],
-                    strategies=artifacts["test_strategies"],
-                    test_suites=artifacts["test_suites"],
-                    test_cases=artifacts["test_cases"],
-                    optimized_test_cases=artifacts["optimized_test_cases"],
-                    state_sequences=artifacts["state_transition_sequences"],
-                    state_model=st.session_state.state_model,
-                    prefix=st.session_state.project_name,
-                    export_format=format_map[selected_format],
-                )
-                st.session_state.last_export_paths = paths
-                st.toast("Full artifact export completed.")
+            st.session_state.last_export_paths = paths
+            st.toast("Test artifact export completed.")
+    st.caption("Exports generated test design artifacts, not local project state.")
 
     if st.session_state.last_export_paths:
         render_export_paths(st.session_state.last_export_paths)
