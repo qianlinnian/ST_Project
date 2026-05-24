@@ -12,6 +12,7 @@ from src.oracle_generator import generate_expected_result, improve_oracles_with_
 from src.prompt_templates import (
     COMPACT_TEST_CASE_IMPROVEMENT_SYSTEM,
     TEST_CASE_GENERATION_SYSTEM,
+    missing_test_case_prompt,
     test_case_generation_prompt as build_test_case_generation_prompt,
 )
 from src.state_modeler import infer_state_model_from_requirements, generate_state_transition_tests
@@ -489,7 +490,7 @@ def suggest_missing_test_cases_with_llm(
     strategy_map = strategies.set_index("coverage_id").to_dict("index") if not strategies.empty else {}
 
     def review_batch(_batch_index: int, batch: list[dict]) -> pd.DataFrame:
-        prompt = _missing_test_case_prompt(batch, requirements, strategy_map, existing_test_cases)
+        prompt = missing_test_case_prompt(batch, requirements, strategy_map, existing_test_cases)
         response_text = chat_completion(
             COMPACT_TEST_CASE_IMPROVEMENT_SYSTEM,
             prompt,
@@ -518,69 +519,6 @@ def suggest_missing_test_cases_with_llm(
         if col not in data.columns:
             data[col] = ""
     return data[REQUIRED_COLUMNS + [col for col in data.columns if col not in REQUIRED_COLUMNS]]
-
-
-def _missing_test_case_prompt(
-    coverage_batch: list[dict],
-    requirements: pd.DataFrame,
-    strategy_map: dict,
-    existing_test_cases: pd.DataFrame,
-) -> str:
-    requirement_ids = {
-        str(row.get("requirement_id", "")).strip()
-        for row in coverage_batch
-        if str(row.get("requirement_id", "")).strip()
-    }
-    coverage_ids = {
-        str(row.get("coverage_id", "")).strip()
-        for row in coverage_batch
-        if str(row.get("coverage_id", "")).strip()
-    }
-    req_rows = requirements[
-        requirements["requirement_id"].astype(str).isin(requirement_ids)
-    ] if "requirement_id" in requirements.columns else requirements
-    case_rows = existing_test_cases[
-        existing_test_cases["coverage_id"].astype(str).isin(coverage_ids)
-    ] if "coverage_id" in existing_test_cases.columns else existing_test_cases
-
-    lines = ["REQ|id|text"]
-    for _, row in req_rows.iterrows():
-        lines.append(f"REQ|{_compact_text(row.get('requirement_id', ''), 60)}|{_compact_text(row.get('requirement_text', ''), 260)}")
-
-    lines.append("COV|id|req|type|desc|tech|risk")
-    for row in coverage_batch:
-        cov_id = str(row.get("coverage_id", ""))
-        strategy = strategy_map.get(cov_id, {})
-        technique = strategy.get("technique", row.get("related_techniques", ""))
-        lines.append(
-            "|".join(
-                [
-                    "COV",
-                    _compact_text(cov_id, 60),
-                    _compact_text(row.get("requirement_id", ""), 60),
-                    _compact_text(row.get("coverage_type", ""), 60),
-                    _compact_text(row.get("description", ""), 180),
-                    _compact_text(technique, 80),
-                    _compact_text(row.get("risk_level", "Medium"), 40),
-                ]
-            )
-        )
-
-    lines.append("EXISTING|id|cov|tech|data|expected")
-    for _, row in case_rows.iterrows():
-        lines.append(
-            "|".join(
-                [
-                    "EXISTING",
-                    _compact_text(row.get("test_case_id", ""), 40),
-                    _compact_text(row.get("coverage_id", ""), 60),
-                    _compact_text(row.get("technique", ""), 80),
-                    _compact_text(row.get("test_data", ""), 140),
-                    _compact_text(row.get("expected_result", ""), 180),
-                ]
-            )
-        )
-    return "\n".join(lines)
 
 
 def _parse_missing_test_cases(parsed: dict, batch_size: int) -> pd.DataFrame:
@@ -747,13 +685,6 @@ def renumber_test_case_ids(test_cases: pd.DataFrame, prefix: str = "TC") -> pd.D
         f"{prefix}-{index:03d}" for index in range(1, len(renumbered) + 1)
     ]
     return renumbered
-
-
-def _compact_text(value, limit: int) -> str:
-    text = " ".join(str(value or "").split())
-    if len(text) > limit:
-        text = text[:limit]
-    return text
 
 
 def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame,

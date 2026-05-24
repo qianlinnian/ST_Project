@@ -7,6 +7,10 @@ import pandas as pd
 
 from src.ai_client import is_llm_enabled
 from src.llm_execution import call_json_completion, env_int, run_parallel_batches
+from src.prompt_templates import (
+    SUITE_DESIGN_IMPROVEMENT_SYSTEM,
+    suite_improvement_prompt,
+)
 
 
 RISK_ORDER = {"High": 0, "Medium": 1, "Low": 2}
@@ -24,18 +28,6 @@ SUITE_COLUMNS = [
     "optimization_basis",
     "source",
 ]
-
-SUITE_DESIGN_IMPROVEMENT_SYSTEM = (
-    "You improve high-level software test suite metadata. Return strict JSON only. "
-    "Do not invent coverage IDs and do not remove traceability. Prefer concise names and objectives."
-)
-
-
-def _as_text(value: Any) -> str:
-    if isinstance(value, list):
-        return ", ".join(str(item) for item in value if str(item).strip())
-    return str(value or "")
-
 
 def _split_values(value: Any) -> list[str]:
     if isinstance(value, list):
@@ -239,7 +231,7 @@ def improve_test_suites_with_llm(
     def improve_batch(_batch_index: int, batch: list[dict]) -> dict[str, Any]:
         return call_json_completion(
             SUITE_DESIGN_IMPROVEMENT_SYSTEM,
-            _suite_improvement_prompt(batch, coverage_lookup),
+            suite_improvement_prompt(batch, coverage_lookup),
             provider=provider,
             model=model,
             max_tokens=max(700, 220 * len(batch) + 300),
@@ -260,48 +252,6 @@ def improve_test_suites_with_llm(
     suggestions = _parse_suite_improvements(batch_results)
     improved = _apply_suite_improvements(test_suites, suggestions)
     return {"test_suites": improved, "suite_improvement_suggestions": suggestions}
-
-
-def _suite_improvement_prompt(batch: list[dict], coverage_lookup: dict[str, dict]) -> str:
-    lines = [
-        "Return JSON: {\"suggestions\":[{\"suite_id\":\"TS-001\",\"action\":\"rename|improve_objective\","
-        "\"reason\":\"...\",\"suggested_suite_name\":\"...\",\"suggested_objective\":\"...\","
-        "\"suggested_optimization_basis\":\"...\",\"related_coverage_ids\":[\"COV-001\"]}]}",
-        "SUITE|id|name|module|risk|priority|coverage_ids|techniques|coverage_types|objective|basis",
-    ]
-    for row in batch:
-        coverage_ids = _split_values(row.get("coverage_ids", ""))
-        lines.append(
-            "|".join(
-                [
-                    "SUITE",
-                    _compact(row.get("suite_id"), 40),
-                    _compact(row.get("suite_name"), 100),
-                    _compact(row.get("module"), 80),
-                    _compact(row.get("risk_level"), 20),
-                    _compact(row.get("priority"), 20),
-                    _compact("; ".join(coverage_ids), 180),
-                    _compact(row.get("techniques"), 120),
-                    _compact(row.get("coverage_types"), 100),
-                    _compact(row.get("suite_objective"), 240),
-                    _compact(row.get("optimization_basis"), 120),
-                ]
-            )
-        )
-        for coverage_id in coverage_ids:
-            coverage = coverage_lookup.get(coverage_id, {})
-            lines.append(
-                "COV|"
-                + "|".join(
-                    [
-                        _compact(coverage_id, 40),
-                        _compact(coverage.get("requirement_id"), 60),
-                        _compact(coverage.get("coverage_type"), 60),
-                        _compact(coverage.get("description"), 220),
-                    ]
-                )
-            )
-    return "\n".join(lines)
 
 
 def _parse_suite_improvements(batch_results: list[dict]) -> pd.DataFrame:
@@ -396,9 +346,3 @@ def _state_suite_module(structured_requirements: pd.DataFrame) -> str:
         return modules[0]
     return "Cross-module behavior"
 
-
-def _compact(value: Any, limit: int) -> str:
-    text = " ".join(_as_text(value).split())
-    if len(text) > limit:
-        return text[:limit]
-    return text

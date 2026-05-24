@@ -10,6 +10,8 @@ from src.prompt_templates import (
     COMPACT_COVERAGE_IMPROVEMENT_SYSTEM,
     COMPACT_SUITE_MINIMIZATION_SYSTEM,
     SUITE_OPTIMIZATION_REVIEW_SYSTEM,
+    compact_coverage_improvement_prompt,
+    compact_suite_minimization_prompt,
     suite_optimization_review_prompt,
 )
 from src.suite_optimizer import optimize_suite
@@ -56,7 +58,7 @@ def suggest_missing_coverage_with_llm(
         else:
             batch_coverage = coverage_items
 
-        prompt = _compact_coverage_improvement_prompt(batch_requirements, batch_coverage)
+        prompt = compact_coverage_improvement_prompt(batch_requirements, batch_coverage)
         parsed = call_json_completion(
             COMPACT_COVERAGE_IMPROVEMENT_SYSTEM,
             prompt,
@@ -115,39 +117,6 @@ def suggest_missing_coverage_with_llm(
     if not rows and errors:
         return pd.DataFrame([{"llm_error": "; ".join(errors)}])
     return pd.DataFrame(rows)
-
-
-def _compact_coverage_improvement_prompt(
-    requirements: pd.DataFrame, coverage_items: pd.DataFrame
-) -> str:
-    lines = ["REQ|id|text|risk"]
-    risk_by_req = {}
-    if "requirement_id" in coverage_items.columns and "risk_level" in coverage_items.columns:
-        risk_by_req = coverage_items.groupby("requirement_id")["risk_level"].first().to_dict()
-
-    for _, row in requirements.iterrows():
-        req_id = str(row.get("requirement_id", "")).strip()
-        text = _compact_text(row.get("requirement_text", ""), 280)
-        risk = str(risk_by_req.get(req_id, row.get("risk_level", "Medium")))
-        lines.append(f"REQ|{req_id}|{text}|{risk}")
-
-    lines.append("COV|id|req|type|desc|tech")
-    for _, row in coverage_items.iterrows():
-        coverage_id = str(row.get("coverage_id", "")).strip()
-        req_id = str(row.get("requirement_id", "")).strip()
-        coverage_type = str(row.get("coverage_type", "Functional")).strip()
-        desc = _compact_text(row.get("description", ""), 180)
-        tech = _compact_text(row.get("related_techniques", ""), 120)
-        lines.append(f"COV|{coverage_id}|{req_id}|{coverage_type}|{desc}|{tech}")
-
-    return "\n".join(lines)
-
-
-def _compact_text(value, limit: int) -> str:
-    text = " ".join(str(value or "").split())
-    if len(text) > limit:
-        text = text[:limit]
-    return text
 
 
 def _parse_missing_coverage_items(parsed: dict) -> list[dict[str, Any]]:
@@ -252,7 +221,7 @@ def improve_optimized_suite_with_llm(
         suite_payload = batch[0]
         parsed = call_json_completion(
             COMPACT_SUITE_MINIMIZATION_SYSTEM,
-            _compact_suite_minimization_prompt(suite_payload),
+            compact_suite_minimization_prompt(suite_payload),
             provider=provider,
             model=model,
             max_tokens=max(700, 80 * len(suite_payload.get("test_cases", [])) + 300),
@@ -319,48 +288,6 @@ def _suite_minimization_groups(
             }
         )
     return payloads
-
-
-def _compact_suite_minimization_prompt(suite_payload: dict[str, Any]) -> str:
-    lines = [
-        f"SUITE|{_compact_text(suite_payload.get('suite_id', ''), 40)}|"
-        f"{_compact_text(suite_payload.get('suite_name', ''), 100)}|"
-        f"{_compact_text(suite_payload.get('suite_risk_level', ''), 20)}|"
-        f"{_compact_text(suite_payload.get('suite_objective', ''), 220)}",
-        "COV|id|req|type|risk|desc",
-    ]
-    for coverage in suite_payload.get("coverage_items", []):
-        lines.append(
-            "|".join(
-                [
-                    "COV",
-                    _compact_text(coverage.get("coverage_id", ""), 40),
-                    _compact_text(coverage.get("requirement_id", ""), 60),
-                    _compact_text(coverage.get("coverage_type", ""), 60),
-                    _compact_text(coverage.get("risk_level", "Medium"), 20),
-                    _compact_text(coverage.get("description", ""), 180),
-                ]
-            )
-        )
-    lines.append("CASE|id|req|cov|tech|priority|risk|data|expected|basis")
-    for row in suite_payload.get("test_cases", []):
-        lines.append(
-            "|".join(
-                [
-                    "CASE",
-                    _compact_text(row.get("test_case_id", ""), 40),
-                    _compact_text(row.get("requirement_id", ""), 60),
-                    _compact_text(row.get("coverage_id", ""), 60),
-                    _compact_text(row.get("technique", ""), 80),
-                    _compact_text(row.get("priority", "Medium"), 20),
-                    _compact_text(row.get("risk_level", "Medium"), 20),
-                    _compact_text(row.get("test_data", ""), 120),
-                    _compact_text(row.get("expected_result", ""), 160),
-                    _compact_text(row.get("design_basis", ""), 120),
-                ]
-            )
-        )
-    return "\n".join(lines)
 
 
 def _parse_suite_minimization_decisions(batch_results: list[dict]) -> pd.DataFrame:

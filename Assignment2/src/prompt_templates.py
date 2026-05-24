@@ -4,6 +4,35 @@ These prompts do not replace B/C's rule-based modules. They are used to
 explain, review, and improve generated artifacts while preserving traceability.
 """
 
+from typing import Any
+
+import pandas as pd
+
+
+def _compact_text(value: Any, limit: int) -> str:
+    text = " ".join(_as_text(value).split())
+    if len(text) > limit:
+        return text[:limit]
+    return text
+
+
+def _as_text(value: Any) -> str:
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value if str(item).strip())
+    return str(value or "")
+
+
+def _split_values(value: Any) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    text = str(value or "").strip()
+    if not text:
+        return []
+    if ";" in text:
+        return [part.strip() for part in text.split(";") if part.strip()]
+    return [part.strip() for part in text.split(",") if part.strip()]
+
+
 REQUIREMENT_STRUCTURING_SYSTEM = (
     "You are a software testing analyst following ISTQB Foundation Level and "
     "ISO/IEC/IEEE 29119-4 terminology. Extract test-design information from a "
@@ -64,12 +93,6 @@ impact and likelihood must be integers from 1 to 3.
 reason must be no more than 6 English words.
 """.strip()
 
-COVERAGE_IMPROVEMENT_SYSTEM = (
-    "You are a test design reviewer. Review coverage items against the provided "
-    "requirements and suggest only missing valid coverage items. Preserve "
-    "requirement_id traceability and use black-box or state-based testing terms."
-)
-
 COMPACT_COVERAGE_IMPROVEMENT_SYSTEM = """
 You are a fast test coverage gap reviewer.
 
@@ -95,12 +118,6 @@ TEST_STRATEGY_REVIEW_SYSTEM = (
     "You are a test strategy reviewer. Review whether each coverage item is "
     "mapped to a suitable ISO/IEC/IEEE 29119-4 black-box or state-based test "
     "technique. Preserve coverage_id and requirement_id traceability."
-)
-
-TEST_CASE_IMPROVEMENT_SYSTEM = (
-    "You are a test case design reviewer. Improve generated test cases without "
-    "breaking traceability. Do not invent new requirement_id or coverage_id "
-    "values unless explicitly asked to suggest missing cases."
 )
 
 COMPACT_TEST_CASE_IMPROVEMENT_SYSTEM = """
@@ -199,6 +216,11 @@ Rules:
 - Prefer 4 to 8 states and 5 to 12 transitions.
 """.strip()
 
+SUITE_DESIGN_IMPROVEMENT_SYSTEM = (
+    "You improve high-level software test suite metadata. Return strict JSON only. "
+    "Do not invent coverage IDs and do not remove traceability. Prefer concise names and objectives."
+)
+
 
 def requirement_structuring_prompt(requirement_text: str) -> str:
     return (
@@ -218,34 +240,6 @@ def requirement_structuring_prompt(requirement_text: str) -> str:
         "- Keep values short and directly grounded in the requirement text.\n"
         "- Do not invent requirement_id or module values.\n"
         "- Extract only information explicitly supported by this requirement text."
-    )
-
-
-def coverage_improvement_prompt(
-    requirements_summary: str, coverage_summary: str
-) -> str:
-    return (
-        "Review the current coverage items and identify missing valid coverage. "
-        "The tool currently uses these coverage fields: coverage_id, "
-        "requirement_id, description, coverage_type, risk_level, "
-        "related_techniques, tags, notes.\n\n"
-        f"Requirements:\n{requirements_summary}\n\n"
-        f"Current coverage items:\n{coverage_summary}\n\n"
-        "Return JSON with this shape:\n"
-        "{\n"
-        '  "missing_coverage_items": [\n'
-        "    {\n"
-        '      "requirement_id": "...",\n'
-        '      "description": "...",\n'
-        '      "coverage_type": "Functional|Input|Boundary|Condition|Error|State Transition",\n'
-        '      "risk_level": "High|Medium|Low",\n'
-        '      "related_techniques": ["Equivalence Partitioning"],\n'
-        '      "reason": "..."\n'
-        "    }\n"
-        "  ],\n"
-        '  "review_summary": "..."\n'
-        "}\n\n"
-        "Do not duplicate existing coverage_id values. Do not remove existing items."
     )
 
 
@@ -321,31 +315,6 @@ def test_case_generation_prompt(
     )
 
 
-def test_case_improvement_prompt(test_case_summary: str) -> str:
-    return (
-        "Review generated test cases for clarity, traceability, and executable "
-        "test design quality.\n\n"
-        "Required test case fields: test_case_id, requirement_id, coverage_id, "
-        "technique, technique_standard, precondition, test_data, steps, "
-        "expected_result, priority, risk_score, risk_level, coverage_type, "
-        "automation_candidate, source, design_basis.\n\n"
-        f"Generated test cases:\n{test_case_summary}\n\n"
-        "Return JSON with this shape:\n"
-        "{\n"
-        '  "case_reviews": [\n'
-        "    {\n"
-        '      "test_case_id": "...",\n'
-        '      "issue": "...",\n'
-        '      "suggested_revision": "...",\n'
-        '      "severity": "High|Medium|Low"\n'
-        "    }\n"
-        "  ],\n"
-        '  "review_summary": "..."\n'
-        "}\n\n"
-        "Do not change requirement_id or coverage_id."
-    )
-
-
 def oracle_review_prompt(test_case_summary: str) -> str:
     return (
         "Review expected_result values. They must be observable, testable, and "
@@ -412,3 +381,215 @@ def risk_analysis_batch_prompt(requirements_text: str) -> str:
         "  ]\n"
         "}"
     )
+
+
+def compact_requirement_structuring_prompt(batch: list[dict]) -> str:
+    lines = ["id|requirement"]
+    for item in batch:
+        text = " ".join(str(item["requirement_text"]).split())
+        if len(text) > 350:
+            text = text[:350]
+        lines.append(f"{item['requirement_id']}|{text}")
+    return "\n".join(lines)
+
+
+def compact_risk_prompt(batch: list[Any], text_limit: int = 300) -> str:
+    lines = ["id|module|requirement"]
+    for req in batch:
+        req_id = _compact_text(getattr(req, "requirement_id", ""), 80)
+        module = _compact_text(getattr(req, "module", ""), 80)
+        text = _compact_text(getattr(req, "requirement_text", ""), text_limit)
+        lines.append(f"{req_id}|{module}|{text}")
+    return "\n".join(lines)
+
+
+def compact_coverage_improvement_prompt(
+    requirements: pd.DataFrame, coverage_items: pd.DataFrame
+) -> str:
+    lines = ["REQ|id|text|risk"]
+    risk_by_req = {}
+    if "requirement_id" in coverage_items.columns and "risk_level" in coverage_items.columns:
+        risk_by_req = coverage_items.groupby("requirement_id")["risk_level"].first().to_dict()
+
+    for _, row in requirements.iterrows():
+        req_id = str(row.get("requirement_id", "")).strip()
+        text = _compact_text(row.get("requirement_text", ""), 280)
+        risk = str(risk_by_req.get(req_id, row.get("risk_level", "Medium")))
+        lines.append(f"REQ|{req_id}|{text}|{risk}")
+
+    lines.append("COV|id|req|type|desc|tech")
+    for _, row in coverage_items.iterrows():
+        coverage_id = str(row.get("coverage_id", "")).strip()
+        req_id = str(row.get("requirement_id", "")).strip()
+        coverage_type = str(row.get("coverage_type", "Functional")).strip()
+        desc = _compact_text(row.get("description", ""), 180)
+        tech = _compact_text(row.get("related_techniques", ""), 120)
+        lines.append(f"COV|{coverage_id}|{req_id}|{coverage_type}|{desc}|{tech}")
+
+    return "\n".join(lines)
+
+
+def missing_test_case_prompt(
+    coverage_batch: list[dict],
+    requirements: pd.DataFrame,
+    strategy_map: dict,
+    existing_test_cases: pd.DataFrame,
+) -> str:
+    requirement_ids = {
+        str(row.get("requirement_id", "")).strip()
+        for row in coverage_batch
+        if str(row.get("requirement_id", "")).strip()
+    }
+    coverage_ids = {
+        str(row.get("coverage_id", "")).strip()
+        for row in coverage_batch
+        if str(row.get("coverage_id", "")).strip()
+    }
+    req_rows = (
+        requirements[requirements["requirement_id"].astype(str).isin(requirement_ids)]
+        if "requirement_id" in requirements.columns
+        else requirements
+    )
+    case_rows = (
+        existing_test_cases[existing_test_cases["coverage_id"].astype(str).isin(coverage_ids)]
+        if "coverage_id" in existing_test_cases.columns
+        else existing_test_cases
+    )
+
+    lines = ["REQ|id|text"]
+    for _, row in req_rows.iterrows():
+        lines.append(
+            f"REQ|{_compact_text(row.get('requirement_id', ''), 60)}|"
+            f"{_compact_text(row.get('requirement_text', ''), 260)}"
+        )
+
+    lines.append("COV|id|req|type|desc|tech|risk")
+    for row in coverage_batch:
+        cov_id = str(row.get("coverage_id", ""))
+        strategy = strategy_map.get(cov_id, {})
+        technique = strategy.get("technique", row.get("related_techniques", ""))
+        lines.append(
+            "|".join(
+                [
+                    "COV",
+                    _compact_text(cov_id, 60),
+                    _compact_text(row.get("requirement_id", ""), 60),
+                    _compact_text(row.get("coverage_type", ""), 60),
+                    _compact_text(row.get("description", ""), 180),
+                    _compact_text(technique, 80),
+                    _compact_text(row.get("risk_level", "Medium"), 40),
+                ]
+            )
+        )
+
+    lines.append("EXISTING|id|cov|tech|data|expected")
+    for _, row in case_rows.iterrows():
+        lines.append(
+            "|".join(
+                [
+                    "EXISTING",
+                    _compact_text(row.get("test_case_id", ""), 40),
+                    _compact_text(row.get("coverage_id", ""), 60),
+                    _compact_text(row.get("technique", ""), 80),
+                    _compact_text(row.get("test_data", ""), 140),
+                    _compact_text(row.get("expected_result", ""), 180),
+                ]
+            )
+        )
+    return "\n".join(lines)
+
+
+def compact_suite_minimization_prompt(suite_payload: dict[str, Any]) -> str:
+    lines = [
+        f"SUITE|{_compact_text(suite_payload.get('suite_id', ''), 40)}|"
+        f"{_compact_text(suite_payload.get('suite_name', ''), 100)}|"
+        f"{_compact_text(suite_payload.get('suite_risk_level', ''), 20)}|"
+        f"{_compact_text(suite_payload.get('suite_objective', ''), 220)}",
+        "COV|id|req|type|risk|desc",
+    ]
+    for coverage in suite_payload.get("coverage_items", []):
+        lines.append(
+            "|".join(
+                [
+                    "COV",
+                    _compact_text(coverage.get("coverage_id", ""), 40),
+                    _compact_text(coverage.get("requirement_id", ""), 60),
+                    _compact_text(coverage.get("coverage_type", ""), 60),
+                    _compact_text(coverage.get("risk_level", "Medium"), 20),
+                    _compact_text(coverage.get("description", ""), 180),
+                ]
+            )
+        )
+    lines.append("CASE|id|req|cov|tech|priority|risk|data|expected|basis")
+    for row in suite_payload.get("test_cases", []):
+        lines.append(
+            "|".join(
+                [
+                    "CASE",
+                    _compact_text(row.get("test_case_id", ""), 40),
+                    _compact_text(row.get("requirement_id", ""), 60),
+                    _compact_text(row.get("coverage_id", ""), 60),
+                    _compact_text(row.get("technique", ""), 80),
+                    _compact_text(row.get("priority", "Medium"), 20),
+                    _compact_text(row.get("risk_level", "Medium"), 20),
+                    _compact_text(row.get("test_data", ""), 120),
+                    _compact_text(row.get("expected_result", ""), 160),
+                    _compact_text(row.get("design_basis", ""), 120),
+                ]
+            )
+        )
+    return "\n".join(lines)
+
+
+def state_model_improvement_prompt(structured_requirements: pd.DataFrame) -> str:
+    lines = ["id|requirement|conditions|actions|expected"]
+    for _, row in structured_requirements.iterrows():
+        req_id = _compact_text(row.get("requirement_id", ""), 80)
+        req_text = _compact_text(row.get("requirement_text", ""), 260)
+        conditions = _compact_text(row.get("conditions", ""), 180)
+        actions = _compact_text(row.get("actions", ""), 160)
+        expected = _compact_text(row.get("expected_results", ""), 180)
+        lines.append(f"{req_id}|{req_text}|{conditions}|{actions}|{expected}")
+    return "\n".join(lines)
+
+
+def suite_improvement_prompt(batch: list[dict], coverage_lookup: dict[str, dict]) -> str:
+    lines = [
+        "Return JSON: {\"suggestions\":[{\"suite_id\":\"TS-001\",\"action\":\"rename|improve_objective\","
+        "\"reason\":\"...\",\"suggested_suite_name\":\"...\",\"suggested_objective\":\"...\","
+        "\"suggested_optimization_basis\":\"...\",\"related_coverage_ids\":[\"COV-001\"]}]}",
+        "SUITE|id|name|module|risk|priority|coverage_ids|techniques|coverage_types|objective|basis",
+    ]
+    for row in batch:
+        coverage_ids = _split_values(row.get("coverage_ids", ""))
+        lines.append(
+            "|".join(
+                [
+                    "SUITE",
+                    _compact_text(row.get("suite_id"), 40),
+                    _compact_text(row.get("suite_name"), 100),
+                    _compact_text(row.get("module"), 80),
+                    _compact_text(row.get("risk_level"), 20),
+                    _compact_text(row.get("priority"), 20),
+                    _compact_text("; ".join(coverage_ids), 180),
+                    _compact_text(row.get("techniques"), 120),
+                    _compact_text(row.get("coverage_types"), 100),
+                    _compact_text(row.get("suite_objective"), 240),
+                    _compact_text(row.get("optimization_basis"), 120),
+                ]
+            )
+        )
+        for coverage_id in coverage_ids:
+            coverage = coverage_lookup.get(coverage_id, {})
+            lines.append(
+                "COV|"
+                + "|".join(
+                    [
+                        _compact_text(coverage_id, 40),
+                        _compact_text(coverage.get("requirement_id"), 60),
+                        _compact_text(coverage.get("coverage_type"), 60),
+                        _compact_text(coverage.get("description"), 220),
+                    ]
+                )
+            )
+    return "\n".join(lines)

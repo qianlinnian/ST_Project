@@ -7,7 +7,10 @@ import pandas as pd
 from src.ai_client import is_llm_enabled
 from src.llm_execution import call_json_completion
 from src.oracle_generator import generate_expected_result
-from src.prompt_templates import STATE_MODEL_IMPROVEMENT_SYSTEM
+from src.prompt_templates import (
+    STATE_MODEL_IMPROVEMENT_SYSTEM,
+    state_model_improvement_prompt,
+)
 
 
 DEFAULT_GENERIC_STATE_MODEL = {
@@ -191,7 +194,7 @@ def improve_state_model_with_llm(
     ):
         return infer_state_model_from_requirements(structured_requirements)
 
-    prompt = _state_model_improvement_prompt(structured_requirements)
+    prompt = state_model_improvement_prompt(structured_requirements)
     parsed = call_json_completion(
         STATE_MODEL_IMPROVEMENT_SYSTEM,
         prompt,
@@ -207,26 +210,6 @@ def improve_state_model_with_llm(
         raise ValueError("LLM returned incomplete state model")
 
     return build_state_model(states=states, transitions=transitions)
-
-
-def _state_model_improvement_prompt(structured_requirements: pd.DataFrame) -> str:
-    lines = ["id|requirement|conditions|actions|expected"]
-    for _, row in structured_requirements.iterrows():
-        req_id = _compact_text(row.get("requirement_id", ""), 80)
-        req_text = _compact_text(row.get("requirement_text", ""), 260)
-        conditions = _compact_text(row.get("conditions", ""), 180)
-        actions = _compact_text(row.get("actions", ""), 160)
-        expected = _compact_text(row.get("expected_results", ""), 180)
-        lines.append(f"{req_id}|{req_text}|{conditions}|{actions}|{expected}")
-    return "\n".join(lines)
-
-
-def _compact_text(value: Any, limit: int) -> str:
-    text = _as_text(value)
-    text = " ".join(text.split())
-    if len(text) > limit:
-        text = text[:limit]
-    return text
 
 
 def generate_all_states_sequence(state_model: dict | None = None) -> pd.DataFrame:

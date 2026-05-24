@@ -8,7 +8,10 @@ from src.nlp_processor import (
     is_requirement_structure_sufficient,
 )
 from src.models import Requirement
-from src.prompt_templates import COMPACT_REQUIREMENT_STRUCTURING_SYSTEM
+from src.prompt_templates import (
+    COMPACT_REQUIREMENT_STRUCTURING_SYSTEM,
+    compact_requirement_structuring_prompt,
+)
 
 
 def structure_requirements(
@@ -50,7 +53,7 @@ def structure_requirements(
         def structure_llm_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
             parsed = call_json_completion(
                 COMPACT_REQUIREMENT_STRUCTURING_SYSTEM,
-                _compact_requirement_structuring_prompt(batch),
+                compact_requirement_structuring_prompt(batch),
                 provider=provider,
                 max_tokens=max(600, 120 * len(batch) + 400),
                 task_label="Requirement Structuring Fallback",
@@ -126,7 +129,7 @@ def enhance_requirements_with_llm(
     def enhance_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
         parsed = call_json_completion(
             COMPACT_REQUIREMENT_STRUCTURING_SYSTEM,
-            _compact_requirement_structuring_prompt(batch),
+            compact_requirement_structuring_prompt(batch),
             provider=provider,
             max_tokens=max(600, 120 * len(batch) + 400),
             task_label="Requirement Structuring Enhancement",
@@ -218,48 +221,6 @@ def _ensure_list(value) -> list:
         return []
     return [str(value)]
 
-
-def _compact_requirement_structuring_prompt(batch: list[dict]) -> str:
-    lines = ["id|requirement"]
-    for item in batch:
-        text = " ".join(str(item["requirement_text"]).split())
-        if len(text) > 350:
-            text = text[:350]
-        lines.append(f"{item['requirement_id']}|{text}")
-    return "\n".join(lines)
-
-
-def _requirement_structuring_batch_prompt(batch: list[dict]) -> str:
-    lines = []
-    for item in batch:
-        lines.append(
-            f"Requirement ID: {item['requirement_id']}\n"
-            f"Requirement: {item['requirement_text']}"
-        )
-    return (
-        "Analyze these requirements and extract the fields used by the "
-        "AutoTestDesign requirement parser.\n\n"
-        + "\n---\n".join(lines)
-        + "\n\nReturn exactly this JSON shape:\n"
-        "{\n"
-        '  "requirements": [\n'
-        "    {\n"
-        '      "requirement_id": "...",\n'
-        '      "input_fields": ["..."],\n'
-        '      "data_ranges": ["..."],\n'
-        '      "conditions": ["..."],\n'
-        '      "actions": ["..."],\n'
-        '      "expected_results": ["..."]\n'
-        "    }\n"
-        "  ]\n"
-        "}\n\n"
-        "Rules:\n"
-        "- Return exactly one item for every input requirement_id.\n"
-        "- Use empty lists when a field is not present.\n"
-        "- Keep values short and directly grounded in the requirement text.\n"
-        "- Do not invent requirement_id or module values.\n"
-        "- Extract only information explicitly supported by each requirement text."
-    )
 
 def parse_requirements(
     requirements_data: List[dict], provider: str = "openai"

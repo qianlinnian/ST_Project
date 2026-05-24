@@ -8,6 +8,7 @@ from src.ai_client import chat_completion, is_llm_enabled
 from src.prompt_templates import (
     COMPACT_RISK_SYSTEM,
     RISK_ANALYSIS_SYSTEM,
+    compact_risk_prompt,
     risk_analysis_batch_prompt,
 )
 
@@ -176,13 +177,6 @@ def _clamp_int(value, default: int = 2, low: int = 1, high: int = 3) -> int:
     return max(low, min(high, value))
 
 
-def _compact_text(value, limit: int = 300) -> str:
-    text = " ".join(str(value or "").split())
-    if len(text) > limit:
-        text = text[:limit]
-    return text
-
-
 def _risk_category_from_code(value) -> str:
     text = str(value or "").strip().lower()
 
@@ -254,19 +248,6 @@ def _make_risk_record(
         reason=reason or "Analyzed by compact LLM prompt.",
         test_suggestion=test_suggestion or _test_suggestion(risk_category),
     )
-
-
-def _compact_risk_prompt(batch: List[Requirement]) -> str:
-    text_limit = _env_int("AUTOTESTDESIGN_RISK_TEXT_LIMIT", 300, 80, 2000)
-
-    lines = ["id|module|requirement"]
-    for req in batch:
-        req_id = _compact_text(req.requirement_id, 80)
-        module = _compact_text(req.module, 80)
-        text = _compact_text(req.requirement_text, text_limit)
-        lines.append(f"{req_id}|{module}|{text}")
-
-    return "\n".join(lines)
 
 
 def _risk_max_tokens(batch_size: int, fast_mode: bool = True) -> int:
@@ -442,7 +423,8 @@ def _analyze_one_batch_with_llm(
 
     if fast_mode:
         system_prompt = COMPACT_RISK_SYSTEM
-        prompt = _compact_risk_prompt(batch)
+        text_limit = _env_int("AUTOTESTDESIGN_RISK_TEXT_LIMIT", 300, 80, 2000)
+        prompt = compact_risk_prompt(batch, text_limit=text_limit)
     else:
         reqs_text = []
         for req in batch:
