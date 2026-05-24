@@ -39,13 +39,15 @@ All major LLM features use shared performance settings from the sidebar:
 
 LLM requests use a shared client with session reuse and connection pooling. DeepSeek calls run with deterministic settings, including `temperature = 0` and disabled thinking mode where supported. Backend logs include task labels such as `Risk Analysis`, `Coverage Improvement`, `Test Case Generation`, and `Suite LLM Minimization`, making timing output easier to interpret.
 
+Risk analysis uses a compact prompt and compact JSON response format. With the default settings (`LLM batch size = 25`, `LLM concurrency = 4`), a 100-requirement file is processed as four parallel LLM batches. The total risk-analysis time is therefore mainly bounded by the slowest batch, not by the sum of all four batch durations. Recent local runs have usually completed the LLM risk-analysis stage in about 3-4 seconds for the 100-requirement TodoList sample, but this is an observed runtime under current provider/network conditions rather than a guaranteed algorithmic bound. Earlier 5-6 second runs used the same compact parallel design and are consistent with normal LLM service latency variation.
+
 Test suite improvement and state model improvement follow the same shared LLM execution pattern as the rest of the system. The only intentional exception is suite-level optimized-suite minimization, which reviews one suite per LLM batch because the prompt must include all candidate cases within that suite.
 
 Example:
 
 ```text
 [AutoTestDesign][LLM] request start task=Risk Analysis provider=deepseek ...
-[TIMING][Risk Analysis] Batch 1: 4.026s (processing 25 items)
+[TIMING][Risk Analysis] Batch 1: 3.426s (processing 25 items)
 [TIMING][Coverage Improvement] Batch 2: 18.504s (processing 25 items)
 ```
 
@@ -191,7 +193,7 @@ The Excel workbook contains the same artifact tables as separate sheets. JSON ex
 - `Assignment2/src/state_modeler.py`: state transition model, graph data, and optimized transition sequence generation.
 - `Assignment2/src/suite_optimizer.py`: deterministic test suite prioritization, deduplication, and minimization.
 - `Assignment2/src/improvement_engine.py`: LLM-based coverage improvement, test design improvement, and suite minimization.
-- `Assignment2/src/exporter.py`: CSV, JSON, Excel, traceability, and draft test export.
+- `Assignment2/src/exporter.py`: CSV, JSON, Excel, and traceability export.
 
 ## Supported Test Design Techniques
 
@@ -222,5 +224,7 @@ streamlit run Assignment2\app.py
 - Limited test case explosion with per-technique and global candidate limits.
 - Added LLM missing test case selection with risk-aware and coverage-diverse acceptance.
 - Added LLM semantic minimization for optimized suites using keep/drop decisions with suite-level protection rules.
-- Added editable state transition sequence tables, stronger save/load restoration, and unified export format choices.
+- Added editable state transition sequence tables and unified export format choices.
 - Simplified the Test Cases page by replacing detailed LLM result tables with concise summaries.
+- Removed local project persistence, selected-artifact export, and Selenium/PyTest draft generation from the main tool workflow.
+- Centralized active LLM prompt templates in `src/prompt_templates.py`.

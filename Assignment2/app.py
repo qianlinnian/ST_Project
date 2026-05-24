@@ -821,6 +821,17 @@ def generate_current_strategy(use_llm: bool = False) -> None:
     reset_downstream("strategy")
 
 
+def handle_strategy_generation(use_llm: bool = False) -> None:
+    if not st.session_state.coverage_items_draft.empty:
+        save_coverage_items(st.session_state.coverage_items_draft)
+    generate_current_strategy(use_llm=use_llm)
+    st.toast(
+        "LLM strategy improvement completed."
+        if use_llm
+        else "Coverage strategy generated."
+    )
+
+
 def generate_current_test_suites() -> None:
     if st.session_state.test_strategies.empty:
         st.warning("Please generate strategy first.")
@@ -983,6 +994,19 @@ def improve_current_optimized_suite_with_llm() -> None:
         )
     st.session_state.suite_minimization_result = result
     set_performance("llm_suite_minimization_seconds", llm_time)
+    decisions = result.get("suite_minimization_decisions", pd.DataFrame())
+    if decisions.empty:
+        st.toast("LLM reviewed the optimized suite; no redundant cases were removed.")
+        return
+    removed = int((decisions.get("status") == "applied").sum()) if "status" in decisions.columns else 0
+    protected = int((decisions.get("status") == "protected").sum()) if "status" in decisions.columns else 0
+    if removed or protected:
+        st.toast(
+            f"LLM minimization removed {removed} redundant cases, "
+            f"protected {protected} high-value cases."
+        )
+    else:
+        st.toast("LLM reviewed the optimized suite; no safe removals were applied.")
 
 
 def save_test_cases(test_cases: pd.DataFrame) -> None:
@@ -1152,34 +1176,6 @@ def render_export_paths(paths: dict[str, object]) -> None:
             "folder": st.column_config.TextColumn("folder", width="large"),
         },
     )
-
-
-def render_test_design_llm_summary(result: dict | None) -> None:
-    if not result:
-        return
-    missing_cases = result.get("missing_test_cases", pd.DataFrame())
-    if missing_cases.empty or "llm_error" in missing_cases.columns:
-        st.info("LLM did not add missing test cases.")
-        return
-    st.success(f"Added {len(missing_cases)} missing test cases with LLM.")
-
-
-def render_suite_minimization_summary(result: dict | None) -> None:
-    if not result:
-        return
-    decisions = result.get("suite_minimization_decisions", pd.DataFrame())
-    if decisions.empty:
-        st.info("LLM minimization reviewed the suite; no redundant cases were removed.")
-        return
-    removed = int((decisions.get("status") == "applied").sum()) if "status" in decisions.columns else 0
-    protected = int((decisions.get("status") == "protected").sum()) if "status" in decisions.columns else 0
-    if removed or protected:
-        st.success(
-            f"LLM minimization removed {removed} redundant cases, "
-            f"protected {protected} high-value cases."
-        )
-    else:
-        st.info("LLM minimization reviewed the suite; no safe removals were applied.")
 
 
 def render_performance_table(artifacts: dict[str, pd.DataFrame]) -> None:
@@ -1623,25 +1619,24 @@ if page == "Coverage & Strategy":
     strategy_col, strategy_llm_col = st.columns([1, 1], gap="medium")
     with strategy_col:
         strategy_disabled = artifacts["coverage_items"].empty
-        if st.button("Generate Strategy", type="primary", disabled=strategy_disabled):
-            with st.spinner("Generating local test strategy..."):
-                if not st.session_state.coverage_items_draft.empty:
-                    save_coverage_items(st.session_state.coverage_items_draft)
-                generate_current_strategy(use_llm=False)
-            artifacts = current_artifacts()
-            st.toast("Coverage strategy generated.")
+        st.button(
+            "Generate Strategy",
+            type="primary",
+            disabled=strategy_disabled,
+            on_click=handle_strategy_generation,
+            kwargs={"use_llm": False},
+        )
     with strategy_llm_col:
         strategy_llm_disabled = (
             not is_llm_enabled(st.session_state.selected_provider)
             or artifacts["coverage_items"].empty
         )
-        if st.button("Improve Strategy With LLM", disabled=strategy_llm_disabled):
-            with st.spinner("Reviewing strategy with LLM..."):
-                if not st.session_state.coverage_items_draft.empty:
-                    save_coverage_items(st.session_state.coverage_items_draft)
-                generate_current_strategy(use_llm=True)
-            artifacts = current_artifacts()
-            st.toast("LLM strategy improvement completed.")
+        st.button(
+            "Improve Strategy With LLM",
+            disabled=strategy_llm_disabled,
+            on_click=handle_strategy_generation,
+            kwargs={"use_llm": True},
+        )
 
     if artifacts["test_strategies"].empty:
         st.info("Coverage strategy has not been generated yet.")
@@ -1681,7 +1676,7 @@ if page == "Test Cases":
             not is_llm_enabled(st.session_state.selected_provider)
             or artifacts["test_suites"].empty
         )
-        if st.button("Improve Test Suite Metadata With LLM", disabled=suite_llm_disabled):
+        if st.button("Refine Suite Descriptions With LLM", disabled=suite_llm_disabled):
             with st.spinner("Improving test suite metadata with LLM..."):
                 improve_current_test_suites_with_llm()
             artifacts = current_artifacts()
@@ -1743,6 +1738,7 @@ if page == "Test Cases":
                     test_suites=st.session_state.test_suites,
                 )
                 st.session_state.ai_improvement_result = improvement_result
+                missing_cases = improvement_result.get("missing_test_cases", pd.DataFrame())
                 enhanced_cases = improvement_result.get("enhanced_test_cases", pd.DataFrame())
                 if not enhanced_cases.empty:
                     enhanced_cases = assign_test_suites_to_cases(
@@ -1767,6 +1763,10 @@ if page == "Test Cases":
                         st.session_state.optimized_test_cases,
                     )
                 set_performance("llm_test_design_improvement_seconds", llm_time)
+                if missing_cases.empty or "llm_error" in missing_cases.columns:
+                    st.toast("LLM did not add missing test cases.")
+                else:
+                    st.toast(f"Added {len(missing_cases)} missing test cases with LLM.")
             st.toast("LLM test design improvement completed.")
     if artifacts["test_cases"].empty:
         if artifacts["test_suites"].empty:
@@ -1800,9 +1800,6 @@ if page == "Test Cases":
                     improve_current_optimized_suite_with_llm()
                 artifacts = current_artifacts()
                 st.toast("LLM optimized suite improvement completed.")
-            render_suite_minimization_summary(
-                st.session_state.get("suite_minimization_result")
-            )
             st.dataframe(editor_safe_frame(artifacts["optimized_test_cases"]))
     section_header("Traceability Matrix", "map")
     if artifacts["traceability_matrix"].empty:
@@ -1818,8 +1815,6 @@ if page == "Test Cases":
             st.session_state.ai_improvement_result = None
             result = None
 
-    if result:
-        render_test_design_llm_summary(result)
     render_performance_table(artifacts)
 
 if page == "Export":
