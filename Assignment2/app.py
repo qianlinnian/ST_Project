@@ -1681,7 +1681,7 @@ if page == "Test Cases":
             not is_llm_enabled(st.session_state.selected_provider)
             or artifacts["test_suites"].empty
         )
-        if st.button("Improve Test Suites With LLM", disabled=suite_llm_disabled):
+        if st.button("Improve Test Suite Metadata With LLM", disabled=suite_llm_disabled):
             with st.spinner("Improving test suite metadata with LLM..."):
                 improve_current_test_suites_with_llm()
             artifacts = current_artifacts()
@@ -1726,7 +1726,7 @@ if page == "Test Cases":
             or artifacts["test_cases"].empty
         )
         if st.button(
-            "Improve Test Suite Metadata With LLM",
+            "Improve Test Design With LLM",
                         disabled=test_llm_disabled,
         ):
             with st.spinner("Generating LLM improvement suggestions..."):
