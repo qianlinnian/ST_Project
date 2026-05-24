@@ -903,7 +903,7 @@ def improve_current_test_suites_with_llm() -> None:
                 st.session_state.structured_requirements,
                 st.session_state.coverage_items,
                 st.session_state.test_strategies,
-                st.session_state.optimized_test_cases,
+                st.session_state.test_cases,
             )
     st.session_state.suite_design_improvement = result.get("suite_improvement_suggestions", pd.DataFrame())
     set_performance("llm_test_suite_design_improvement_seconds", llm_time)
@@ -972,7 +972,7 @@ def generate_current_test_cases() -> None:
         st.session_state.structured_requirements,
         st.session_state.coverage_items,
         st.session_state.test_strategies,
-        optimized_cases,
+        test_cases,
     )
     st.session_state.test_cases = test_cases
     st.session_state.test_cases_draft = test_cases.copy()
@@ -1004,12 +1004,6 @@ def improve_current_optimized_suite_with_llm() -> None:
     optimized_cases = result.get("optimized_test_cases", pd.DataFrame())
     if not optimized_cases.empty:
         st.session_state.optimized_test_cases = optimized_cases
-        st.session_state.traceability_matrix = build_traceability_matrix(
-            st.session_state.structured_requirements,
-            st.session_state.coverage_items,
-            st.session_state.test_strategies,
-            st.session_state.optimized_test_cases,
-        )
     st.session_state.suite_minimization_result = result
     set_performance("llm_suite_minimization_seconds", llm_time)
     decisions = result.get("suite_minimization_decisions", pd.DataFrame())
@@ -1040,7 +1034,7 @@ def save_test_cases(test_cases: pd.DataFrame) -> None:
         st.session_state.structured_requirements,
         st.session_state.coverage_items,
         st.session_state.test_strategies,
-        st.session_state.optimized_test_cases,
+        st.session_state.test_cases,
     )
 
 
@@ -1059,7 +1053,7 @@ def save_test_suites(test_suites: pd.DataFrame) -> None:
             st.session_state.structured_requirements,
             st.session_state.coverage_items,
             st.session_state.test_strategies,
-            st.session_state.optimized_test_cases,
+            st.session_state.test_cases,
         )
 
 
@@ -1779,7 +1773,7 @@ if page == "Test Cases":
                         st.session_state.structured_requirements,
                         st.session_state.coverage_items,
                         st.session_state.test_strategies,
-                        st.session_state.optimized_test_cases,
+                        st.session_state.test_cases,
                     )
                 set_performance("llm_test_design_improvement_seconds", llm_time)
                 if missing_cases.empty or "llm_error" in missing_cases.columns:

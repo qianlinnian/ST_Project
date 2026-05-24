@@ -245,13 +245,13 @@ def export_test_artifacts(
     state_model: dict | None = None,
     export_format: str = "mixed",
 ) -> dict[str, Path]:
-    final_suite = optimized_test_cases if optimized_test_cases is not None else test_cases
     traceability = build_traceability_matrix(
         structured_requirements,
         coverage_items,
         strategies,
-        final_suite,
+        test_cases,
     )
+    final_suite = optimized_test_cases if optimized_test_cases is not None else test_cases
     test_suites = test_suites if test_suites is not None else pd.DataFrame()
     risk_analysis = _with_default_columns(
         risk_analysis if risk_analysis is not None else pd.DataFrame(),

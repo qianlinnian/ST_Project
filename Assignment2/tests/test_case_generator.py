@@ -255,9 +255,11 @@ def test_export_names_candidate_cases_and_optimized_suite_separately():
     exported_risks = pd.read_csv(paths["risk_analysis_csv"])
     exported_candidates = pd.read_csv(paths["test_cases_csv"])
     exported_optimized = pd.read_csv(paths["optimized_test_suite_csv"])
+    exported_traceability = pd.read_csv(paths["traceability_csv"])
     assert len(exported_risks) == len(risks)
     assert len(exported_candidates) == len(test_cases)
     assert len(exported_optimized) == len(optimized)
+    assert len(exported_traceability) == len(test_cases)
     payload = json.loads(paths["test_suite_json"].read_text(encoding="utf-8"))
     assert {
         "risk_analysis",
