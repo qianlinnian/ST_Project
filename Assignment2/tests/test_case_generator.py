@@ -1,4 +1,5 @@
 import pandas as pd
+import json
 
 from src.coverage_identifier import identify_coverage_items
 from src.exporter import build_traceability_matrix, export_test_artifacts
@@ -9,6 +10,7 @@ from src.risk_analyzer import analyze_risks
 from src.state_modeler import (
     generate_all_transitions_sequence,
     generate_optimized_transition_sequence,
+    infer_state_model_from_requirements,
 )
 from src.suite_optimizer import optimize_suite
 from src.test_suite_designer import _apply_suite_improvements, design_test_suites
@@ -21,8 +23,11 @@ def _pipeline():
     risks = analyze_risks(structured)
     coverage = identify_coverage_items(structured, risks)
     strategies = select_strategies(coverage)
-    suites = design_test_suites(structured, coverage, strategies, risks)
-    test_cases = generate_test_cases(structured, coverage, strategies, suites)
+    state_sequences = generate_optimized_transition_sequence(
+        infer_state_model_from_requirements(structured)
+    )
+    suites = design_test_suites(structured, coverage, strategies, risks, state_sequences)
+    test_cases = generate_test_cases(structured, coverage, strategies, suites, state_sequences)
     return structured, coverage, strategies, suites, test_cases
 
 
@@ -96,6 +101,8 @@ def test_design_test_suites_groups_coverage_and_links_cases():
     assert {"suite_id", "suite_name"}.issubset(test_cases.columns)
     assert test_cases["suite_id"].astype(str).str.strip().ne("").all()
     assert test_cases["suite_name"].astype(str).str.strip().ne("").all()
+    assert (suites["suite_name"] == "State Transition Model Suite").any()
+    assert test_cases["coverage_id"].astype(str).str.startswith("COV-STATE-").any()
 
 
 def test_test_suite_ids_are_stable_for_same_inputs():
@@ -189,6 +196,10 @@ def test_traceability_matrix_links_requirement_coverage_strategy_and_cases():
 
 def test_export_names_candidate_cases_and_optimized_suite_separately():
     structured, coverage, strategies, suites, test_cases = _pipeline()
+    state_sequences = generate_optimized_transition_sequence(
+        infer_state_model_from_requirements(structured)
+    )
+    state_model = infer_state_model_from_requirements(structured)
     optimized = optimize_suite(test_cases).head(max(len(test_cases) - 1, 1)).reset_index(drop=True)
     paths = export_test_artifacts(
         structured,
@@ -197,6 +208,8 @@ def test_export_names_candidate_cases_and_optimized_suite_separately():
         test_cases,
         optimized_test_cases=optimized,
         test_suites=suites,
+        state_sequences=state_sequences,
+        state_model=state_model,
         prefix="pytest_suite_contract",
     )
     assert paths["test_cases_csv"].name.endswith("_test_cases.csv")
@@ -205,3 +218,6 @@ def test_export_names_candidate_cases_and_optimized_suite_separately():
     exported_optimized = pd.read_csv(paths["optimized_test_suite_csv"])
     assert len(exported_candidates) == len(test_cases)
     assert len(exported_optimized) == len(optimized)
+    payload = json.loads(paths["test_suite_json"].read_text(encoding="utf-8"))
+    assert {"test_suites", "test_cases", "optimized_test_cases", "state_transition_sequences", "state_model"}.issubset(payload)
+    assert len(payload["state_transition_sequences"]) == len(state_sequences)

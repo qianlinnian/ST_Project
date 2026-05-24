@@ -174,6 +174,8 @@ def export_test_artifacts(
     state_sequences: pd.DataFrame | None = None,
     prefix: str = "autotestdesign",
     test_suites: pd.DataFrame | None = None,
+    state_model: dict | None = None,
+    export_format: str = "mixed",
 ) -> dict[str, Path]:
     final_suite = optimized_test_cases if optimized_test_cases is not None else test_cases
     traceability = build_traceability_matrix(
@@ -182,41 +184,74 @@ def export_test_artifacts(
         strategies,
         final_suite,
     )
-    artifacts = {
-        "requirements_csv": export_csv(structured_requirements, f"{prefix}_requirements_structured.csv"),
-        "coverage_csv": export_csv(coverage_items, f"{prefix}_coverage_items.csv"),
-        "strategies_csv": export_csv(strategies, f"{prefix}_test_strategies.csv"),
-        "test_suites_csv": export_csv(test_suites if test_suites is not None else pd.DataFrame(), f"{prefix}_test_suites.csv"),
-        "test_cases_csv": export_csv(test_cases, f"{prefix}_test_cases.csv"),
-        "optimized_test_suite_csv": export_csv(final_suite, f"{prefix}_optimized_test_suite.csv"),
-        "test_suite_json": export_json(
-            {
-                "test_suites": (test_suites if test_suites is not None else pd.DataFrame()).to_dict("records"),
-                "test_cases": test_cases.to_dict("records"),
-                "optimized_test_cases": final_suite.to_dict("records"),
-            },
-            f"{prefix}_test_suite.json",
-        ),
-        "traceability_excel": export_excel(traceability, f"{prefix}_traceability_matrix.xlsx"),
-    }
+    test_suites = test_suites if test_suites is not None else pd.DataFrame()
+    state_sequences = state_sequences if state_sequences is not None else pd.DataFrame()
+    export_format = str(export_format or "mixed").lower()
 
     excel_sheets = {
         "Requirements": structured_requirements,
         "Coverage": coverage_items,
         "Strategies": strategies,
-        "Test Suites": test_suites if test_suites is not None else pd.DataFrame(),
+        "Test Suites": test_suites,
         "Test Cases": test_cases,
         "Optimized Test Suite": final_suite,
         "Traceability": traceability,
     }
-
-    if state_sequences is not None and not state_sequences.empty:
+    if not state_sequences.empty:
         excel_sheets["State Transitions"] = state_sequences
+
+    json_payload = {
+        "requirements": structured_requirements.to_dict("records"),
+        "coverage_items": coverage_items.to_dict("records"),
+        "test_strategies": strategies.to_dict("records"),
+        "test_suites": test_suites.to_dict("records"),
+        "test_cases": test_cases.to_dict("records"),
+        "optimized_test_cases": final_suite.to_dict("records"),
+        "traceability_matrix": traceability.to_dict("records"),
+        "state_transition_sequences": state_sequences.to_dict("records"),
+        "state_model": state_model or {},
+    }
+
+    if export_format == "xlsx":
+        return {
+            "test_design_excel": export_excel(
+                excel_sheets,
+                f"{prefix}_test_design_artifacts.xlsx",
+            )
+        }
+
+    if export_format == "json":
+        return {
+            "test_suite_json": export_json(
+                json_payload,
+                f"{prefix}_test_suite_artifacts.json",
+            )
+        }
+
+    artifacts = {
+        "requirements_csv": export_csv(structured_requirements, f"{prefix}_requirements_structured.csv"),
+        "coverage_csv": export_csv(coverage_items, f"{prefix}_coverage_items.csv"),
+        "strategies_csv": export_csv(strategies, f"{prefix}_test_strategies.csv"),
+        "test_suites_csv": export_csv(test_suites, f"{prefix}_test_suites.csv"),
+        "test_cases_csv": export_csv(test_cases, f"{prefix}_test_cases.csv"),
+        "optimized_test_suite_csv": export_csv(final_suite, f"{prefix}_optimized_test_suite.csv"),
+        "traceability_csv": export_csv(traceability, f"{prefix}_traceability_matrix.csv"),
+    }
+
+    if not state_sequences.empty:
         artifacts["state_transitions_csv"] = export_csv(
             state_sequences,
             f"{prefix}_state_transitions.csv",
         )
 
+    if export_format == "csv":
+        return artifacts
+
+    artifacts["test_suite_json"] = export_json(
+        json_payload,
+        f"{prefix}_test_suite.json",
+    )
+    artifacts["traceability_excel"] = export_excel(traceability, f"{prefix}_traceability_matrix.xlsx")
     artifacts["test_design_excel"] = export_excel(
         excel_sheets,
         f"{prefix}_test_design_artifacts.xlsx",

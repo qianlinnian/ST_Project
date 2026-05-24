@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import re
 
 import pandas as pd
 
@@ -47,6 +48,14 @@ def _split_values(value: Any) -> list[str]:
     return [part.strip() for part in text.split(",") if part.strip()]
 
 
+def _state_sequence_coverage_id(sequence: pd.Series | dict, offset: int) -> str:
+    transition_id = str(sequence.get("transition_id", "")).strip()
+    if transition_id:
+        suffix = re.sub(r"[^A-Za-z0-9]+", "-", transition_id).strip("-").upper()
+        return f"COV-STATE-{suffix}" if suffix else f"COV-STATE-{offset:03d}"
+    return f"COV-STATE-{offset:03d}"
+
+
 def _best_risk(values: list[str]) -> str:
     if not values:
         return "Medium"
@@ -82,8 +91,9 @@ def design_test_suites(
     coverage_items: pd.DataFrame,
     test_strategies: pd.DataFrame,
     risk_analysis: pd.DataFrame,
+    state_transition_sequences: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if coverage_items.empty:
+    if coverage_items.empty and (state_transition_sequences is None or state_transition_sequences.empty):
         return pd.DataFrame(columns=SUITE_COLUMNS)
 
     requirements = (
@@ -131,31 +141,72 @@ def design_test_suites(
         )
 
     grouped = pd.DataFrame(rows)
-    if grouped.empty:
-        return pd.DataFrame(columns=SUITE_COLUMNS)
 
     suite_rows = []
-    for index, ((module, technique, coverage_type), group) in enumerate(
-        grouped.groupby(["module", "technique", "coverage_type"], sort=True),
-        start=1,
-    ):
-        risk_level = _best_risk([str(value) for value in group["risk_level"].tolist()])
-        coverage_ids = sorted(set(group["coverage_id"].astype(str)))
-        techniques = sorted(set(group["technique"].astype(str)))
-        coverage_types = sorted(set(group["coverage_type"].astype(str)))
+    if not grouped.empty:
+        for index, ((module, technique, coverage_type), group) in enumerate(
+            grouped.groupby(["module", "technique", "coverage_type"], sort=True),
+            start=1,
+        ):
+            risk_level = _best_risk([str(value) for value in group["risk_level"].tolist()])
+            coverage_ids = sorted(set(group["coverage_id"].astype(str)))
+            techniques = sorted(set(group["technique"].astype(str)))
+            coverage_types = sorted(set(group["coverage_type"].astype(str)))
+            suite_rows.append(
+                {
+                    "suite_id": f"TS-{len(suite_rows) + 1:03d}",
+                    "suite_name": _suite_name(str(module), str(technique), str(coverage_type)),
+                    "module": module,
+                    "risk_level": risk_level,
+                    "priority": risk_level,
+                    "coverage_ids": "; ".join(coverage_ids),
+                    "techniques": "; ".join(techniques),
+                    "coverage_types": "; ".join(coverage_types),
+                    "suite_objective": _suite_objective(str(module), techniques, coverage_types),
+                    "optimization_basis": "risk-based and coverage-based prioritization",
+                    "source": "Rule fallback",
+                }
+            )
+
+    if state_transition_sequences is not None and not state_transition_sequences.empty:
+        state_module = _state_suite_module(structured_requirements)
+        coverage_goals = sorted(
+            {
+                str(value)
+                for value in state_transition_sequences.get("coverage_goal", pd.Series(dtype=str)).dropna()
+                if str(value).strip()
+            }
+        )
+        sequence_coverage_ids = [
+            _state_sequence_coverage_id(sequence, offset)
+            for offset, (_, sequence) in enumerate(state_transition_sequences.iterrows(), start=1)
+        ]
+        transition_ids = sorted(
+            {
+                str(value)
+                for value in state_transition_sequences.get("transition_id", pd.Series(dtype=str)).dropna()
+                if str(value).strip()
+            }
+        )
         suite_rows.append(
             {
-                "suite_id": f"TS-{index:03d}",
-                "suite_name": _suite_name(str(module), str(technique), str(coverage_type)),
-                "module": module,
-                "risk_level": risk_level,
-                "priority": risk_level,
-                "coverage_ids": "; ".join(coverage_ids),
-                "techniques": "; ".join(techniques),
-                "coverage_types": "; ".join(coverage_types),
-                "suite_objective": _suite_objective(str(module), techniques, coverage_types),
-                "optimization_basis": "risk-based and coverage-based prioritization",
-                "source": "Rule fallback",
+                "suite_id": f"TS-{len(suite_rows) + 1:03d}",
+                "suite_name": "State Transition Model Suite",
+                "module": state_module,
+                "risk_level": "Medium",
+                "priority": "Medium",
+                "coverage_ids": "; ".join(sequence_coverage_ids),
+                "techniques": "State Transition Testing",
+                "coverage_types": "State Transition",
+                "suite_objective": (
+                    "Validate behavior represented by the state transition model "
+                    f"using {', '.join(coverage_goals) or 'state/transition coverage'}."
+                ),
+                "optimization_basis": (
+                    "coverage-criterion-based optimized transition sequence"
+                    + (f"; transitions: {'; '.join(transition_ids)}" if transition_ids else "")
+                ),
+                "source": "Rule fallback - State transition model",
             }
         )
     return pd.DataFrame(suite_rows, columns=SUITE_COLUMNS)
@@ -327,6 +378,23 @@ def assign_test_suites_to_cases(test_cases: pd.DataFrame, test_suites: pd.DataFr
         for column, value in suite.items():
             assigned.at[index, column] = value
     return assigned
+
+
+def _state_suite_module(structured_requirements: pd.DataFrame) -> str:
+    if structured_requirements.empty or "module" not in structured_requirements.columns:
+        return "Cross-module behavior"
+    modules = sorted(
+        {
+            str(value).strip()
+            for value in structured_requirements["module"].dropna()
+            if str(value).strip()
+        }
+    )
+    if not modules:
+        return "Cross-module behavior"
+    if len(modules) == 1:
+        return modules[0]
+    return "Cross-module behavior"
 
 
 def _compact(value: Any, limit: int) -> str:

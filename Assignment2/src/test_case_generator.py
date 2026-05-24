@@ -158,21 +158,168 @@ def _state(start: int, req_id: str, cov_id: str, cov: dict, state_model: dict) -
     ]
 
 
-def _fallback(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame, include_state: bool) -> pd.DataFrame:
+def _state_sequence_cases(start: int, state_sequences: pd.DataFrame) -> list[dict]:
+    rows = []
+    if state_sequences.empty:
+        return rows
+    for offset, (_, sequence) in enumerate(state_sequences.iterrows()):
+        transition_id = str(sequence.get("transition_id", f"TR-{offset + 1:03d}"))
+        source = str(sequence.get("source_state", "Initial State"))
+        event = str(sequence.get("event", "perform transition event"))
+        target = str(sequence.get("target_state", "Expected Target State"))
+        rows.append(
+            {
+                "test_case_id": f"TC-{start + offset:03d}",
+                "suite_id": "",
+                "suite_name": "",
+                "requirement_id": "REQ-STATE-MODEL",
+                "coverage_id": _state_sequence_coverage_id(sequence, offset + 1),
+                "technique": "State Transition Testing",
+                "technique_standard": TECHNIQUE_STANDARDS["State Transition Testing"],
+                "precondition": sequence.get("precondition", f"The system is in source state: {source}."),
+                "test_data": sequence.get("test_data", f"Transition data for {transition_id}"),
+                "steps": sequence.get(
+                    "steps",
+                    f"1. Establish source state: {source}\n2. Apply event/action: {event}\n3. Observe the resulting system state",
+                ),
+                "expected_result": sequence.get(
+                    "expected_result",
+                    f"The system reaches target state: {target}.",
+                ),
+                "priority": "High",
+                "risk_score": 3.0,
+                "risk_level": "Medium",
+                "suite_risk_level": "",
+                "suite_priority": "",
+                "coverage_type": "State Transition",
+                "automation_candidate": "Partial",
+                "source": "State transition optimized sequence",
+                "design_basis": f"{transition_id}: {source} --{event}--> {target}",
+            }
+        )
+    return rows
+
+
+def _state_sequence_coverage_id(sequence: pd.Series | dict, offset: int) -> str:
+    transition_id = str(sequence.get("transition_id", "")).strip()
+    if transition_id:
+        suffix = re.sub(r"[^A-Za-z0-9]+", "-", transition_id).strip("-").upper()
+        return f"COV-STATE-{suffix}" if suffix else f"COV-STATE-{offset:03d}"
+    return f"COV-STATE-{offset:03d}"
+
+
+def _split_suite_coverage_ids(value: Any) -> list[str]:
+    text = str(value or "").strip()
+    if not text:
+        return []
+    separator = ";" if ";" in text else ","
+    return [part.strip() for part in text.split(separator) if part.strip()]
+
+
+def _generate_for_coverage(
+    counter: int,
+    coverage_row: dict,
+    requirements: pd.DataFrame,
+    strategy_map: dict,
+    state_model: dict,
+) -> list[dict]:
+    req_id = coverage_row.get("requirement_id", "")
+    cov_id = coverage_row.get("coverage_id", "")
+    req = _find_requirement(requirements, req_id)
+    tech = strategy_map.get(cov_id, {}).get("technique", "Equivalence Partitioning")
+    generated = (
+        _bva(counter, req_id, cov_id, coverage_row, req)
+        if tech == "Boundary Value Analysis"
+        else _decision(counter, req_id, cov_id, coverage_row, req)
+        if tech == "Decision Table Testing"
+        else _state(counter, req_id, cov_id, coverage_row, state_model)
+        if tech == "State Transition Testing"
+        else _ep(counter, req_id, cov_id, coverage_row, req)
+    )
+    return _limit_cases_for_coverage(generated, tech)
+
+
+def _suite_driven_fallback(
+    requirements: pd.DataFrame,
+    coverage: pd.DataFrame,
+    strategies: pd.DataFrame,
+    test_suites: pd.DataFrame,
+    include_state: bool,
+    state_transition_sequences: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    coverage_map = coverage.set_index("coverage_id").to_dict("index") if not coverage.empty else {}
+    strategy_map = strategies.set_index("coverage_id").to_dict("index") if not strategies.empty else {}
+    state_model = infer_state_model_from_requirements(requirements)
+    rows, counter = [], 1
+
+    for _, suite in test_suites.iterrows():
+        techniques = str(suite.get("techniques", ""))
+        coverage_type = str(suite.get("coverage_types", ""))
+        source = str(suite.get("source", ""))
+        is_state_suite = (
+            "State Transition Testing" in techniques
+            and ("State Transition" in coverage_type or "state transition model" in source.lower())
+        )
+        if is_state_suite and include_state:
+            sequence_frame = (
+                state_transition_sequences
+                if state_transition_sequences is not None
+                else pd.DataFrame()
+            )
+            state_rows = _state_sequence_cases(counter, sequence_frame)
+            rows.extend(state_rows)
+            counter += len(state_rows)
+            continue
+
+        for coverage_id in _split_suite_coverage_ids(suite.get("coverage_ids", "")):
+            coverage_row = coverage_map.get(coverage_id)
+            if not coverage_row:
+                continue
+            coverage_row = {"coverage_id": coverage_id, **coverage_row}
+            generated = _generate_for_coverage(
+                counter,
+                coverage_row,
+                requirements,
+                strategy_map,
+                state_model,
+            )
+            rows.extend(generated)
+            counter += len(generated)
+
+    return _limit_test_case_volume(pd.DataFrame(rows, columns=REQUIRED_COLUMNS))
+
+
+def _fallback(
+    requirements: pd.DataFrame,
+    coverage: pd.DataFrame,
+    strategies: pd.DataFrame,
+    include_state: bool,
+    state_transition_sequences: pd.DataFrame | None = None,
+    test_suites: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    if test_suites is not None and not test_suites.empty:
+        return _suite_driven_fallback(
+            requirements,
+            coverage,
+            strategies,
+            test_suites,
+            include_state,
+            state_transition_sequences=state_transition_sequences,
+        )
+
     strategy_map = strategies.set_index("coverage_id").to_dict("index") if not strategies.empty else {}
     state_model = infer_state_model_from_requirements(requirements)
     rows, counter = [], 1
     for _, cov_row in coverage.iterrows():
         cov = cov_row.to_dict()
-        req_id, cov_id = cov.get("requirement_id", ""), cov.get("coverage_id", "")
-        req = _find_requirement(requirements, req_id)
-        tech = strategy_map.get(cov_id, {}).get("technique", "Equivalence Partitioning")
-        generated = _bva(counter, req_id, cov_id, cov, req) if tech == "Boundary Value Analysis" else _decision(counter, req_id, cov_id, cov, req) if tech == "Decision Table Testing" else _state(counter, req_id, cov_id, cov, state_model) if tech == "State Transition Testing" else _ep(counter, req_id, cov_id, cov, req)
-        generated = _limit_cases_for_coverage(generated, tech)
+        generated = _generate_for_coverage(counter, cov, requirements, strategy_map, state_model)
         rows.extend(generated)
         counter += len(generated)
-    if include_state and not any(r.get("technique") == "State Transition Testing" for r in rows):
-        rows.extend(generate_state_transition_tests(start_index=counter, state_model=state_model).to_dict("records"))
+    if include_state:
+        if state_transition_sequences is not None and not state_transition_sequences.empty:
+            rows.extend(_state_sequence_cases(counter, state_transition_sequences))
+        elif not any(r.get("technique") == "State Transition Testing" for r in rows):
+            rows.extend(generate_state_transition_tests(start_index=counter, state_model=state_model).to_dict("records"))
     return _limit_test_case_volume(pd.DataFrame(rows, columns=REQUIRED_COLUMNS))
 
 
@@ -611,6 +758,7 @@ def _compact_text(value, limit: int) -> str:
 
 def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, strategies: pd.DataFrame,
                         test_suites: pd.DataFrame | None = None,
+                        state_transition_sequences: pd.DataFrame | None = None,
                         include_state_tests: bool = True, provider: str | None = None,
                         model: str | None = None, use_llm: bool = True,
                         batch_size: int | None = None,
@@ -635,11 +783,25 @@ def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, stra
                 concurrency=concurrency,
             )
         except Exception as exc:
-            fallback = _fallback(requirements, coverage, strategies, include_state_tests)
+            fallback = _fallback(
+                requirements,
+                coverage,
+                strategies,
+                include_state_tests,
+                state_transition_sequences=state_transition_sequences,
+                test_suites=test_suites,
+            )
             if test_suites is not None:
                 fallback = assign_test_suites_to_cases(fallback, test_suites)
             fallback["llm_error"] = str(exc)
             fallback["source"] = fallback["source"].astype(str) + " after LLM fallback"
             return fallback
-    generated = _fallback(requirements, coverage, strategies, include_state_tests)
+    generated = _fallback(
+        requirements,
+        coverage,
+        strategies,
+        include_state_tests,
+        state_transition_sequences=state_transition_sequences,
+        test_suites=test_suites,
+    )
     return assign_test_suites_to_cases(generated, test_suites) if test_suites is not None else generated
