@@ -100,17 +100,30 @@ def driver():
     yield browser
     browser.quit()
 
-
 @pytest.fixture(autouse=True)
 def clean_state(driver):
+    """
+    Reset test state before every pytest case.
+
+    reset_todos() may not clear the currently opened list scope completely,
+    so we also clear any visible Todo items through the UI.
+    """
     try:
         reset_todos()
     except urllib.error.URLError as exc:
         pytest.fail(f"Backend API is not available at {API_BASE_URL}: {exc}")
 
     driver.get(FRONTEND_URL)
-    TodoPage(driver).wait_until_loaded()
+    page = TodoPage(driver)
+    page.wait_until_loaded()
 
+    # Important: clear actual visible items in the current test-list.
+    page.clear_all_items_via_ui()
+
+    # Reload once more so each test starts from a clean, stable empty UI.
+    driver.get(FRONTEND_URL)
+    page.wait_until_loaded()
+    page.assert_count(0)
 
 @pytest.fixture
 def page(driver):
@@ -341,50 +354,29 @@ class TodoPage:
 
     def clear_all_items_via_ui(self):
         """
-        Clear all visible Todo items using normal UI behavior:
-        Mark all as complete -> Clear completed.
-
-        If the Clear completed button is not immediately clickable,
-        fall back to deleting remaining visible items one by one.
+        Clear all currently visible Todo items using delete buttons only.
+        Used only by empty-list boundary tests.
         """
-        if self.visible_count() == 0:
-            return
-
-        # Make sure we are viewing all items before cleanup.
         try:
             self.filter_all()
         except Exception:
             pass
 
-        # Step 1: mark all visible items as completed.
-        if self.visible_count() > 0 and not all(self.completed_flags()):
-            self.toggle_all_to_completed()
-
-        # Step 2: wait for Clear completed button and click it if available.
-        try:
-            button = WebDriverWait(self.driver, 3).until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, ".clear-completed"))
-            )
-            button.click()
-            self.wait.until(lambda _: self.visible_count() == 0)
-            return
-        except Exception:
-            pass
-
-        # Step 3 fallback: delete remaining items one by one through UI.
-        for _ in range(30):
+        for _ in range(50):
             items = self.visible_items()
             if not items:
-                break
+                return
 
+            before = len(items)
             item = items[0]
-            try:
-                ActionChains(self.driver).move_to_element(item).perform()
-                destroy = item.find_element(By.CSS_SELECTOR, ".destroy")
-                self.driver.execute_script("arguments[0].click();", destroy)
-                time.sleep(0.2)
-            except Exception:
-                break
+
+            ActionChains(self.driver).move_to_element(item).perform()
+            time.sleep(0.1)
+
+            destroy = item.find_element(By.CSS_SELECTOR, ".destroy")
+            self.driver.execute_script("arguments[0].click();", destroy)
+
+            self.wait.until(lambda _: self.visible_count() < before)
 
         self.wait.until(lambda _: self.visible_count() == 0)
 
@@ -492,16 +484,11 @@ def s_toggle_all_back_to_active(page):
     assert page.active_count_text() == "3 items left"
 
 def s_toggle_all_empty_safe(page):
-    """
-    Boundary/invalid-control scenario for toggle-all.
-
-    First make the list empty through normal UI operations, then verify that
-    invoking toggle-all in an empty-list boundary state keeps the app usable.
-    """
     page.clear_all_items_via_ui()
     page.assert_count(0)
 
-    page.toggle_all_if_present()
+    clicked = page.toggle_all_if_present()
+    assert clicked is False
 
     page.assert_count(0)
     page.assert_app_still_usable()
@@ -602,18 +589,18 @@ CASES = [
     pytest.param("TC-066", "TS-009", "COV-STATE-TR-001", s_add_valid, id="TC-066_add_valid_item"),
     pytest.param("TC-067", "TS-009", "COV-STATE-TR-003", s_toggle_completed_once, id="TC-067_toggle_completed"),
     pytest.param("TC-068", "TS-009", "COV-STATE-TR-004", s_edit_non_empty, id="TC-068_edit_non_empty"),
-    pytest.param("TC-069", "TS-009", "COV-STATE-TR-005", s_edit_empty_deletes, marks=KNOWN_DEFECT, id="TC-069_edit_empty_deletes"),
+    pytest.param("TC-069", "TS-009", "COV-STATE-TR-005", s_edit_empty_deletes, id="TC-069_edit_empty_deletes"),
     pytest.param("TC-070", "TS-009", "COV-STATE-TR-006", s_delete_single_item, id="TC-070_delete_single"),
     pytest.param("TC-071", "TS-009", "COV-STATE-TR-007", s_toggle_all_to_completed, id="TC-071_toggle_all_completed"),
     pytest.param("TC-072", "TS-009", "COV-STATE-TR-008", s_toggle_all_back_to_active, id="TC-072_toggle_all_active"),
     pytest.param("TC-073", "TS-009", "COV-STATE-TR-009", s_filter_active, id="TC-073_filter_active"),
     pytest.param("TC-074", "TS-009", "COV-STATE-TR-010", s_filter_all_round_trip, id="TC-074_filter_all"),
-    pytest.param("TC-075", "TS-009", "COV-STATE-TR-002", s_add_whitespace_ignored, marks=KNOWN_DEFECT, id="TC-075_add_whitespace_ignored"),
+    pytest.param("TC-075", "TS-009", "COV-STATE-TR-002", s_add_whitespace_ignored, id="TC-075_add_whitespace_ignored"),
     pytest.param("TC-076", "TS-009", "COV-STATE-TR-011", s_clear_completed_all_completed_empty, id="TC-076_clear_completed"),
 
     # TS-001 Boundary Value Analysis
-    pytest.param("TC-001", "TS-001", "COV-004", s_add_whitespace_ignored, marks=KNOWN_DEFECT, id="TC-001_whitespace_boundary"),
-    pytest.param("TC-007", "TS-001", "COV-014", s_edit_empty_deletes, marks=KNOWN_DEFECT, id="TC-007_empty_title_boundary"),
+    pytest.param("TC-001", "TS-001", "COV-004", s_add_whitespace_ignored, id="TC-001_whitespace_boundary"),
+    pytest.param("TC-007", "TS-001", "COV-014", s_edit_empty_deletes, id="TC-007_empty_title_boundary"),
     pytest.param("TC-010", "TS-001", "COV-024", s_filter_invalid_safe, id="TC-010_filter_all_boundary"),
     pytest.param("TC-013", "TS-001", "COV-025", s_filter_active, id="TC-013_filter_active_boundary"),
     pytest.param("TC-016", "TS-001", "COV-026", s_filter_completed, id="TC-016_filter_completed_boundary"),
@@ -624,17 +611,17 @@ CASES = [
 
     # TS-003 Equivalence Partitioning for conditions
     pytest.param("TC-021", "TS-003", "COV-003", s_add_valid_partition, id="TC-021_input_condition_valid"),
-    pytest.param("TC-022", "TS-003", "COV-003", s_add_whitespace_ignored, marks=KNOWN_DEFECT, id="TC-022_input_condition_invalid"),
+    pytest.param("TC-022", "TS-003", "COV-003", s_add_whitespace_ignored, id="TC-022_input_condition_invalid"),
     pytest.param("TC-023", "TS-003", "COV-013", s_edit_non_empty, id="TC-023_save_title_valid"),
-    pytest.param("TC-024", "TS-003", "COV-013", s_edit_empty_deletes, marks=KNOWN_DEFECT, id="TC-024_save_title_empty"),
+    pytest.param("TC-024", "TS-003", "COV-013", s_edit_empty_deletes, id="TC-024_save_title_empty"),
     pytest.param("TC-025", "TS-003", "COV-023", s_filter_active, id="TC-025_filter_condition_valid"),
     pytest.param("TC-026", "TS-003", "COV-023", s_filter_invalid_safe, id="TC-026_filter_condition_invalid"),
 
     # TS-004 Equivalence Partitioning for core behavior
     pytest.param("TC-027", "TS-004", "COV-001", s_add_valid, id="TC-027_add_core_valid"),
-    pytest.param("TC-028", "TS-004", "COV-001", s_add_whitespace_ignored, marks=KNOWN_DEFECT, id="TC-028_add_core_invalid"),
+    pytest.param("TC-028", "TS-004", "COV-001", s_add_whitespace_ignored, id="TC-028_add_core_invalid"),
     pytest.param("TC-031", "TS-004", "COV-009", s_edit_non_empty, id="TC-031_edit_core_valid"),
-    pytest.param("TC-032", "TS-004", "COV-009", s_edit_empty_deletes, marks=KNOWN_DEFECT, id="TC-032_edit_core_invalid_empty"),
+    pytest.param("TC-032", "TS-004", "COV-009", s_edit_empty_deletes, id="TC-032_edit_core_invalid_empty"),
     pytest.param("TC-035", "TS-004", "COV-018", s_toggle_all_to_completed, id="TC-035_toggle_all_core_valid"),
     pytest.param("TC-036", "TS-004", "COV-018", s_toggle_all_empty_safe, id="TC-036_toggle_all_core_invalid_empty"),
     pytest.param("TC-037", "TS-004", "COV-021", s_filter_active, id="TC-037_filter_core_valid"),
@@ -644,11 +631,11 @@ CASES = [
 
     # TS-005 Equivalence Partitioning for inputs
     pytest.param("TC-041", "TS-005", "COV-002", s_add_valid_partition, id="TC-041_add_input_valid"),
-    pytest.param("TC-042", "TS-005", "COV-002", s_add_whitespace_ignored, marks=KNOWN_DEFECT, id="TC-042_add_input_invalid_whitespace"),
+    pytest.param("TC-042", "TS-005", "COV-002", s_add_whitespace_ignored, id="TC-042_add_input_invalid_whitespace"),
     pytest.param("TC-045", "TS-005", "COV-010", s_edit_non_empty, id="TC-045_edit_item_valid"),
     pytest.param("TC-046", "TS-005", "COV-010", s_edit_deleted_item_safe, id="TC-046_edit_item_invalid_deleted"),
     pytest.param("TC-047", "TS-005", "COV-011", s_edit_non_empty, id="TC-047_edit_title_valid"),
-    pytest.param("TC-048", "TS-005", "COV-011", s_edit_empty_deletes, marks=KNOWN_DEFECT, id="TC-048_edit_title_invalid_empty"),
+    pytest.param("TC-048", "TS-005", "COV-011", s_edit_empty_deletes, id="TC-048_edit_title_invalid_empty"),
     pytest.param("TC-051", "TS-005", "COV-019", s_toggle_all_to_completed, id="TC-051_toggle_all_control_valid"),
     pytest.param("TC-052", "TS-005", "COV-019", s_toggle_all_empty_safe, id="TC-052_toggle_all_control_invalid"),
     pytest.param("TC-053", "TS-005", "COV-022", s_filter_all_round_trip, id="TC-053_filter_input_valid"),
