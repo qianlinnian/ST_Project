@@ -322,6 +322,8 @@ def init_state() -> None:
         st.session_state.suite_minimization_result = None
     if "suite_design_improvement" not in st.session_state:
         st.session_state.suite_design_improvement = None
+    if "pending_toasts" not in st.session_state:
+        st.session_state.pending_toasts = []
     if "llm_batch_size" not in st.session_state:
         st.session_state.llm_batch_size = 25
     if "llm_concurrency" not in st.session_state:
@@ -342,6 +344,22 @@ def init_state() -> None:
             st.session_state[key] = pd.DataFrame()
     if "state_model" not in st.session_state:
         st.session_state.state_model = None
+
+
+def queue_toast(message: str) -> None:
+    st.session_state.pending_toasts.append(message)
+
+
+def rerun_with_toast(message: str) -> None:
+    queue_toast(message)
+    st.rerun()
+
+
+def flush_pending_toasts() -> None:
+    pending = list(st.session_state.get("pending_toasts", []))
+    st.session_state.pending_toasts = []
+    for message in pending:
+        st.toast(message)
 
 
 def empty_requirements() -> pd.DataFrame:
@@ -996,17 +1014,17 @@ def improve_current_optimized_suite_with_llm() -> None:
     set_performance("llm_suite_minimization_seconds", llm_time)
     decisions = result.get("suite_minimization_decisions", pd.DataFrame())
     if decisions.empty:
-        st.toast("LLM reviewed the optimized suite; no redundant cases were removed.")
+        queue_toast("LLM reviewed the optimized suite; no redundant cases were removed.")
         return
     removed = int((decisions.get("status") == "applied").sum()) if "status" in decisions.columns else 0
     protected = int((decisions.get("status") == "protected").sum()) if "status" in decisions.columns else 0
     if removed or protected:
-        st.toast(
+        queue_toast(
             f"LLM minimization removed {removed} redundant cases, "
             f"protected {protected} high-value cases."
         )
     else:
-        st.toast("LLM reviewed the optimized suite; no safe removals were applied.")
+        queue_toast("LLM reviewed the optimized suite; no safe removals were applied.")
 
 
 def save_test_cases(test_cases: pd.DataFrame) -> None:
@@ -1227,8 +1245,7 @@ def render_state_model_section() -> None:
             if st.button("Improve State Model With LLM", disabled=disabled):
                 with st.spinner("Improving state model with LLM..."):
                     improve_current_state_model_with_llm()
-                st.toast("LLM state model improvement completed.")
-                st.rerun()
+                rerun_with_toast("LLM state model improvement completed.")
         st.graphviz_chart(state_model_to_dot(state_model))
         if not st.session_state.state_transition_sequences.empty:
             with st.form("state_transition_sequences_edit_form"):
@@ -1243,8 +1260,9 @@ def render_state_model_section() -> None:
                 )
             if saved_sequences:
                 save_state_transition_sequences(edited_sequences)
-                st.toast("Edited state transition sequences saved. Regenerate test suites and test cases.")
-                st.rerun()
+                rerun_with_toast(
+                    "Edited state transition sequences saved. Regenerate test suites and test cases."
+                )
 
 
 def render_risk_timing_details() -> None:
@@ -1294,6 +1312,7 @@ def render_risk_timing_details() -> None:
 
 inject_style()
 init_state()
+flush_pending_toasts()
 
 with st.sidebar:
     st.markdown("### AutoTestDesign Workflow")
@@ -1361,9 +1380,15 @@ st.markdown(
 )
 
 artifacts = current_artifacts()
+metrics_slot = None
+llm_status_slot = None
 if page != "Requirement Input":
-    render_metrics(artifacts)
-    render_llm_status(artifacts)
+    metrics_slot = st.empty()
+    llm_status_slot = st.empty()
+    with metrics_slot.container():
+        render_metrics(artifacts)
+    with llm_status_slot.container():
+        render_llm_status(artifacts)
 
 if page == "Requirement Input":
     with st.container():
@@ -1519,7 +1544,7 @@ if page == "Risk Analysis":
     if st.button("Analyze Risks", type="primary"):
         with st.spinner("Analyzing risks..."):
             analyze_current_risks()
-        artifacts = current_artifacts()
+        rerun_with_toast("Risk analysis completed.")
     if artifacts["risk_analysis"].empty:
         st.info("Structure requirements on the Requirement Input page, then run risk analysis.")
     else:
@@ -1557,7 +1582,7 @@ if page == "Risk Analysis":
         )
         if st.button("Save Edited Risk Analysis"):
             save_risk_analysis(st.session_state.risk_analysis_draft)
-            st.toast("Edited risk analysis saved.")
+            rerun_with_toast("Edited risk analysis saved.")
     render_performance_table(artifacts)
     render_risk_timing_details()
 
@@ -1570,7 +1595,7 @@ if page == "Coverage & Strategy":
                 if not st.session_state.risk_analysis_draft.empty:
                     save_risk_analysis(st.session_state.risk_analysis_draft)
                 generate_current_coverage()
-            artifacts = current_artifacts()
+            rerun_with_toast("Coverage items generated.")
     with llm_col:
         coverage_llm_disabled = (
             not is_llm_enabled(st.session_state.selected_provider)
@@ -1584,8 +1609,7 @@ if page == "Coverage & Strategy":
                 before_count = len(st.session_state.coverage_items)
                 improve_current_coverage_with_llm()
                 after_count = len(st.session_state.coverage_items)
-            artifacts = current_artifacts()
-            st.toast(f"LLM coverage improvement completed. Added {max(after_count - before_count, 0)} coverage items.")
+            rerun_with_toast(f"LLM coverage improvement completed. Added {max(after_count - before_count, 0)} coverage items.")
     if artifacts["coverage_items"].empty:
         st.info("Run requirement structuring and risk analysis first.")
     else:
@@ -1601,8 +1625,7 @@ if page == "Coverage & Strategy":
             )
         if saved_coverage:
             save_coverage_items(edited_coverage)
-            artifacts = current_artifacts()
-            st.toast("Edited coverage items saved. Regenerate strategy before test case generation.")
+            rerun_with_toast("Edited coverage items saved. Regenerate strategy before test case generation.")
 
     coverage_improvement = st.session_state.get("coverage_ai_improvement")
     if coverage_improvement is not None:
@@ -1653,8 +1676,7 @@ if page == "Coverage & Strategy":
             )
         if saved_strategies:
             save_test_strategies(edited_strategies)
-            artifacts = current_artifacts()
-            st.toast("Edited test strategies saved.")
+            rerun_with_toast("Edited test strategies saved.")
 
     render_state_model_section()
     render_performance_table(artifacts)
@@ -1669,8 +1691,7 @@ if page == "Test Cases":
                 if not st.session_state.test_strategies_draft.empty:
                     save_test_strategies(st.session_state.test_strategies_draft)
                 generate_current_test_suites()
-            artifacts = current_artifacts()
-            st.toast("Test suites generated.")
+            rerun_with_toast("Test suites generated.")
     with suite_llm_col:
         suite_llm_disabled = (
             not is_llm_enabled(st.session_state.selected_provider)
@@ -1679,8 +1700,7 @@ if page == "Test Cases":
         if st.button("Refine Suite Descriptions With LLM", disabled=suite_llm_disabled):
             with st.spinner("Improving test suite metadata with LLM..."):
                 improve_current_test_suites_with_llm()
-            artifacts = current_artifacts()
-            st.toast("LLM test suite improvement completed.")
+            rerun_with_toast("LLM test suite improvement completed.")
 
     if artifacts["test_suites"].empty:
         st.info("Generate strategy first, then generate test suites.")
@@ -1695,8 +1715,7 @@ if page == "Test Cases":
             saved_suites = st.form_submit_button("Save Edited Test Suites")
         if saved_suites:
             save_test_suites(edited_suites)
-            artifacts = current_artifacts()
-            st.toast("Edited test suites saved.")
+            rerun_with_toast("Edited test suites saved.")
 
     suite_improvement = st.session_state.get("suite_design_improvement")
     if suite_improvement is not None and not suite_improvement.empty:
@@ -1714,7 +1733,7 @@ if page == "Test Cases":
         if st.button("Generate Test Cases", type="primary", disabled=test_case_disabled):
             with st.spinner("Generating local test cases..."):
                 generate_current_test_cases()
-            artifacts = current_artifacts()
+            rerun_with_toast("Test cases generated.")
     with llm_col:
         test_llm_disabled = (
             not is_llm_enabled(st.session_state.selected_provider)
@@ -1764,10 +1783,10 @@ if page == "Test Cases":
                     )
                 set_performance("llm_test_design_improvement_seconds", llm_time)
                 if missing_cases.empty or "llm_error" in missing_cases.columns:
-                    st.toast("LLM did not add missing test cases.")
+                    queue_toast("LLM did not add missing test cases.")
                 else:
-                    st.toast(f"Added {len(missing_cases)} missing test cases with LLM.")
-            st.toast("LLM test design improvement completed.")
+                    queue_toast(f"Added {len(missing_cases)} missing test cases with LLM.")
+            rerun_with_toast("LLM test design improvement completed.")
     if artifacts["test_cases"].empty:
         if artifacts["test_suites"].empty:
             st.info("Generate coverage, strategy, and test suites first, then generate test cases.")
@@ -1786,8 +1805,7 @@ if page == "Test Cases":
             )
         if saved_cases:
             save_test_cases(edited_cases)
-            artifacts = current_artifacts()
-            st.toast("Edited test cases saved.")
+            rerun_with_toast("Edited test cases saved.")
     if not artifacts["optimized_test_cases"].empty:
         section_header("Optimized Test Suite", "case")
         with st.expander("Optimized test suite", expanded=True):
@@ -1798,8 +1816,7 @@ if page == "Test Cases":
             ):
                 with st.spinner("Reviewing optimized suite with LLM..."):
                     improve_current_optimized_suite_with_llm()
-                artifacts = current_artifacts()
-                st.toast("LLM optimized suite improvement completed.")
+                rerun_with_toast("LLM optimized suite improvement completed.")
             st.dataframe(editor_safe_frame(artifacts["optimized_test_cases"]))
     section_header("Traceability Matrix", "map")
     if artifacts["traceability_matrix"].empty:
@@ -1859,3 +1876,10 @@ if page == "Export":
         render_export_paths(st.session_state.last_export_paths)
 
     st.dataframe(editor_safe_frame(artifacts["performance"]), use_container_width=True)
+
+if metrics_slot is not None and llm_status_slot is not None:
+    refreshed_artifacts = current_artifacts()
+    with metrics_slot.container():
+        render_metrics(refreshed_artifacts)
+    with llm_status_slot.container():
+        render_llm_status(refreshed_artifacts)
