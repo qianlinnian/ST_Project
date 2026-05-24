@@ -194,6 +194,40 @@ def test_traceability_matrix_links_requirement_coverage_strategy_and_cases():
     assert len(matrix) == len(test_cases)
 
 
+def test_traceability_matrix_labels_state_model_derived_rows():
+    structured = pd.DataFrame(
+        [
+            {
+                "requirement_id": "REQ-1",
+                "module": "TodoItem",
+                "requirement_text": "Users can manage todo items.",
+            }
+        ]
+    )
+    test_cases = pd.DataFrame(
+        [
+            {
+                "test_case_id": "TC-001",
+                "suite_id": "TS-001",
+                "suite_name": "TodoItem All Transitions Suite",
+                "requirement_id": "REQ-STATE-MODEL",
+                "coverage_id": "COV-STATE-TR-001",
+                "technique": "State Transition Testing",
+            }
+        ]
+    )
+    matrix = build_traceability_matrix(
+        structured,
+        pd.DataFrame(),
+        pd.DataFrame(),
+        test_cases,
+    )
+    row = matrix.iloc[0]
+    assert row["requirement_text"] == "State model derived requirement"
+    assert row["module"] == "TodoItem"
+    assert row["coverage_description"] == "State transition coverage derived from the generated behavior model"
+
+
 def test_export_names_candidate_cases_and_optimized_suite_separately():
     structured, coverage, strategies, suites, test_cases = _pipeline()
     risks = analyze_risks(structured)

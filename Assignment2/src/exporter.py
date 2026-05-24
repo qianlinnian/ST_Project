@@ -185,7 +185,51 @@ def build_traceability_matrix(
     ]
     ordered = [column for column in desired_order if column in matrix.columns]
     remaining = [column for column in matrix.columns if column not in ordered]
-    return matrix[ordered + remaining]
+    matrix = matrix[ordered + remaining]
+    return _fill_state_model_traceability(matrix, structured_requirements)
+
+
+def _fill_state_model_traceability(
+    matrix: pd.DataFrame, structured_requirements: pd.DataFrame
+) -> pd.DataFrame:
+    if matrix.empty or "requirement_id" not in matrix.columns:
+        return matrix
+
+    filled = matrix.copy()
+    state_rows = filled["requirement_id"].astype(str) == "REQ-STATE-MODEL"
+    if not state_rows.any():
+        return filled
+
+    defaults = {
+        "requirement_text": "State model derived requirement",
+        "module": _state_model_module(structured_requirements),
+        "coverage_description": "State transition coverage derived from the generated behavior model",
+        "coverage_type": "State Transition",
+        "related_techniques": "State Transition Testing",
+        "strategy_reason": "Covers state/event sequences derived from the behavior model.",
+    }
+    for column, value in defaults.items():
+        if column not in filled.columns:
+            filled[column] = pd.NA
+        current = filled.loc[state_rows, column]
+        missing = current.isna() | current.astype(str).str.strip().isin(["", "None", "nan"])
+        filled.loc[state_rows & missing, column] = value
+    return filled
+
+
+def _state_model_module(structured_requirements: pd.DataFrame) -> str:
+    if structured_requirements.empty or "module" not in structured_requirements.columns:
+        return "Cross-module behavior"
+    modules = sorted(
+        {
+            str(value).strip()
+            for value in structured_requirements["module"].dropna()
+            if str(value).strip()
+        }
+    )
+    if len(modules) == 1:
+        return modules[0]
+    return "Cross-module behavior"
 
 
 def export_test_artifacts(
