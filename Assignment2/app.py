@@ -1,4 +1,6 @@
 import hashlib
+import json
+from pathlib import Path
 import re
 
 import pandas as pd
@@ -321,6 +323,8 @@ def init_state() -> None:
         st.session_state.test_suites_draft = pd.DataFrame()
     if "test_cases_draft" not in st.session_state:
         st.session_state.test_cases_draft = pd.DataFrame()
+    if "state_transition_sequences_draft" not in st.session_state:
+        st.session_state.state_transition_sequences_draft = pd.DataFrame()
     if "coverage_ai_improvement" not in st.session_state:
         st.session_state.coverage_ai_improvement = None
     if "ai_improvement_result" not in st.session_state:
@@ -388,6 +392,25 @@ def compact_structured_requirements() -> pd.DataFrame:
         if column in st.session_state.structured_requirements.columns
     ]
     return st.session_state.structured_requirements[available_columns].copy()
+
+
+def format_cell_value(value) -> str:
+    if isinstance(value, (list, dict, tuple, set)):
+        try:
+            return json.dumps(value, ensure_ascii=False)
+        except TypeError:
+            return str(value)
+    return "" if pd.isna(value) else str(value)
+
+
+def editor_safe_frame(data: pd.DataFrame) -> pd.DataFrame:
+    if data.empty:
+        return data.copy()
+    safe = data.copy()
+    for column in safe.columns:
+        if safe[column].map(lambda value: isinstance(value, (list, dict, tuple, set))).any():
+            safe[column] = safe[column].map(format_cell_value)
+    return safe
 
 
 STRUCTURED_LIST_COLUMNS = {
@@ -589,6 +612,7 @@ def reset_downstream(from_step: str) -> None:
             "test_cases_draft",
             "optimized_test_cases",
             "state_transition_sequences",
+            "state_transition_sequences_draft",
             "traceability_matrix",
             "performance",
         ],
@@ -605,6 +629,7 @@ def reset_downstream(from_step: str) -> None:
             "test_cases_draft",
             "optimized_test_cases",
             "state_transition_sequences",
+            "state_transition_sequences_draft",
             "traceability_matrix",
         ],
         "risk": [
@@ -618,6 +643,7 @@ def reset_downstream(from_step: str) -> None:
             "test_cases_draft",
             "optimized_test_cases",
             "state_transition_sequences",
+            "state_transition_sequences_draft",
             "traceability_matrix",
         ],
         "strategy": [
@@ -798,6 +824,7 @@ def generate_current_strategy(use_llm: bool = False) -> None:
     st.session_state.test_strategies = strategies
     st.session_state.test_strategies_draft = strategies.copy()
     st.session_state.state_transition_sequences = state_sequences
+    st.session_state.state_transition_sequences_draft = state_sequences.copy()
     set_performance(
         "llm_strategy_improvement_seconds" if use_llm else "strategy_generation_seconds",
         strategy_time,
@@ -815,6 +842,7 @@ def generate_current_test_suites() -> None:
         st.session_state.coverage_items,
         st.session_state.test_strategies,
         st.session_state.risk_analysis,
+        st.session_state.state_transition_sequences,
     )
     st.session_state.test_suites = suites
     st.session_state.test_suites_draft = suites.copy()
@@ -880,11 +908,26 @@ def improve_current_state_model_with_llm() -> None:
     )
     st.session_state.state_model = state_model
     st.session_state.state_transition_sequences = generate_optimized_transition_sequence(state_model)
+    st.session_state.state_transition_sequences_draft = st.session_state.state_transition_sequences.copy()
     set_performance("llm_state_model_improvement_seconds", model_time)
     st.session_state.test_cases = pd.DataFrame()
     st.session_state.test_cases_draft = pd.DataFrame()
     st.session_state.optimized_test_cases = pd.DataFrame()
     st.session_state.traceability_matrix = pd.DataFrame()
+
+
+def save_state_transition_sequences(state_sequences: pd.DataFrame) -> None:
+    st.session_state.state_transition_sequences = state_sequences.copy()
+    st.session_state.state_transition_sequences_draft = state_sequences.copy()
+    st.session_state.test_suites = pd.DataFrame()
+    st.session_state.test_suites_draft = pd.DataFrame()
+    st.session_state.test_cases = pd.DataFrame()
+    st.session_state.test_cases_draft = pd.DataFrame()
+    st.session_state.optimized_test_cases = pd.DataFrame()
+    st.session_state.traceability_matrix = pd.DataFrame()
+    st.session_state.ai_improvement_result = None
+    st.session_state.suite_design_improvement = None
+    st.session_state.suite_minimization_result = None
 
 
 def generate_current_test_cases() -> None:
@@ -900,6 +943,7 @@ def generate_current_test_cases() -> None:
         st.session_state.coverage_items,
         st.session_state.test_strategies,
         st.session_state.test_suites,
+        st.session_state.state_transition_sequences,
         include_state_tests=True,
         provider=st.session_state.selected_provider,
         model=st.session_state.selected_model,
@@ -1110,7 +1154,7 @@ def render_export_paths(paths: dict[str, object]) -> None:
             }
         )
     st.dataframe(
-        pd.DataFrame(rows),
+        editor_safe_frame(pd.DataFrame(rows)),
         hide_index=True,
         use_container_width=True,
         column_config={
@@ -1152,7 +1196,7 @@ def render_suite_minimization_summary(result: dict | None) -> None:
 def render_performance_table(artifacts: dict[str, pd.DataFrame]) -> None:
     if not artifacts["performance"].empty:
         st.caption("Performance targets are tracked locally for reporting.")
-        st.dataframe(artifacts["performance"], hide_index=True)
+        st.dataframe(editor_safe_frame(artifacts["performance"]), hide_index=True)
 
 
 def state_model_to_dot(state_model: dict) -> str:
@@ -1177,13 +1221,16 @@ def state_model_to_dot(state_model: dict) -> str:
 
 
 def render_state_model_section() -> None:
-    if st.session_state.structured_requirements.empty:
+    if (
+        st.session_state.structured_requirements.empty
+        or st.session_state.test_strategies.empty
+    ):
         return
 
     state_model = st.session_state.state_model or infer_state_model_from_requirements(
         st.session_state.structured_requirements
     )
-    with st.expander("State Transition Model", expanded=False):
+    with st.expander("State Transition Model", expanded=True):
         st.caption(
             "Coverage criterion: All Transitions. The optimized sequence covers each selected transition once and resets only when transitions cannot be chained."
         )
@@ -1199,7 +1246,20 @@ def render_state_model_section() -> None:
                 st.rerun()
         st.graphviz_chart(state_model_to_dot(state_model))
         if not st.session_state.state_transition_sequences.empty:
-            st.dataframe(st.session_state.state_transition_sequences, hide_index=True)
+            with st.form("state_transition_sequences_edit_form"):
+                edited_sequences = st.data_editor(
+                    editor_safe_frame(st.session_state.state_transition_sequences_draft),
+                    num_rows="dynamic",
+                    key="state_transition_sequences_editor",
+                    hide_index=True,
+                )
+                saved_sequences = st.form_submit_button(
+                    "Save Edited State Transition Sequences"
+                )
+            if saved_sequences:
+                save_state_transition_sequences(edited_sequences)
+                st.toast("Edited state transition sequences saved. Regenerate test suites and test cases.")
+                st.rerun()
 
 
 def render_risk_timing_details() -> None:
@@ -1235,7 +1295,7 @@ def render_risk_timing_details() -> None:
                         "Result Parse (s)": f"{bt.get('result_parsing_seconds', 0):.3f}",
                         "Batch Total (s)": f"{bt.get('batch_total_seconds', 0):.3f}",
                     })
-                st.dataframe(pd.DataFrame(batch_data), hide_index=True)
+                st.dataframe(editor_safe_frame(pd.DataFrame(batch_data)), hide_index=True)
 
             st.metric("Total Time", f"{timing.get('total_seconds', 0):.3f}s")
 
@@ -1245,6 +1305,53 @@ def render_risk_timing_details() -> None:
         elif method == "rule_fallback_after_error":
             st.error(f"LLM Error: {timing.get('error', 'Unknown error')}")
             st.metric("Fallback Time", f"{timing.get('fallback_after_error_seconds', 0):.3f}s")
+
+
+def build_current_project_state() -> dict:
+    state = build_project_state(
+        st.session_state.project_name,
+        st.session_state.selected_provider,
+        st.session_state.selected_model,
+        current_artifacts(),
+    )
+    state["state_model"] = st.session_state.state_model
+    return state
+
+
+def export_selected_artifact(
+    artifact_label: str,
+    export_format_label: str,
+    artifacts: dict[str, pd.DataFrame],
+) -> Path:
+    artifact_map = {
+        "Risk Analysis": ("risk_analysis", artifacts["risk_analysis"]),
+        "Test Suites": ("test_suites", artifacts["test_suites"]),
+        "Candidate Test Cases": ("test_cases", artifacts["test_cases"]),
+        "Optimized Test Suite": ("optimized_test_suite", artifacts["optimized_test_cases"]),
+        "Traceability Matrix": ("traceability_matrix", artifacts["traceability_matrix"]),
+        "State Transition Sequences": (
+            "state_transition_sequences",
+            artifacts["state_transition_sequences"],
+        ),
+        "Project State": ("test_suite_artifacts", build_current_project_state()),
+    }
+    base_name, data = artifact_map[artifact_label]
+    if export_format_label == "XLSX":
+        if isinstance(data, pd.DataFrame):
+            return export_excel({base_name: data}, f"{base_name}.xlsx")
+        return export_excel(
+            {
+                key[:31]: pd.DataFrame(value)
+                for key, value in data.get("artifacts", {}).items()
+                if isinstance(value, list)
+            },
+            f"{base_name}.xlsx",
+        )
+    if export_format_label == "CSV":
+        if not isinstance(data, pd.DataFrame):
+            raise ValueError("Project State cannot be exported as CSV. Choose JSON or XLSX.")
+        return export_csv(data, f"{base_name}.csv")
+    return export_json(data, f"{base_name}.json")
 
 
 inject_style()
@@ -1259,7 +1366,7 @@ with st.sidebar:
             "Risk Analysis",
             "Coverage & Strategy",
             "Test Cases",
-            "Persistence & Export",
+            "Export",
         ],
         label_visibility="collapsed",
     )
@@ -1336,8 +1443,8 @@ if page == "Requirement Input":
                 '<code>requirement_id</code>, <code>module</code>, and '
                 '<code>requirement_text</code>.</p>'
                 '<pre class="csv-sample">requirement_id,module,requirement_text\n'
-                'FR-11,TodoItem / Functional,Users shall be able to add a new Todo item\n'
-                'FR-12,TodoItem / Functional,Users shall be able to mark or unmark a Todo item</pre>',
+                'FR-11,TodoItem,Users shall be able to add a new Todo item\n'
+                'FR-12,TodoItem,Users shall be able to mark or unmark a Todo item</pre>',
                 unsafe_allow_html=True,
             )
             uploaded_file = st.file_uploader(
@@ -1373,7 +1480,7 @@ if page == "Requirement Input":
                             "Invalid CSV format. Use exactly three columns named "
                             "requirement_id,module,requirement_text. If you need "
                             "a category such as Functional, include it inside module, "
-                            "for example TodoItem / Functional."
+                            "for example TodoItem."
                         )
 
         with text_col:
@@ -1404,7 +1511,7 @@ if page == "Requirement Input":
                     st.toast("Text requirements converted to table.")
 
         edited = st.data_editor(
-            st.session_state.requirements_draft,
+            editor_safe_frame(st.session_state.requirements_draft),
             num_rows="dynamic",
             key="requirements_editor",
                         hide_index=True,
@@ -1438,7 +1545,7 @@ if page == "Requirement Input":
         if not st.session_state.structured_requirements.empty:
             section_header("Structured Requirement Preview", "file")
             structured_editor = st.data_editor(
-                editable_structured_requirements(),
+                editor_safe_frame(editable_structured_requirements()),
                 key="structured_requirements_editor",
                 hide_index=True,
                 use_container_width=True,
@@ -1493,7 +1600,7 @@ if page == "Risk Analysis":
             sort_option,
         )
         edited_risks = st.data_editor(
-            display_risk_analysis(),
+            editor_safe_frame(display_risk_analysis()),
             num_rows="dynamic",
             key=f"risk_analysis_editor_{sort_option}",
             hide_index=True,
@@ -1546,7 +1653,7 @@ if page == "Coverage & Strategy":
     else:
         with st.form("coverage_items_edit_form"):
             edited_coverage = st.data_editor(
-                st.session_state.coverage_items_draft,
+                editor_safe_frame(st.session_state.coverage_items_draft),
                 num_rows="dynamic",
                 key="coverage_items_editor",
                                 hide_index=True,
@@ -1568,7 +1675,7 @@ if page == "Coverage & Strategy":
                 st.error(str(coverage_improvement["llm_error"].dropna().iloc[0]))
             else:
                 st.metric("Added Items", len(coverage_improvement))
-                st.dataframe(coverage_improvement, hide_index=True)
+                st.dataframe(editor_safe_frame(coverage_improvement), hide_index=True)
 
     section_header("Coverage Strategy", "map")
     strategy_col, strategy_llm_col = st.columns([1, 1], gap="medium")
@@ -1599,7 +1706,7 @@ if page == "Coverage & Strategy":
     else:
         with st.form("test_strategies_edit_form"):
             edited_strategies = st.data_editor(
-                st.session_state.test_strategies_draft,
+                editor_safe_frame(st.session_state.test_strategies_draft),
                 num_rows="dynamic",
                 key="test_strategies_editor",
                                 hide_index=True,
@@ -1612,6 +1719,10 @@ if page == "Coverage & Strategy":
             artifacts = current_artifacts()
             st.toast("Edited test strategies saved.")
 
+    render_state_model_section()
+    render_performance_table(artifacts)
+
+if page == "Test Cases":
     section_header("Test Suites", "case")
     suite_col, suite_llm_col = st.columns([1, 1], gap="medium")
     with suite_col:
@@ -1639,7 +1750,7 @@ if page == "Coverage & Strategy":
     else:
         with st.form("test_suites_edit_form"):
             edited_suites = st.data_editor(
-                st.session_state.test_suites_draft,
+                editor_safe_frame(st.session_state.test_suites_draft),
                 num_rows="dynamic",
                 key="test_suites_editor",
                 hide_index=True,
@@ -1653,11 +1764,8 @@ if page == "Coverage & Strategy":
     suite_improvement = st.session_state.get("suite_design_improvement")
     if suite_improvement is not None and not suite_improvement.empty:
         with st.expander("LLM Test Suite Suggestions", expanded=False):
-            st.dataframe(suite_improvement, hide_index=True)
-    render_state_model_section()
-    render_performance_table(artifacts)
+            st.dataframe(editor_safe_frame(suite_improvement), hide_index=True)
 
-if page == "Test Cases":
     section_header("Candidate Test Cases", "case")
     local_col, llm_col = st.columns([1, 1], gap="medium")
     with local_col:
@@ -1718,7 +1826,7 @@ if page == "Test Cases":
     else:
         with st.form("test_cases_edit_form"):
             edited_cases = st.data_editor(
-                st.session_state.test_cases_draft,
+                editor_safe_frame(st.session_state.test_cases_draft),
                 num_rows="dynamic",
                 key="test_cases_editor",
                                 hide_index=True,
@@ -1745,16 +1853,12 @@ if page == "Test Cases":
             render_suite_minimization_summary(
                 st.session_state.get("suite_minimization_result")
             )
-            st.dataframe(artifacts["optimized_test_cases"])
+            st.dataframe(editor_safe_frame(artifacts["optimized_test_cases"]))
     section_header("Traceability Matrix", "map")
     if artifacts["traceability_matrix"].empty:
         st.info("Traceability matrix will appear after test case generation.")
     else:
-        st.dataframe(artifacts["traceability_matrix"])
-    if not artifacts["state_transition_sequences"].empty:
-        with st.expander("Standalone state transition tests"):
-            st.dataframe(artifacts["state_transition_sequences"])
-
+        st.dataframe(editor_safe_frame(artifacts["traceability_matrix"]))
     result = st.session_state.get("ai_improvement_result")
     if result:
         missing_cases = result.get("missing_test_cases", pd.DataFrame())
@@ -1768,17 +1872,12 @@ if page == "Test Cases":
         render_test_design_llm_summary(result)
     render_performance_table(artifacts)
 
-if page == "Persistence & Export":
+if page == "Export":
     section_header("Local Project Persistence", "save")
     left, right = st.columns([1, 1], gap="medium")
     with left:
         if st.button("Save Project"):
-            state = build_project_state(
-                st.session_state.project_name,
-                st.session_state.selected_provider,
-                st.session_state.selected_model,
-                artifacts,
-            )
+            state = build_current_project_state()
             path = save_project(state, f"{st.session_state.project_name}_project.json")
             st.toast(f"Saved to {path}")
     with right:
@@ -1797,6 +1896,7 @@ if page == "Persistence & Export":
             st.session_state.selected_model = loaded.get(
                 "selected_model", st.session_state.selected_model
             )
+            st.session_state.state_model = loaded.get("state_model")
             requirements_records = loaded.get("artifacts", {}).get("requirements", [])
             if requirements_records:
                 save_requirements(pd.DataFrame(requirements_records))
@@ -1813,12 +1913,32 @@ if page == "Persistence & Export":
                 "performance",
             ]:
                 records = loaded.get("artifacts", {}).get(artifact_key, [])
-                if records:
-                    st.session_state[artifact_key] = pd.DataFrame(records)
-            if not st.session_state.test_cases.empty:
-                st.session_state.test_cases_draft = st.session_state.test_cases.copy()
-            if not st.session_state.test_suites.empty:
-                st.session_state.test_suites_draft = st.session_state.test_suites.copy()
+                st.session_state[artifact_key] = pd.DataFrame(records or [])
+            st.session_state.risk_analysis_draft = st.session_state.risk_analysis.copy()
+            st.session_state.coverage_items_draft = st.session_state.coverage_items.copy()
+            st.session_state.test_strategies_draft = st.session_state.test_strategies.copy()
+            st.session_state.test_suites_draft = st.session_state.test_suites.copy()
+            st.session_state.test_cases_draft = st.session_state.test_cases.copy()
+            st.session_state.state_transition_sequences_draft = st.session_state.state_transition_sequences.copy()
+            if (
+                st.session_state.traceability_matrix.empty
+                and not st.session_state.optimized_test_cases.empty
+            ):
+                st.session_state.traceability_matrix = build_traceability_matrix(
+                    st.session_state.structured_requirements,
+                    st.session_state.coverage_items,
+                    st.session_state.test_strategies,
+                    st.session_state.optimized_test_cases,
+                )
+            if st.session_state.state_model is None and not st.session_state.structured_requirements.empty:
+                st.session_state.state_model = infer_state_model_from_requirements(
+                    st.session_state.structured_requirements
+                )
+            st.session_state.coverage_ai_improvement = None
+            st.session_state.ai_improvement_result = None
+            st.session_state.suite_design_improvement = None
+            st.session_state.suite_minimization_result = None
+            st.session_state.last_export_paths = None
             st.toast(f"Loaded {selected_project}")
 
     section_header("Export Artifacts", "save")
@@ -1826,57 +1946,81 @@ if page == "Persistence & Export":
     if artifacts["test_cases"].empty:
         st.info("Generate test cases before exporting test design artifacts.")
 
-    row1_cols = st.columns(3, gap="medium")
-    with row1_cols[0]:
-        if st.button("Export Risk Excel"):
-            path = export_excel(
-                {"risk_analysis": artifacts["risk_analysis"]}, "risk_analysis.xlsx"
+    export_cols = st.columns([1.4, 1.2, 1.2, 0.8], gap="medium")
+    artifact_label = None
+    with export_cols[0]:
+        export_scope = st.selectbox(
+            "Export scope",
+            ["Full artifacts", "Selected artifact", "Selenium/PyTest draft"],
+            key="export_scope",
+        )
+    with export_cols[1]:
+        if export_scope == "Selected artifact":
+            artifact_label = st.selectbox(
+                "Artifact",
+                [
+                    "Risk Analysis",
+                    "Test Suites",
+                    "Candidate Test Cases",
+                    "Optimized Test Suite",
+                    "Traceability Matrix",
+                    "State Transition Sequences",
+                    "Project State",
+                ],
+                key="single_export_artifact",
             )
-            st.toast(f"Saved to {path}")
-    with row1_cols[1]:
-        if st.button("Export Test Cases Excel"):
-            path = export_excel(
-                {"test_cases": artifacts["optimized_test_cases"]}, "test_cases.xlsx"
+        else:
+            st.caption("Exports the complete current test design package.")
+    with export_cols[2]:
+        if export_scope == "Selenium/PyTest draft":
+            selected_format = "PY"
+            st.caption("Format: PY")
+        else:
+            format_options = ["XLSX", "CSV", "JSON"]
+            if artifact_label == "Project State":
+                format_options = ["JSON", "XLSX"]
+            selected_format = st.selectbox(
+                "Format",
+                format_options,
+                key="export_format",
             )
-            st.toast(f"Saved to {path}")
-    with row1_cols[2]:
-        if st.button("Export Traceability CSV"):
-            path = export_csv(
-                artifacts["traceability_matrix"], "traceability_matrix.csv"
-            )
-            st.toast(f"Saved to {path}")
-
-    row2_cols = st.columns(3, gap="medium")
-    with row2_cols[0]:
-        if st.button("Export Project JSON"):
-            state = build_project_state(
-                st.session_state.project_name,
-                st.session_state.selected_provider,
-                st.session_state.selected_model,
-                artifacts,
-            )
-            path = export_json(state, "test_suite_artifacts.json")
-            st.toast(f"Saved to {path}")
-    with row2_cols[1]:
-        if st.button("Export Full Test Design Artifacts"):
-            paths = export_test_artifacts(
-                structured_requirements=artifacts["structured_requirements"],
-                coverage_items=artifacts["coverage_items"],
-                strategies=artifacts["test_strategies"],
-                test_suites=artifacts["test_suites"],
-                test_cases=artifacts["test_cases"],
-                optimized_test_cases=artifacts["optimized_test_cases"],
-                state_sequences=artifacts["state_transition_sequences"],
-                prefix=st.session_state.project_name,
-            )
-            st.session_state.last_export_paths = paths
-            st.toast("Full artifact export completed.")
-    with row2_cols[2]:
-        if st.button("Export Selenium/PyTest Draft"):
-            path = export_selenium_pytest_draft(artifacts["optimized_test_cases"])
-            st.toast(f"Saved to {path}")
+    with export_cols[3]:
+        if st.button("Export", type="primary"):
+            if export_scope == "Selenium/PyTest draft":
+                path = export_selenium_pytest_draft(artifacts["optimized_test_cases"])
+                st.toast(f"Saved to {path}")
+            elif export_scope == "Selected artifact":
+                try:
+                    path = export_selected_artifact(
+                        artifact_label or "Risk Analysis",
+                        selected_format,
+                        artifacts,
+                    )
+                    st.toast(f"Saved to {path}")
+                except ValueError as exc:
+                    st.warning(str(exc))
+            else:
+                format_map = {
+                    "XLSX": "xlsx",
+                    "CSV": "csv",
+                    "JSON": "json",
+                }
+                paths = export_test_artifacts(
+                    structured_requirements=artifacts["structured_requirements"],
+                    coverage_items=artifacts["coverage_items"],
+                    strategies=artifacts["test_strategies"],
+                    test_suites=artifacts["test_suites"],
+                    test_cases=artifacts["test_cases"],
+                    optimized_test_cases=artifacts["optimized_test_cases"],
+                    state_sequences=artifacts["state_transition_sequences"],
+                    state_model=st.session_state.state_model,
+                    prefix=st.session_state.project_name,
+                    export_format=format_map[selected_format],
+                )
+                st.session_state.last_export_paths = paths
+                st.toast("Full artifact export completed.")
 
     if st.session_state.last_export_paths:
         render_export_paths(st.session_state.last_export_paths)
 
-    st.dataframe(artifacts["performance"], use_container_width=True)
+    st.dataframe(editor_safe_frame(artifacts["performance"]), use_container_width=True)
