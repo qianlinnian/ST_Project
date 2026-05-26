@@ -26,9 +26,153 @@ from app_ui.state import (
 )
 
 
+RISK_ORDER = {"High": 0, "Medium": 1, "Low": 2}
+PRIORITY_ORDER = {"High": 0, "Medium": 1, "Low": 2}
+
+
+def _coverage_count(value: object) -> int:
+    return len([item.strip() for item in str(value or "").split(";") if item.strip()])
+
+
+def _sort_test_suites_by_risk(test_suites: pd.DataFrame) -> pd.DataFrame:
+    if test_suites.empty:
+        return test_suites.copy()
+
+    data = test_suites.copy()
+    risk_levels = (
+        data["risk_level"]
+        if "risk_level" in data.columns
+        else pd.Series("Medium", index=data.index, dtype=str)
+    )
+    priorities = (
+        data["priority"]
+        if "priority" in data.columns
+        else pd.Series("Medium", index=data.index, dtype=str)
+    )
+    coverage_ids = (
+        data["coverage_ids"]
+        if "coverage_ids" in data.columns
+        else pd.Series("", index=data.index, dtype=str)
+    )
+    suite_ids = (
+        data["suite_id"]
+        if "suite_id" in data.columns
+        else pd.Series("", index=data.index, dtype=str)
+    )
+
+    data["_risk_order"] = risk_levels.map(RISK_ORDER).fillna(3)
+    data["_priority_order"] = priorities.map(PRIORITY_ORDER).fillna(3)
+    data["_coverage_count"] = coverage_ids.apply(_coverage_count)
+    data["_suite_id_sort"] = suite_ids.astype(str)
+
+    data = data.sort_values(
+        ["_risk_order", "_priority_order", "_coverage_count", "_suite_id_sort"],
+        ascending=[True, True, False, True],
+        kind="stable",
+    )
+    return data.drop(
+        columns=["_risk_order", "_priority_order", "_coverage_count", "_suite_id_sort"]
+    ).reset_index(drop=True)
+
+
+def _sort_test_suites_by_id(test_suites: pd.DataFrame) -> pd.DataFrame:
+    if test_suites.empty or "suite_id" not in test_suites.columns:
+        return test_suites.copy()
+    return (
+        test_suites.assign(_suite_id_sort=test_suites["suite_id"].astype(str))
+        .sort_values("_suite_id_sort", ascending=True, kind="stable")
+        .drop(columns=["_suite_id_sort"])
+        .reset_index(drop=True)
+    )
+
+
+def _sort_test_suites(test_suites: pd.DataFrame, sort_option: str) -> pd.DataFrame:
+    if sort_option == "Risk (High first)":
+        return _sort_test_suites_by_risk(test_suites)
+    return _sort_test_suites_by_id(test_suites)
+
+
+def _sort_optimized_cases_by_risk(test_cases: pd.DataFrame) -> pd.DataFrame:
+    if test_cases.empty:
+        return test_cases.copy()
+
+    data = test_cases.copy()
+    suite_risk_levels = (
+        data["suite_risk_level"]
+        if "suite_risk_level" in data.columns
+        else data.get("risk_level", pd.Series("Medium", index=data.index, dtype=str))
+    )
+    suite_priorities = (
+        data["suite_priority"]
+        if "suite_priority" in data.columns
+        else data.get("priority", pd.Series("Medium", index=data.index, dtype=str))
+    )
+    risk_levels = data.get("risk_level", pd.Series("Medium", index=data.index, dtype=str))
+    risk_scores = data.get("risk_score", pd.Series(0, index=data.index, dtype=float))
+    suite_ids = data.get("suite_id", pd.Series("", index=data.index, dtype=str))
+
+    data["_suite_risk_order"] = suite_risk_levels.map(RISK_ORDER).fillna(3)
+    data["_suite_priority_order"] = suite_priorities.map(PRIORITY_ORDER).fillna(3)
+    data["_risk_level_order"] = risk_levels.map(RISK_ORDER).fillna(3)
+    data["_risk_score_order"] = pd.to_numeric(risk_scores, errors="coerce").fillna(0)
+    data["_suite_id_sort"] = suite_ids.astype(str)
+
+    data = data.sort_values(
+        [
+            "_suite_risk_order",
+            "_suite_priority_order",
+            "_risk_level_order",
+            "_risk_score_order",
+            "_suite_id_sort",
+        ],
+        ascending=[True, True, True, False, True],
+        kind="stable",
+    )
+    return data.drop(
+        columns=[
+            "_suite_risk_order",
+            "_suite_priority_order",
+            "_risk_level_order",
+            "_risk_score_order",
+            "_suite_id_sort",
+        ]
+    ).reset_index(drop=True)
+
+
+def _sort_optimized_cases_by_id(test_cases: pd.DataFrame) -> pd.DataFrame:
+    if test_cases.empty:
+        return test_cases.copy()
+
+    data = test_cases.copy()
+    if "suite_id" in data.columns:
+        data["_suite_id_sort"] = data["suite_id"].astype(str)
+    else:
+        data["_suite_id_sort"] = ""
+    if "test_case_id" in data.columns:
+        data["_test_case_id_sort"] = data["test_case_id"].astype(str)
+    else:
+        data["_test_case_id_sort"] = ""
+
+    return (
+        data.sort_values(
+            ["_suite_id_sort", "_test_case_id_sort"],
+            ascending=[True, True],
+            kind="stable",
+        )
+        .drop(columns=["_suite_id_sort", "_test_case_id_sort"])
+        .reset_index(drop=True)
+    )
+
+
+def _sort_optimized_cases(test_cases: pd.DataFrame, sort_option: str) -> pd.DataFrame:
+    if sort_option == "Risk (High first)":
+        return _sort_optimized_cases_by_risk(test_cases)
+    return _sort_optimized_cases_by_id(test_cases)
+
+
 def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
     section_header("Test Suites", "case")
-    suite_col, suite_llm_col = st.columns([1, 1], gap="medium")
+    suite_col, _, suite_llm_col = st.columns([1, 1, 1], gap="medium")
     with suite_col:
         suite_disabled = artifacts["test_strategies"].empty
         if st.button("Generate Test Suites", type="primary", disabled=suite_disabled):
@@ -50,11 +194,23 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
     if artifacts["test_suites"].empty:
         st.info("Generate strategy first, then generate test suites.")
     else:
+        suite_sort_option = st.selectbox(
+            "Sort test suites by",
+            [
+                "Risk (High first)",
+                "Suite ID (Ascending)",
+            ],
+            index=0,
+        )
+        sorted_suites = _sort_test_suites(
+            st.session_state.test_suites_draft,
+            suite_sort_option,
+        )
         with st.form("test_suites_edit_form"):
             edited_suites = st.data_editor(
-                editor_safe_frame(st.session_state.test_suites_draft),
+                editor_safe_frame(sorted_suites),
                 num_rows="dynamic",
-                key="test_suites_editor",
+                key=f"test_suites_editor_{suite_sort_option}",
                 hide_index=True,
             )
             saved_suites = st.form_submit_button("Save Edited Test Suites")
@@ -165,6 +321,14 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
             improve_suite_disabled = not is_llm_enabled(
                 st.session_state.selected_provider
             )
+            optimized_sort_option = st.selectbox(
+                "Sort optimized suite by",
+                [
+                    "Risk (High first)",
+                    "ID (Ascending)",
+                ],
+                index=0,
+            )
             if st.button(
                 "Improve Optimized Suite With LLM",
                 disabled=improve_suite_disabled,
@@ -172,7 +336,14 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
                 with st.spinner("Reviewing optimized suite with LLM..."):
                     improve_current_optimized_suite_with_llm()
                 rerun_with_toast("LLM optimized suite improvement completed.")
-            st.dataframe(editor_safe_frame(artifacts["optimized_test_cases"]))
+            st.dataframe(
+                editor_safe_frame(
+                    _sort_optimized_cases(
+                        st.session_state.optimized_test_cases,
+                        optimized_sort_option,
+                    )
+                )
+            )
     section_header("Traceability Matrix", "map")
     if artifacts["traceability_matrix"].empty:
         st.info("Traceability matrix will appear after test case generation.")
