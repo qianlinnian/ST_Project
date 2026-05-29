@@ -2,6 +2,7 @@ import hashlib
 
 import pandas as pd
 import streamlit as st
+from pandas.errors import ParserError
 
 from src.ai_client import is_llm_enabled
 
@@ -17,6 +18,24 @@ from app_ui.state import (
     save_requirements,
     save_structured_requirements,
 )
+
+
+REQUIRED_REQUIREMENT_COLUMNS = [
+    "requirement_id",
+    "module",
+    "requirement_text",
+]
+
+
+def _format_csv_upload_error(error: Exception) -> str:
+    if isinstance(error, ParserError):
+        return (
+            "CSV parsing failed. The file must contain exactly three comma-separated "
+            "columns: requirement_id, module, requirement_text. "
+            "If requirement_text contains commas, wrap the full text in double quotes. "
+            f"Details: {error}"
+        )
+    return f"Failed to read CSV file. Details: {error}"
 
 
 def render_requirement_input_page(artifacts: dict[str, pd.DataFrame]) -> None:
@@ -51,33 +70,40 @@ def render_requirement_input_page(artifacts: dict[str, pd.DataFrame]) -> None:
                     hashlib.sha256(uploaded_bytes).hexdigest(),
                 )
                 if upload_signature != st.session_state.uploaded_requirements_signature:
-                    uploaded_requirements = pd.read_csv(
-                        pd.io.common.BytesIO(uploaded_bytes)
-                    )
-                    required_columns = [
-                        "requirement_id",
-                        "module",
-                        "requirement_text",
-                    ]
-                    if list(
-                        uploaded_requirements.columns
-                    ) == required_columns and isinstance(
-                        uploaded_requirements.index, pd.RangeIndex
-                    ):
-                        save_requirements(
-                            uploaded_requirements[required_columns].copy()
+                    try:
+                        uploaded_requirements = pd.read_csv(
+                            pd.io.common.BytesIO(uploaded_bytes)
                         )
-                        st.session_state.uploaded_requirements_signature = (
-                            upload_signature
-                        )
-                        st.toast("CSV requirements loaded.")
+                    except Exception as error:
+                        st.error(_format_csv_upload_error(error))
                     else:
-                        st.error(
-                            "Invalid CSV format. Use exactly three columns named "
-                            "requirement_id,module,requirement_text. If you need "
-                            "a category such as Functional, include it inside module, "
-                            "for example TodoItem."
-                        )
+                        if list(
+                            uploaded_requirements.columns
+                        ) == REQUIRED_REQUIREMENT_COLUMNS and isinstance(
+                            uploaded_requirements.index, pd.RangeIndex
+                        ):
+                            save_requirements(
+                                uploaded_requirements[
+                                    REQUIRED_REQUIREMENT_COLUMNS
+                                ].copy()
+                            )
+                            st.session_state.uploaded_requirements_signature = (
+                                upload_signature
+                            )
+                            st.toast("CSV requirements loaded.")
+                        else:
+                            actual_columns = ", ".join(
+                                map(str, uploaded_requirements.columns.tolist())
+                            )
+                            if not actual_columns:
+                                actual_columns = "(none)"
+                            st.error(
+                                "Invalid CSV format. Use exactly three columns named "
+                                "requirement_id,module,requirement_text. "
+                                f"Detected columns: {actual_columns}. "
+                                "If requirement_text contains commas, wrap it in "
+                                'double quotes.'
+                            )
 
         with text_col:
             st.markdown(
@@ -99,12 +125,23 @@ def render_requirement_input_page(artifacts: dict[str, pd.DataFrame]) -> None:
                 height=110,
             )
             if st.button("Use Text Requirements"):
-                parsed_requirements = requirements_from_text(raw_requirements)
-                if parsed_requirements.empty:
-                    st.warning("Please enter at least one requirement.")
+                try:
+                    parsed_requirements = requirements_from_text(raw_requirements)
+                except Exception as error:
+                    st.error(
+                        "Failed to parse text requirements. Use one requirement per "
+                        "line, optionally in the format [Module] REQ-001: text. "
+                        f"Details: {error}"
+                    )
                 else:
-                    save_requirements(parsed_requirements)
-                    st.toast("Text requirements converted to table.")
+                    if parsed_requirements.empty:
+                        st.warning(
+                            "Please enter at least one requirement. "
+                            "Each non-empty line will be treated as one requirement."
+                        )
+                    else:
+                        save_requirements(parsed_requirements)
+                        st.toast("Text requirements converted to table.")
 
         edited = st.data_editor(
             editor_safe_frame(st.session_state.requirements_draft),

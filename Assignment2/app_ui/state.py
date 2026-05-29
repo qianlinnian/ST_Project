@@ -413,11 +413,12 @@ def reset_downstream(from_step: str) -> None:
 
 def requirements_from_text(raw_text: str) -> pd.DataFrame:
     rows = []
+    bullet_prefix_pattern = re.compile(r"^\s*(?:[-*•]+|\d+[.)])\s*")
     module_prefix_pattern = re.compile(r"^\s*\[([^\]]+)\]\s*(.*)$")
     id_prefix_pattern = re.compile(r"^\s*((?:[A-Za-z]+-)+\d+)\s*(?::|\uFF1A|-)\s*(.*)$")
 
     for line in raw_text.splitlines():
-        requirement_text = line.strip()
+        requirement_text = bullet_prefix_pattern.sub("", line).strip()
         if not requirement_text:
             continue
 
