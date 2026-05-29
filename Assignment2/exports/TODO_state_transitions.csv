@@ -1,0 +1,47 @@
+sequence_id,transition_id,coverage_goal,optimization_rule,reset_required,source_state,event,guard,test_data,target_state,precondition,steps,expected_result
+OPT-TRANS-001,TR-001,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Active,toggle status,todo item exists,,Completed,The system is in source state: Active.,"1. Reset or navigate the system to the source state
+2. Establish source state: Active
+3. Apply event/action: toggle status
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-002,TR-002,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Completed,toggle status,todo item exists,,Active,The system is in source state: Completed.,"1. Establish source state: Completed
+2. Apply event/action: toggle status
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-003,TR-003,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Active,delete,todo item exists,,Deleted,The system is in source state: Active.,"1. Establish source state: Active
+2. Apply event/action: delete
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-004,TR-004,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Completed,delete,todo item exists,,Deleted,The system is in source state: Completed.,"1. Reset or navigate the system to the source state
+2. Establish source state: Completed
+3. Apply event/action: delete
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-005,TR-005,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Active,start editing,todo item exists,,Editing,The system is in source state: Active.,"1. Reset or navigate the system to the source state
+2. Establish source state: Active
+3. Apply event/action: start editing
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-006,TR-007,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Editing,save with valid title,title after trimming is non-empty and length <= 100,title with no leading/trailing whitespace,Active,The system is in source state: Editing.,"1. Establish source state: Editing
+2. Apply event/action: save with valid title
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-007,TR-011,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Active,mark all as completed,list exists,,Completed,The system is in source state: Active.,"1. Establish source state: Active
+2. Apply event/action: mark all as completed
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-008,TR-006,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Completed,start editing,todo item exists,,Editing,The system is in source state: Completed.,"1. Establish source state: Completed
+2. Apply event/action: start editing
+3. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-009,TR-008,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,False,Editing,save with empty title after trimming,edited title after trimming is empty,title with only whitespace,Deleted,The system is in source state: Editing.,"1. Establish source state: Editing
+2. Apply event/action: save with empty title after trimming
+3. Observe the resulting system state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.
+OPT-TRANS-010,TR-009,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Editing,press Escape,user presses Escape during editing,,Active,The system is in source state: Editing.,"1. Reset or navigate the system to the source state
+2. Establish source state: Editing
+3. Apply event/action: press Escape
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-011,TR-010,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Editing,save with title too long,title length > 100,title longer than 100 characters,Editing,The system is in source state: Editing.,"1. Reset or navigate the system to the source state
+2. Establish source state: Editing
+3. Apply event/action: save with title too long
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-012,TR-012,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Completed,mark all as active,list exists,,Active,The system is in source state: Completed.,"1. Reset or navigate the system to the source state
+2. Establish source state: Completed
+3. Apply event/action: mark all as active
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
+OPT-TRANS-013,TR-013,All Transitions,Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.,True,Completed,clear completed,list exists and has completed items,,Deleted,The system is in source state: Completed.,"1. Reset or navigate the system to the source state
+2. Establish source state: Completed
+3. Apply event/action: clear completed
+4. Observe the resulting system state","The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state."
