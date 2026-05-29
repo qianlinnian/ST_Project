@@ -1,0 +1,15 @@
+[Todo Creation] REQ-TODO-001: Users shall be able to add a new Todo item to a specified List.
+[Todo Validation] REQ-TODO-002: The system shall trim leading and trailing whitespace from a Todo item title before saving it during creation or editing.
+[Todo Validation] REQ-TODO-003: The system shall reject a Todo item title that is empty or contains only whitespace after trimming during creation or editing.
+[Todo Validation] REQ-TODO-004: The system shall reject a Todo item title longer than 100 characters during creation or editing.
+[Todo Completion] REQ-TODO-005: Users shall be able to toggle a Todo item between active and completed status.
+[Todo Editing] REQ-TODO-006: Users shall be able to enter Todo item edit mode by double-clicking the item label.
+[Todo Editing] REQ-TODO-007: Users shall be able to update the title of an existing Todo item.
+[Todo Editing] REQ-TODO-008: The system shall delete a Todo item when the edited title is saved as empty after trimming.
+[Todo Editing] REQ-TODO-009: The system shall cancel editing and keep the original title when the user presses Escape.
+[Todo Deletion] REQ-TODO-010: Users shall be able to delete a single Todo item.
+[Todo Bulk Update] REQ-TODO-011: Users shall be able to use a single control to mark all Todo items in the current List as completed or active.
+[Todo Filter] REQ-TODO-012: Users shall be able to filter Todo items by All, Active, and Completed status.
+[Todo Cleanup] REQ-TODO-013: Users shall be able to clear all completed Todo items in the current List at once.
+[Todo Persistence] REQ-TODO-014: The system shall persist Todo items so that they remain available after page reload or application restart.
+[Todo List Scope] REQ-TODO-015: The system shall keep Todo items isolated by List so that items from one List do not appear in another List.
