@@ -28,6 +28,39 @@ from app_ui.state import (
 
 RISK_ORDER = {"High": 0, "Medium": 1, "Low": 2}
 PRIORITY_ORDER = {"High": 0, "Medium": 1, "Low": 2}
+VISIBLE_TEST_SUITE_COLUMNS = [
+    "suite_id",
+    "suite_name",
+    "suite_objective",
+    "coverage_ids",
+    "techniques",
+    "risk_level",
+    "source",
+    "llm_changes",
+]
+VISIBLE_TEST_CASE_COLUMNS = [
+    "test_case_id",
+    "suite_id",
+    "requirement_id",
+    "coverage_id",
+    "precondition",
+    "test_data",
+    "steps",
+    "expected_result",
+    "source",
+]
+VISIBLE_OPTIMIZED_TEST_CASE_COLUMNS = [
+    "test_case_id",
+    "suite_id",
+    "requirement_id",
+    "coverage_id",
+    "precondition",
+    "test_data",
+    "steps",
+    "expected_result",
+    "risk_level",
+    "source",
+]
 
 
 def _coverage_count(value: object) -> int:
@@ -207,21 +240,22 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
             suite_sort_option,
         )
         with st.form("test_suites_edit_form"):
+            visible_suite_columns = [
+                column
+                for column in VISIBLE_TEST_SUITE_COLUMNS
+                if column in sorted_suites.columns
+            ]
             edited_suites = st.data_editor(
                 editor_safe_frame(sorted_suites),
                 num_rows="dynamic",
                 key=f"test_suites_editor_{suite_sort_option}",
                 hide_index=True,
+                column_order=visible_suite_columns if visible_suite_columns else None,
             )
             saved_suites = st.form_submit_button("Save Edited Test Suites")
         if saved_suites:
             save_test_suites(edited_suites)
             rerun_with_toast("Edited test suites saved.")
-
-    suite_improvement = st.session_state.get("suite_design_improvement")
-    if suite_improvement is not None and not suite_improvement.empty:
-        with st.expander("LLM Test Suite Suggestions", expanded=False):
-            st.dataframe(editor_safe_frame(suite_improvement), hide_index=True)
 
     section_header("Candidate Test Cases", "case")
     local_col, llm_col = st.columns([1, 1], gap="medium")
@@ -236,14 +270,16 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
         ):
             with st.spinner("Generating local test cases..."):
                 generate_current_test_cases()
-            rerun_with_toast("Test cases generated.")
+            rerun_with_toast(
+                f"Generated {len(st.session_state.test_cases)} candidate test cases."
+            )
     with llm_col:
         test_llm_disabled = (
             not is_llm_enabled(st.session_state.selected_provider)
             or artifacts["test_cases"].empty
         )
         if st.button(
-            "Improve Test Design With LLM",
+            "Review And Improve Test Cases With LLM",
             disabled=test_llm_disabled,
         ):
             with st.spinner("Generating LLM improvement suggestions..."):
@@ -265,6 +301,9 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
                 )
                 enhanced_cases = improvement_result.get(
                     "enhanced_test_cases", pd.DataFrame()
+                )
+                improvement_stats = improvement_result.get(
+                    "test_case_improvement_stats", pd.DataFrame()
                 )
                 if not enhanced_cases.empty:
                     enhanced_cases = assign_test_suites_to_cases(
@@ -292,8 +331,13 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
                 if missing_cases.empty or "llm_error" in missing_cases.columns:
                     queue_toast("LLM did not add missing test cases.")
                 else:
+                    reviewed = 0
+                    added = 0
+                    if isinstance(improvement_stats, pd.DataFrame) and not improvement_stats.empty:
+                        reviewed = int(improvement_stats.iloc[0].get("reviewed", 0) or 0)
+                        added = int(improvement_stats.iloc[0].get("added", 0) or 0)
                     queue_toast(
-                        f"Added {len(missing_cases)} missing test cases with LLM."
+                        f"LLM test design improvement completed. Reviewed {reviewed}, added {added}."
                     )
             rerun_with_toast("LLM test design improvement completed.")
     if artifacts["test_cases"].empty:
@@ -305,11 +349,17 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
             st.info("Generate test cases to continue.")
     else:
         with st.form("test_cases_edit_form"):
+            visible_columns = [
+                column
+                for column in VISIBLE_TEST_CASE_COLUMNS
+                if column in st.session_state.test_cases_draft.columns
+            ]
             edited_cases = st.data_editor(
                 editor_safe_frame(st.session_state.test_cases_draft),
                 num_rows="dynamic",
                 key="test_cases_editor",
                 hide_index=True,
+                column_order=visible_columns if visible_columns else None,
             )
             saved_cases = st.form_submit_button("Save Edited Test Cases")
         if saved_cases:
@@ -336,13 +386,19 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
                 with st.spinner("Reviewing optimized suite with LLM..."):
                     improve_current_optimized_suite_with_llm()
                 rerun_with_toast("LLM optimized suite improvement completed.")
+            visible_optimized_columns = [
+                column
+                for column in VISIBLE_OPTIMIZED_TEST_CASE_COLUMNS
+                if column in st.session_state.optimized_test_cases.columns
+            ]
             st.dataframe(
                 editor_safe_frame(
                     _sort_optimized_cases(
                         st.session_state.optimized_test_cases,
                         optimized_sort_option,
                     )
-                )
+                ),
+                column_order=visible_optimized_columns if visible_optimized_columns else None,
             )
     section_header("Traceability Matrix", "map")
     if artifacts["traceability_matrix"].empty:

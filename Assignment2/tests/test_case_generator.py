@@ -37,10 +37,10 @@ def test_generate_test_cases_has_traceability():
     assert len(test_cases) >= len(coverage)
 
 
-def test_generated_cases_include_istqb_technique_metadata():
+def test_generated_cases_include_named_test_techniques():
     _, _, _, _, test_cases = _pipeline()
-    assert "technique_standard" in test_cases.columns
-    assert test_cases["technique_standard"].str.contains("ISO/IEC/IEEE 29119-4", regex=False).any()
+    assert "technique" in test_cases.columns
+    assert test_cases["technique"].astype(str).str.strip().ne("").all()
 
 
 def test_generated_cases_include_black_box_and_state_techniques():

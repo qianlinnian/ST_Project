@@ -11,15 +11,6 @@ from src.prompt_templates import (
     test_strategy_review_prompt as build_test_strategy_review_prompt,
 )
 
-
-TECHNIQUE_STANDARDS = {
-    "Equivalence Partitioning": "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 equivalence partitioning",
-    "Boundary Value Analysis": "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 boundary value analysis",
-    "Decision Table Testing": "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 decision table testing",
-    "State Transition Testing": "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 state transition testing",
-}
-
-
 def _as_text(value: Any) -> str:
     if isinstance(value, list):
         return ", ".join(str(item) for item in value)
@@ -76,7 +67,6 @@ def _fallback_strategies(coverage_items: pd.DataFrame) -> pd.DataFrame:
                 "coverage_type": row.get("coverage_type", "Functional"),
                 "risk_level": row.get("risk_level", "Medium"),
                 "technique": technique,
-                "technique_standard": TECHNIQUE_STANDARDS[technique],
                 "strategy_reason": reason,
                 "source": "Rule fallback",
             }
@@ -134,13 +124,17 @@ def _llm_refine_strategies(
     for review in reviews:
         coverage_id = review.get("coverage_id")
         recommended = review.get("recommended_technique")
-        if recommended not in TECHNIQUE_STANDARDS:
+        if recommended not in {
+            "Equivalence Partitioning",
+            "Boundary Value Analysis",
+            "Decision Table Testing",
+            "State Transition Testing",
+        }:
             continue
         mask = refined["coverage_id"] == coverage_id
         if not mask.any():
             continue
         refined.loc[mask, "technique"] = recommended
-        refined.loc[mask, "technique_standard"] = TECHNIQUE_STANDARDS[recommended]
         refined.loc[mask, "strategy_reason"] = review.get("recommendation_reason", refined.loc[mask, "strategy_reason"].iloc[0])
         refined.loc[mask, "source"] = "LLM prompt review"
     return refined

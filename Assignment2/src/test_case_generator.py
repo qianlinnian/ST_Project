@@ -17,7 +17,6 @@ from src.prompt_templates import (
 )
 from src.state_modeler import infer_state_model_from_requirements, generate_state_transition_tests
 from src.test_suite_designer import assign_test_suites_to_cases
-from src.test_strategy_selector import TECHNIQUE_STANDARDS
 
 PRIORITY_BY_RISK = {"High": "High", "Medium": "Medium", "Low": "Low"}
 RISK_SCORE_BY_LEVEL = {"High": 5.0, "Medium": 3.0, "Low": 1.0}
@@ -28,7 +27,7 @@ TECHNIQUE_CASE_LIMITS = {
     "State Transition Testing": 1,
 }
 REQUIRED_COLUMNS = [
-    "test_case_id", "suite_id", "suite_name", "requirement_id", "coverage_id", "technique", "technique_standard",
+    "test_case_id", "suite_id", "suite_name", "requirement_id", "coverage_id", "technique",
     "precondition", "test_data", "steps", "expected_result", "priority", "risk_score",
     "risk_level", "suite_risk_level", "suite_priority", "coverage_type", "automation_candidate", "source", "design_basis",
 ]
@@ -79,7 +78,6 @@ def _case(idx: int, req_id: str, cov_id: str, tech: str, cov: dict, req: dict, d
         "requirement_id": req_id,
         "coverage_id": cov_id,
         "technique": tech,
-        "technique_standard": TECHNIQUE_STANDARDS.get(tech, "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4"),
         "precondition": "The system under test is available and the relevant feature can be exercised.",
         "test_data": data,
         "steps": steps,
@@ -102,11 +100,11 @@ def _ep(start: int, req_id: str, cov_id: str, cov: dict, req: dict) -> list[dict
         _case(start, req_id, cov_id, "Equivalence Partitioning", cov, req,
               "Representative valid partition data derived from the requirement",
               "1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response",
-              source="Rule fallback - EP valid partition", basis=f"Valid equivalence partition for: {basis}"),
+              source="Rule fallback", basis=f"Valid equivalence partition for: {basis}"),
         _case(start + 1, req_id, cov_id, "Equivalence Partitioning", cov, req,
               "Representative invalid partition data derived from the requirement",
               "1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling",
-              source="Rule fallback - EP invalid partition", basis=f"Invalid equivalence partition for: {basis}"),
+              source="Rule fallback", basis=f"Invalid equivalence partition for: {basis}"),
     ]
 
 
@@ -123,7 +121,7 @@ def _bva(start: int, req_id: str, cov_id: str, cov: dict, req: dict) -> list[dic
         rows.append(_case(start + len(rows), req_id, cov_id, "Boundary Value Analysis", cov, req,
                           f"Boundary value: {value} ({label})",
                           "1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule",
-                          source="Rule fallback - BVA",
+                          source="Rule fallback",
                           basis="Values are selected on and around identifiable or inferred boundaries."))
     return rows
 
@@ -137,7 +135,7 @@ def _decision(start: int, req_id: str, cov_id: str, cov: dict, req: dict) -> lis
     return [_case(start + i, req_id, cov_id, "Decision Table Testing", cov, req,
                   f"Rule {i + 1}: {cond}",
                   "1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome",
-                  expected=exp, source="Rule fallback - Decision Table",
+                  expected=exp, source="Rule fallback",
                   basis=f"Decision rule based on requirement conditions: {cond}") for i, (cond, exp) in enumerate(rules)]
 
 
@@ -153,7 +151,7 @@ def _state(start: int, req_id: str, cov_id: str, cov: dict, state_model: dict) -
             {},
             f"Transition scenario for: {basis}",
             "1. Establish the source state\n2. Trigger the transition event\n3. Verify the target state",
-            source="Rule fallback - State Transition",
+            source="Rule fallback",
             basis=basis,
         )
     ]
@@ -176,7 +174,6 @@ def _state_sequence_cases(start: int, state_sequences: pd.DataFrame) -> list[dic
                 "requirement_id": "REQ-STATE-MODEL",
                 "coverage_id": _state_sequence_coverage_id(sequence, offset + 1),
                 "technique": "State Transition Testing",
-                "technique_standard": TECHNIQUE_STANDARDS["State Transition Testing"],
                 "precondition": sequence.get("precondition", f"The system is in source state: {source}."),
                 "test_data": sequence.get("test_data", f"Transition data for {transition_id}"),
                 "steps": sequence.get(
@@ -194,7 +191,7 @@ def _state_sequence_cases(start: int, state_sequences: pd.DataFrame) -> list[dic
                 "suite_priority": "",
                 "coverage_type": "State Transition",
                 "automation_candidate": "Partial",
-                "source": "State transition optimized sequence",
+                "source": "Rule fallback",
                 "design_basis": f"{transition_id}: {source} --{event}--> {target}",
             }
         )
@@ -538,11 +535,10 @@ def _parse_missing_test_cases(parsed: dict, batch_size: int) -> pd.DataFrame:
             risk_level = str(item[7] if len(item) > 7 else "Medium")
             rows.append(
                 {
-                    "test_case_id": f"TC-AI-{index:03d}",
+                    "test_case_id": "",
                     "requirement_id": item[0],
                     "coverage_id": item[1],
                     "technique": item[2],
-                    "technique_standard": TECHNIQUE_STANDARDS.get(str(item[2]), "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4"),
                     "precondition": "The system under test is available and the relevant feature can be exercised.",
                     "test_data": item[3],
                     "steps": item[4],
@@ -552,7 +548,7 @@ def _parse_missing_test_cases(parsed: dict, batch_size: int) -> pd.DataFrame:
                     "risk_level": risk_level,
                     "coverage_type": "",
                     "automation_candidate": "Partial",
-                    "source": "LLM missing test case suggestion",
+                    "source": "LLM added",
                     "design_basis": "LLM identified missing coverage in existing test cases.",
                     "llm_reason": item[8] if len(item) > 8 else "",
                 }
@@ -725,8 +721,8 @@ def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, stra
             if test_suites is not None:
                 fallback = assign_test_suites_to_cases(fallback, test_suites)
             fallback["llm_error"] = str(exc)
-            fallback["source"] = fallback["source"].astype(str) + " after LLM fallback"
-            return fallback
+            fallback["source"] = "Rule fallback"
+            return renumber_test_case_ids(fallback)
     generated = _fallback(
         requirements,
         coverage,
@@ -735,4 +731,9 @@ def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, stra
         state_transition_sequences=state_transition_sequences,
         test_suites=test_suites,
     )
-    return assign_test_suites_to_cases(generated, test_suites) if test_suites is not None else generated
+    assigned = (
+        assign_test_suites_to_cases(generated, test_suites)
+        if test_suites is not None
+        else generated
+    )
+    return renumber_test_case_ids(assigned)
