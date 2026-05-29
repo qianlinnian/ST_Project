@@ -39,6 +39,7 @@ def identify_coverage_items(
                 "related_techniques": ["Equivalence Partitioning"],
                 "tags": ["core"],
                 "notes": _expected_note(expected_results),
+                "source": "Rule",
             }
         )
         cov_counter += 1
@@ -58,6 +59,7 @@ def identify_coverage_items(
                     "related_techniques": ["Equivalence Partitioning", "Boundary Value Analysis"],
                     "tags": ["input"],
                     "notes": _expected_note(expected_results),
+                    "source": "Rule",
                 }
             )
             cov_counter += 1
@@ -76,6 +78,7 @@ def identify_coverage_items(
                         "related_techniques": ["Decision Table Testing"],
                         "tags": ["condition"],
                         "notes": _expected_note(expected_results),
+                        "source": "Rule",
                     }
                 )
                 cov_counter += 1
@@ -95,6 +98,7 @@ def identify_coverage_items(
                     "related_techniques": ["Boundary Value Analysis", "Equivalence Partitioning"],
                     "tags": ["boundary"],
                     "notes": _expected_note(expected_results),
+                    "source": "Rule",
                 }
             )
             cov_counter += 1

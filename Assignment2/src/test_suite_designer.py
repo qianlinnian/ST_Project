@@ -27,6 +27,7 @@ SUITE_COLUMNS = [
     "suite_objective",
     "optimization_basis",
     "source",
+    "llm_changes",
 ]
 
 def _split_values(value: Any) -> list[str]:
@@ -157,6 +158,7 @@ def design_test_suites(
                     "suite_objective": _suite_objective(str(module), techniques, coverage_types),
                     "optimization_basis": "risk-based and coverage-based prioritization",
                     "source": "Rule fallback",
+                    "llm_changes": "",
                 }
             )
 
@@ -199,6 +201,7 @@ def design_test_suites(
                     + (f"; transitions: {'; '.join(transition_ids)}" if transition_ids else "")
                 ),
                 "source": "Rule fallback - State transition model",
+                "llm_changes": "",
             }
         )
     return pd.DataFrame(suite_rows, columns=SUITE_COLUMNS)
@@ -281,6 +284,8 @@ def _apply_suite_improvements(test_suites: pd.DataFrame, suggestions: pd.DataFra
     if test_suites.empty or suggestions.empty or "suite_id" not in test_suites.columns:
         return test_suites.copy()
     improved = test_suites.copy()
+    if "llm_changes" not in improved.columns:
+        improved["llm_changes"] = ""
     valid_suite_ids = set(improved["suite_id"].astype(str))
     for _, suggestion in suggestions.iterrows():
         suite_id = str(suggestion.get("suite_id", "")).strip()
@@ -290,14 +295,26 @@ def _apply_suite_improvements(test_suites: pd.DataFrame, suggestions: pd.DataFra
         name = str(suggestion.get("suggested_suite_name", "")).strip()
         objective = str(suggestion.get("suggested_objective", "")).strip()
         basis = str(suggestion.get("suggested_optimization_basis", "")).strip()
+        changes: list[str] = []
+        current_row = improved.loc[mask].iloc[0]
         if name:
+            old_name = str(current_row.get("suite_name", "")).strip()
             improved.loc[mask, "suite_name"] = name
+            if name != old_name:
+                changes.append("suite_name updated")
         if objective:
+            old_objective = str(current_row.get("suite_objective", "")).strip()
             improved.loc[mask, "suite_objective"] = objective
+            if objective != old_objective:
+                changes.append("suite_objective updated")
         if basis:
+            old_basis = str(current_row.get("optimization_basis", "")).strip()
             improved.loc[mask, "optimization_basis"] = basis
-        if name or objective or basis:
-            improved.loc[mask, "source"] = "Rule fallback + LLM metadata improvement"
+            if basis != old_basis:
+                changes.append("optimization_basis updated")
+        if changes:
+            improved.loc[mask, "source"] = "LLM updated"
+            improved.loc[mask, "llm_changes"] = "; ".join(changes)
     return improved
 
 

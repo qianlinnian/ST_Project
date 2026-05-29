@@ -8,7 +8,8 @@ from src.coverage_identifier import identify_coverage_items
 from src.exporter import build_traceability_matrix
 from src.improvement_engine import (
     improve_optimized_suite_with_llm,
-    suggest_missing_coverage_with_llm,
+    merge_coverage_improvements,
+    review_and_improve_coverage_with_llm,
 )
 from src.performance_tracker import measure_time
 from src.requirement_parser import enhance_requirements_with_llm, structure_requirements
@@ -137,8 +138,8 @@ def improve_current_coverage_with_llm() -> None:
         st.warning("Selected LLM provider is not configured.")
         return
 
-    llm_time, missing_coverage = measure_time(
-        suggest_missing_coverage_with_llm,
+    llm_time, suggested_coverage = measure_time(
+        review_and_improve_coverage_with_llm,
         st.session_state.structured_requirements,
         st.session_state.coverage_items,
         st.session_state.selected_provider,
@@ -146,24 +147,19 @@ def improve_current_coverage_with_llm() -> None:
         batch_size=int(st.session_state.get("llm_batch_size", 25)),
         concurrency=int(st.session_state.get("llm_concurrency", 4)),
     )
-    st.session_state.coverage_ai_improvement = missing_coverage
+    st.session_state.coverage_ai_improvement = suggested_coverage
     set_performance("llm_coverage_improvement_seconds", llm_time)
 
-    if missing_coverage.empty or "llm_error" in missing_coverage.columns:
+    if suggested_coverage.empty or "llm_error" in suggested_coverage.columns:
         return
 
-    base_columns = list(st.session_state.coverage_items.columns)
-    additions = missing_coverage.copy()
-    for column in base_columns:
-        if column not in additions.columns:
-            additions[column] = ""
-    additions = additions[base_columns]
-    enhanced = pd.concat(
-        [st.session_state.coverage_items, additions],
-        ignore_index=True,
+    enhanced, stats = merge_coverage_improvements(
+        st.session_state.coverage_items,
+        suggested_coverage,
     )
     st.session_state.coverage_items = enhanced
     st.session_state.coverage_items_draft = enhanced.copy()
+    st.session_state.coverage_ai_improvement = pd.DataFrame([stats])
     reset_downstream("strategy")
 
 
@@ -273,9 +269,7 @@ def improve_current_test_suites_with_llm() -> None:
                 st.session_state.test_strategies,
                 st.session_state.test_cases,
             )
-    st.session_state.suite_design_improvement = result.get(
-        "suite_improvement_suggestions", pd.DataFrame()
-    )
+    st.session_state.suite_design_improvement = pd.DataFrame()
     set_performance("llm_test_suite_design_improvement_seconds", llm_time)
 
 

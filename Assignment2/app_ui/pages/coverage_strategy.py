@@ -18,6 +18,24 @@ from app_ui.components import (
 )
 from app_ui.state import editor_safe_frame, rerun_with_toast
 
+VISIBLE_COVERAGE_COLUMNS = [
+    "coverage_id",
+    "requirement_id",
+    "coverage_type",
+    "description",
+    "risk_level",
+    "source",
+]
+
+VISIBLE_STRATEGY_COLUMNS = [
+    "coverage_id",
+    "requirement_id",
+    "coverage_type",
+    "technique",
+    "strategy_reason",
+    "source",
+]
+
 
 def render_coverage_strategy_page(artifacts: dict[str, pd.DataFrame]) -> None:
     section_header("Coverage Items", "map")
@@ -38,20 +56,30 @@ def render_coverage_strategy_page(artifacts: dict[str, pd.DataFrame]) -> None:
             "Improve Coverage With LLM",
             disabled=coverage_llm_disabled,
         ):
-            with st.spinner("Reviewing and merging missing coverage with LLM..."):
-                before_count = len(st.session_state.coverage_items)
+            with st.spinner("Reviewing and improving existing coverage with LLM..."):
                 improve_current_coverage_with_llm()
-                after_count = len(st.session_state.coverage_items)
+                improvement_stats = st.session_state.get("coverage_ai_improvement")
+                reviewed = 0
+                added = 0
+                if isinstance(improvement_stats, pd.DataFrame) and not improvement_stats.empty:
+                    reviewed = int(improvement_stats.iloc[0].get("reviewed", 0) or 0)
+                    added = int(improvement_stats.iloc[0].get("added", 0) or 0)
             rerun_with_toast(
-                f"LLM coverage improvement completed. Added {max(after_count - before_count, 0)} coverage items."
+                f"LLM coverage improvement completed. Reviewed {reviewed}, added {added}."
             )
     if artifacts["coverage_items"].empty:
         st.info("Run requirement structuring and risk analysis first.")
     else:
         with st.form("coverage_items_edit_form"):
+            coverage_draft = editor_safe_frame(st.session_state.coverage_items_draft)
             edited_coverage = st.data_editor(
-                editor_safe_frame(st.session_state.coverage_items_draft),
+                coverage_draft,
                 num_rows="dynamic",
+                column_order=[
+                    column
+                    for column in VISIBLE_COVERAGE_COLUMNS
+                    if column in coverage_draft.columns
+                ],
                 key="coverage_items_editor",
                 hide_index=True,
             )
@@ -63,15 +91,9 @@ def render_coverage_strategy_page(artifacts: dict[str, pd.DataFrame]) -> None:
             )
 
     coverage_improvement = st.session_state.get("coverage_ai_improvement")
-    if coverage_improvement is not None:
-        with st.expander("LLM Coverage Additions", expanded=False):
-            if coverage_improvement.empty:
-                st.info("LLM did not identify additional missing coverage items.")
-            elif "llm_error" in coverage_improvement.columns:
-                st.error(str(coverage_improvement["llm_error"].dropna().iloc[0]))
-            else:
-                st.metric("Added Items", len(coverage_improvement))
-                st.dataframe(editor_safe_frame(coverage_improvement), hide_index=True)
+    if coverage_improvement is not None and isinstance(coverage_improvement, pd.DataFrame):
+        if not coverage_improvement.empty and "llm_error" in coverage_improvement.columns:
+            st.error(str(coverage_improvement["llm_error"].dropna().iloc[0]))
 
     section_header("Coverage Strategy", "map")
     strategy_col, strategy_llm_col = st.columns([1, 1], gap="medium")
@@ -100,9 +122,15 @@ def render_coverage_strategy_page(artifacts: dict[str, pd.DataFrame]) -> None:
         st.info("Coverage strategy has not been generated yet.")
     else:
         with st.form("test_strategies_edit_form"):
+            strategies_draft = editor_safe_frame(st.session_state.test_strategies_draft)
             edited_strategies = st.data_editor(
-                editor_safe_frame(st.session_state.test_strategies_draft),
+                strategies_draft,
                 num_rows="dynamic",
+                column_order=[
+                    column
+                    for column in VISIBLE_STRATEGY_COLUMNS
+                    if column in strategies_draft.columns
+                ],
                 key="test_strategies_editor",
                 hide_index=True,
             )

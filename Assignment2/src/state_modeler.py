@@ -50,6 +50,64 @@ def _as_text(value: Any) -> str:
     return str(value or "")
 
 
+def _state_model_focus_frame(structured_requirements: pd.DataFrame) -> pd.DataFrame:
+    if structured_requirements.empty:
+        return structured_requirements
+
+    lifecycle_keywords = {
+        "add",
+        "create",
+        "update",
+        "edit",
+        "save",
+        "delete",
+        "remove",
+        "complete",
+        "completed",
+        "toggle",
+        "cancel",
+        "escape",
+        "reject",
+        "persist",
+        "reload",
+        "restart",
+    }
+    context_keywords = {
+        "filter",
+        "view",
+        "list exists",
+        "page",
+        "screen",
+        "display",
+        "show",
+        "navigate",
+    }
+
+    scored_rows: list[tuple[int, int, dict[str, Any]]] = []
+    for index, (_, row) in enumerate(structured_requirements.iterrows()):
+        actions = _as_text(row.get("actions", "")).lower()
+        conditions = _as_text(row.get("conditions", "")).lower()
+        expected = _as_text(row.get("expected_results", "")).lower()
+        requirement = _as_text(row.get("requirement_text", "")).lower()
+        combined = " | ".join([actions, conditions, expected, requirement])
+
+        positive = sum(1 for keyword in lifecycle_keywords if keyword in combined)
+        negative = sum(1 for keyword in context_keywords if keyword in combined)
+        score = positive - negative
+        scored_rows.append((score, index, row.to_dict()))
+
+    prioritized = [item for item in scored_rows if item[0] > 0]
+    if len(prioritized) < max(3, min(6, len(scored_rows))):
+        prioritized = sorted(scored_rows, key=lambda item: (item[0], -item[1]), reverse=True)
+    else:
+        prioritized = sorted(prioritized, key=lambda item: (item[0], -item[1]), reverse=True)
+
+    selected_count = min(len(prioritized), max(4, min(10, len(scored_rows))))
+    selected = prioritized[:selected_count]
+    selected_indexes = sorted(item[1] for item in selected)
+    return structured_requirements.iloc[selected_indexes].reset_index(drop=True)
+
+
 def build_state_model(
     states: list[str] | None = None,
     transitions: list[dict] | None = None,
@@ -194,7 +252,8 @@ def improve_state_model_with_llm(
     ):
         return infer_state_model_from_requirements(structured_requirements)
 
-    prompt = state_model_improvement_prompt(structured_requirements)
+    focused_requirements = _state_model_focus_frame(structured_requirements)
+    prompt = state_model_improvement_prompt(focused_requirements)
     parsed = call_json_completion(
         STATE_MODEL_IMPROVEMENT_SYSTEM,
         prompt,
@@ -327,7 +386,6 @@ def generate_state_transition_tests(
                 "requirement_id": requirement_id,
                 "coverage_id": coverage_id,
                 "technique": "State Transition Testing",
-                "technique_standard": "ISTQB Foundation Level / ISO/IEC/IEEE 29119-4 state transition testing",
                 "precondition": row["precondition"],
                 "test_data": row["test_data"],
                 "steps": row["steps"],

@@ -109,12 +109,13 @@ def build_traceability_matrix(
             "related_techniques",
             "tags",
             "notes",
+            "source",
         ]
         if column in coverage_items.columns
     ]
     strategy_cols = [
         column
-        for column in ["coverage_id", "technique", "technique_standard", "strategy_reason"]
+        for column in ["coverage_id", "technique", "strategy_reason"]
         if column in strategies.columns
     ]
     tc_cols = [
@@ -146,6 +147,7 @@ def build_traceability_matrix(
                 "description": "coverage_description",
                 "coverage_item": "coverage_description",
                 "risk_level": "coverage_risk_level",
+                "source": "coverage_source",
             }
         )
         matrix = matrix.merge(coverage, on="coverage_id", how="left", suffixes=("", "_coverage"))
@@ -160,25 +162,25 @@ def build_traceability_matrix(
 
     desired_order = [
         "requirement_id",
-        "requirement_text",
-        "module",
         "coverage_id",
         "suite_id",
         "suite_name",
+        "test_case_id",
+        "technique",
+        "priority",
+        "risk_level",
+        "coverage_risk_level",
+        "source",
+        "coverage_source",
+        "module",
+        "requirement_text",
         "coverage_description",
         "coverage_type",
         "related_techniques",
         "tags",
         "notes",
-        "technique",
-        "technique_standard",
-        "test_case_id",
         "test_data",
         "expected_result",
-        "priority",
-        "risk_level",
-        "coverage_risk_level",
-        "source",
         "design_basis",
         "llm_reason",
         "strategy_reason",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import pandas as pd
@@ -25,10 +26,32 @@ from src.test_strategy_selector import select_strategies
 
 
 def _next_coverage_id(existing: pd.DataFrame, offset: int) -> str:
-    return f"COV-AI-{offset:03d}"
+    next_index = offset
+    if existing is not None and not existing.empty and "coverage_id" in existing.columns:
+        indices = []
+        for value in existing["coverage_id"].astype(str):
+            match = re.fullmatch(r"COV-(\d{3,})", value.strip())
+            if match:
+                indices.append(int(match.group(1)))
+        if indices:
+            next_index = max(indices) + offset
+    return f"COV-{next_index:03d}"
 
 
-def suggest_missing_coverage_with_llm(
+def _default_coverage_tags(coverage_type: str) -> list[str]:
+    normalized = str(coverage_type or "Functional").strip().lower()
+    mapping = {
+        "functional": ["core"],
+        "input": ["input"],
+        "boundary": ["boundary"],
+        "condition": ["condition"],
+        "error": ["error"],
+        "state transition": ["state"],
+    }
+    return mapping.get(normalized, ["core"])
+
+
+def review_and_improve_coverage_with_llm(
     requirements: pd.DataFrame,
     coverage_items: pd.DataFrame,
     provider: str | None = None,
@@ -103,20 +126,77 @@ def suggest_missing_coverage_with_llm(
             seen.add(key)
             rows.append(
                 {
-                    "coverage_id": _next_coverage_id(coverage_items, len(rows) + 1),
+                    "coverage_id": "",
                     "requirement_id": item.get("requirement_id", ""),
                     "description": item.get("description", ""),
                     "coverage_type": item.get("coverage_type", "Functional"),
                     "risk_level": item.get("risk_level", "Medium"),
                     "related_techniques": item.get("related_techniques", []),
-                    "tags": ["llm-suggested"],
+                    "tags": _default_coverage_tags(item.get("coverage_type", "Functional")),
                     "notes": item.get("review_summary", parsed.get("s", "")),
                     "reason": item.get("reason", ""),
+                    "source": "LLM added",
                 }
             )
     if not rows and errors:
         return pd.DataFrame([{"llm_error": "; ".join(errors)}])
     return pd.DataFrame(rows)
+
+
+def merge_coverage_improvements(
+    existing: pd.DataFrame,
+    suggested: pd.DataFrame,
+) -> tuple[pd.DataFrame, dict[str, int]]:
+    if existing is None or existing.empty:
+        merged = suggested.copy() if suggested is not None else pd.DataFrame()
+        return merged, {"reviewed": 0, "added": len(merged)}
+    if suggested is None or suggested.empty or "llm_error" in suggested.columns:
+        return existing.copy(), {"reviewed": 0, "added": 0}
+
+    merged = existing.copy()
+    if "source" not in merged.columns:
+        merged["source"] = "Rule"
+
+    reviewed = 0
+    added = 0
+
+    for _, suggestion in suggested.iterrows():
+        req_id = str(suggestion.get("requirement_id", "")).strip()
+        coverage_type = str(suggestion.get("coverage_type", "Functional")).strip()
+        matches = merged[
+            (merged["requirement_id"].astype(str) == req_id)
+            & (merged["coverage_type"].astype(str) == coverage_type)
+        ]
+
+        if len(matches) == 1:
+            idx = matches.index[0]
+            for column in ["description", "related_techniques", "notes"]:
+                if column in suggestion and column in merged.columns:
+                    merged.at[idx, column] = suggestion.get(column)
+            if "reason" in suggestion:
+                merged.at[idx, "notes"] = (
+                    f"{str(merged.at[idx, 'notes']).strip()} | reason: {suggestion.get('reason', '')}".strip(" |")
+                    if "notes" in merged.columns and str(merged.at[idx, "notes"]).strip()
+                    else suggestion.get("reason", "")
+                )
+            merged.at[idx, "source"] = "LLM updated"
+            reviewed += 1
+            continue
+
+        row = suggestion.to_dict()
+        row["source"] = row.get("source", "LLM added") or "LLM added"
+        row["tags"] = row.get("tags") or _default_coverage_tags(row.get("coverage_type", "Functional"))
+        row["coverage_id"] = _next_coverage_id(merged, 1)
+        missing_columns = [column for column in merged.columns if column not in row]
+        for column in missing_columns:
+            row[column] = "" if column != "tags" and column != "related_techniques" else []
+        extra_columns = [column for column in row if column not in merged.columns]
+        for column in extra_columns:
+            merged[column] = ""
+        merged = pd.concat([merged, pd.DataFrame([row])], ignore_index=True)
+        added += 1
+
+    return merged, {"reviewed": reviewed, "added": added}
 
 
 def _parse_missing_coverage_items(parsed: dict) -> list[dict[str, Any]]:
@@ -394,6 +474,55 @@ def _protected_test_case_ids(test_cases: pd.DataFrame) -> set[str]:
     return protected
 
 
+def merge_test_case_improvements(
+    existing: pd.DataFrame,
+    suggested: pd.DataFrame,
+) -> tuple[pd.DataFrame, dict[str, int]]:
+    if existing is None or existing.empty:
+        merged = suggested.copy() if suggested is not None else pd.DataFrame()
+        if not merged.empty:
+            merged = renumber_test_case_ids(limit_generated_test_case_volume(merged))
+        return merged, {"reviewed": 0, "added": len(merged)}
+    if suggested is None or suggested.empty or "llm_error" in suggested.columns:
+        return existing.copy(), {"reviewed": 0, "added": 0}
+
+    merged = existing.copy()
+    reviewed_ids: set[str] = set()
+
+    for _, suggestion in suggested.iterrows():
+        coverage_id = str(suggestion.get("coverage_id", "")).strip()
+        technique = str(suggestion.get("technique", "")).strip()
+        matches = merged[
+            (merged["coverage_id"].astype(str) == coverage_id)
+            & (merged["technique"].astype(str) == technique)
+        ]
+        if len(matches) == 1:
+            idx = matches.index[0]
+            current_test_case_id = str(merged.at[idx, "test_case_id"]).strip()
+            for column in ["test_data", "steps", "expected_result", "priority", "risk_score", "risk_level", "design_basis", "llm_reason"]:
+                if column in suggestion and column in merged.columns:
+                    merged.at[idx, column] = suggestion.get(column)
+            if "source" in merged.columns:
+                merged.at[idx, "source"] = "LLM updated"
+            if current_test_case_id:
+                reviewed_ids.add(current_test_case_id)
+            continue
+
+        row = suggestion.to_dict()
+        row["source"] = row.get("source", "LLM added") or "LLM added"
+        missing_columns = [column for column in merged.columns if column not in row]
+        for column in missing_columns:
+            row[column] = ""
+        extra_columns = [column for column in row if column not in merged.columns]
+        for column in extra_columns:
+            merged[column] = ""
+        merged = pd.concat([merged, pd.DataFrame([row])], ignore_index=True)
+
+    merged = renumber_test_case_ids(limit_generated_test_case_volume(merged))
+    net_added = max(len(merged) - len(existing), 0)
+    return merged, {"reviewed": len(reviewed_ids), "added": net_added}
+
+
 def generate_improved_test_design_with_llm(
     requirements: pd.DataFrame,
     coverage_items: pd.DataFrame,
@@ -419,15 +548,12 @@ def generate_improved_test_design_with_llm(
     )
     if missing_cases.empty or "llm_error" in missing_cases.columns:
         enhanced_cases = existing_test_cases.copy()
+        stats = {"reviewed": 0, "added": 0}
     else:
-        base_columns = list(existing_test_cases.columns)
-        additions = missing_cases.copy()
-        for column in base_columns:
-            if column not in additions.columns:
-                additions[column] = ""
-        additions = additions[base_columns + [col for col in additions.columns if col not in base_columns]]
-        enhanced_cases = pd.concat([existing_test_cases, additions], ignore_index=True)
-        enhanced_cases = renumber_test_case_ids(limit_generated_test_case_volume(enhanced_cases))
+        enhanced_cases, stats = merge_test_case_improvements(
+            existing_test_cases,
+            missing_cases,
+        )
     if test_suites is not None:
         enhanced_cases = assign_test_suites_to_cases(enhanced_cases, test_suites)
 
@@ -436,4 +562,5 @@ def generate_improved_test_design_with_llm(
         "missing_test_cases": missing_cases,
         "enhanced_test_cases": enhanced_cases,
         "optimized_test_cases": optimized_cases,
+        "test_case_improvement_stats": pd.DataFrame([stats]),
     }

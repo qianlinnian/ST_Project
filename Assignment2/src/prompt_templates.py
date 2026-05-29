@@ -40,7 +40,7 @@ REQUIREMENT_STRUCTURING_SYSTEM = (
 )
 
 COMPACT_REQUIREMENT_STRUCTURING_SYSTEM = """
-You are a fast software requirement parser.
+You are a fast software requirement parser for test design.
 
 Return valid JSON only.
 No markdown. No explanation. No trailing comma.
@@ -57,6 +57,10 @@ Rules:
 - Use short strings.
 - Use empty arrays when a field is not present.
 - Do not invent ids.
+- Extract only information explicitly supported by the requirement text.
+- actions should describe the behavior performed, not a vague label.
+- expected_results should describe an observable and testable system outcome.
+- Avoid generic outputs such as "error", "success", "valid", "invalid", or "rejected" alone.
 """.strip()
 
 RISK_ANALYSIS_SYSTEM = (
@@ -94,7 +98,7 @@ reason must be no more than 6 English words.
 """.strip()
 
 COMPACT_COVERAGE_IMPROVEMENT_SYSTEM = """
-You are a fast test coverage gap reviewer.
+You are a fast test coverage reviewer and improver.
 
 Return valid JSON only.
 No markdown. No explanation. No trailing comma.
@@ -107,10 +111,13 @@ Rules:
 - "m" must be an array.
 - Each item in "m" must be:
   [requirement_id, coverage_type, description, related_techniques, reason]
-- Only suggest coverage that is missing from current coverage.
-- Do not repeat existing coverage.
+- Review current coverage against the requirements.
+- Prefer improving an overly generic existing coverage idea before suggesting a brand-new one.
+- Return only items that should be added or used to improve weak current coverage.
+- Do not repeat unchanged existing coverage.
 - Prefer at most 2 missing items per requirement.
 - Keep descriptions and reasons short.
+- Descriptions must be concrete and testable, not vague labels.
 - coverage_type must be one of: Functional, Input, Boundary, Condition, Error, State Transition.
 """.strip()
 
@@ -211,8 +218,21 @@ Return exactly this JSON shape:
 Rules:
 - Use domain-level state names, not requirement ids.
 - Keep states and events short.
+- Prefer stable, reusable state names across runs.
+- Reuse the same state name when the meaning is equivalent.
+- Do not create multiple states with the same meaning.
+- Keep the number of states as small as possible while preserving important behavior.
+- Prefer one coherent state-machine scope for the main business entity or workflow.
+- Do not mix entity lifecycle states with page/view/filter/context states in the same model unless the requirements clearly define them as one state machine.
+- Treat preconditions, environment facts, list existence, page mode, filter mode, and similar context as guards or test data unless they are explicit states of the same workflow.
 - Include valid, invalid, filtering, completion, deletion, and persistence states when supported by requirements.
 - Do not invent behavior that is not supported by requirements.
+- Reuse wording from requirement actions, conditions, and expected results when possible.
+- Avoid overly abstract state names when a clearer domain state is implied by the requirements.
+- Each transition must connect valid existing states.
+- Avoid duplicate transitions with the same source_state, event, and target_state.
+- Prefer user-observable events and guards.
+- Prefer lifecycle states such as created, active, completed, editing, rejected, deleted, persisted, or equivalent domain-specific states when supported.
 - Prefer 4 to 8 states and 5 to 12 transitions.
 """.strip()
 
@@ -253,7 +273,7 @@ def test_strategy_review_prompt(coverage_summary: str, strategy_summary: str) ->
         "- Decision Table Testing\n"
         "- State Transition Testing\n\n"
         "Strategy fields used by the tool: coverage_id, requirement_id, "
-        "coverage_type, risk_level, technique, technique_standard, strategy_reason.\n\n"
+        "coverage_type, risk_level, technique, strategy_reason.\n\n"
         f"Coverage items:\n{coverage_summary}\n\n"
         f"Selected strategies:\n{strategy_summary}\n\n"
         "Return JSON with this shape:\n"
@@ -282,7 +302,7 @@ def test_case_generation_prompt(
         "ISO/IEC/IEEE 29119-4 detailed test techniques. Do not assume any specific "
         "application domain unless it is present in the input requirements.\n\n"
         "Required test case fields: test_case_id, requirement_id, coverage_id, "
-        "technique, technique_standard, precondition, test_data, steps, "
+        "technique, precondition, test_data, steps, "
         "expected_result, priority, risk_score, risk_level, coverage_type, "
         "automation_candidate, source, design_basis.\n\n"
         f"Structured requirements:\n{requirements_summary}\n\n"
@@ -296,7 +316,6 @@ def test_case_generation_prompt(
         '      "requirement_id": "...",\n'
         '      "coverage_id": "...",\n'
         '      "technique": "Equivalence Partitioning|Boundary Value Analysis|Decision Table Testing|State Transition Testing",\n'
-        '      "technique_standard": "...",\n'
         '      "precondition": "...",\n'
         '      "test_data": "...",\n'
         '      "steps": "1. ...",\n'
@@ -406,7 +425,13 @@ def compact_risk_prompt(batch: list[Any], text_limit: int = 300) -> str:
 def compact_coverage_improvement_prompt(
     requirements: pd.DataFrame, coverage_items: pd.DataFrame
 ) -> str:
-    lines = ["REQ|id|text|risk"]
+    lines = [
+        "Review the current coverage items against the requirements.",
+        "If a current coverage item is too generic, return an improved replacement-style suggestion.",
+        "If current coverage is already sufficient, do not repeat it.",
+        "Only suggest truly missing coverage or clear improvements.",
+        "REQ|id|text|risk",
+    ]
     risk_by_req = {}
     if "requirement_id" in coverage_items.columns and "risk_level" in coverage_items.columns:
         risk_by_req = coverage_items.groupby("requirement_id")["risk_level"].first().to_dict()
