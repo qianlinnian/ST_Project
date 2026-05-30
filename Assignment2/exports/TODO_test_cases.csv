@@ -1,0 +1,514 @@
+test_case_id,suite_id,suite_name,requirement_id,coverage_id,technique,precondition,test_data,steps,expected_result,priority,risk_score,risk_level,suite_risk_level,suite_priority,coverage_type,automation_candidate,source,design_basis,llm_reason
+TC-001,TS-001,Todo Bulk Update Boundary,REQ-TODO-011,COV-053,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-002,TS-001,Todo Bulk Update Boundary,REQ-TODO-011,COV-053,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-003,TS-001,Todo Bulk Update Boundary,REQ-TODO-011,COV-053,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-004,TS-002,Todo Bulk Update Decision Rule,REQ-TODO-011,COV-052,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-005,TS-002,Todo Bulk Update Decision Rule,REQ-TODO-011,COV-052,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-006,TS-003,Todo Bulk Update Partition Boundary,REQ-TODO-011,COV-054,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Valid equivalence partition for: Test data range and boundaries: action:markAllCompleted or markAllActive,
+TC-007,TS-003,Todo Bulk Update Partition Boundary,REQ-TODO-011,COV-054,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Invalid equivalence partition for: Test data range and boundaries: action:markAllCompleted or markAllActive,
+TC-008,TS-004,Todo Bulk Update Partition Functional,REQ-TODO-011,COV-049,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: mark all items as completed or active,
+TC-009,TS-004,Todo Bulk Update Partition Functional,REQ-TODO-011,COV-049,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: mark all items as completed or active,
+TC-010,TS-005,Todo Bulk Update Partition Input,REQ-TODO-011,COV-050,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'listId' with valid and invalid data,
+TC-011,TS-005,Todo Bulk Update Partition Input,REQ-TODO-011,COV-050,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'listId' with valid and invalid data,
+TC-012,TS-005,Todo Bulk Update Partition Input,REQ-TODO-011,COV-051,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'action' with valid and invalid data,
+TC-013,TS-005,Todo Bulk Update Partition Input,REQ-TODO-011,COV-051,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",all todo items in list have specified status,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'action' with valid and invalid data,
+TC-014,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-001,State Transition Testing,The system is in source state: active.,Transition scenario for: ,"1. Reset or navigate the system to the source state
+2. Establish source state: active
+3. Apply event/action: toggle status
+4. Observe the resulting system state",The todo item status changes to completed.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-001: active --toggle status--> completed,
+TC-015,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-002,State Transition Testing,The system is in source state: completed.,Transition scenario for: ,"1. Establish source state: completed
+2. Apply event/action: toggle status
+3. Observe the resulting system state",The todo item status changes to active.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-002: completed --toggle status--> active,
+TC-016,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-003,State Transition Testing,The system is in source state: active.,Transition scenario for: ,"1. Establish source state: active
+2. Apply event/action: double-click label
+3. Observe the resulting system state",The item enters edit mode and the edit field shows the current title.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-003: active --double-click label--> editing,
+TC-017,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-005,State Transition Testing,The system is in source state: editing.,newTitle: 'updated title',"1. Establish source state: editing
+2. Apply event/action: save title
+3. Observe the resulting system state",The system reaches target state 'active' after the event.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-005: editing --save title--> active,
+TC-018,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-009,State Transition Testing,The system is in source state: active.,Transition scenario for: ,"1. Establish source state: active
+2. Apply event/action: delete item
+3. Observe the resulting system state",The todo item is deleted and removed from the list.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-009: active --delete item--> deleted,
+TC-019,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-004,State Transition Testing,The system is in source state: completed.,Transition scenario for: ,"1. Reset or navigate the system to the source state
+2. Establish source state: completed
+3. Apply event/action: double-click label
+4. Observe the resulting system state",The item enters edit mode and the edit field shows the current title.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-004: completed --double-click label--> editing,
+TC-020,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-006,State Transition Testing,The system is in source state: editing.,newTitle: '',"1. Establish source state: editing
+2. Apply event/action: save title
+3. Observe the resulting system state",The system reaches target state 'deleted' after the event.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-006: editing --save title--> deleted,
+TC-021,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-007,State Transition Testing,The system is in source state: editing.,Transition scenario for: ,"1. Reset or navigate the system to the source state
+2. Establish source state: editing
+3. Apply event/action: press Escape
+4. Observe the resulting system state","Editing is cancelled, edit mode exits, and the original title is restored.",High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-007: editing --press Escape--> active,
+TC-022,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-011,State Transition Testing,The system is in source state: active.,Transition scenario for: ,"1. Establish source state: active
+2. Apply event/action: mark all as completed
+3. Observe the resulting system state",All todo items in the current list become completed.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-011: active --mark all as completed--> completed,
+TC-023,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-010,State Transition Testing,The system is in source state: completed.,Transition scenario for: ,"1. Establish source state: completed
+2. Apply event/action: delete item
+3. Observe the resulting system state",The todo item is deleted and removed from the list.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-010: completed --delete item--> deleted,
+TC-024,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-008,State Transition Testing,The system is in source state: editing.,Transition scenario for: ,"1. Reset or navigate the system to the source state
+2. Establish source state: editing
+3. Apply event/action: press Escape
+4. Observe the resulting system state","Editing is cancelled, edit mode exits, and the original title is restored.",High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-008: editing --press Escape--> completed,
+TC-025,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-012,State Transition Testing,The system is in source state: completed.,Transition scenario for: ,"1. Establish source state: completed
+2. Apply event/action: mark all as active
+3. Observe the resulting system state",All todo items in the current list become active.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-012: completed --mark all as active--> active,
+TC-026,TS-044,State Transition Model Suite,REQ-STATE-MODEL,COV-STATE-TR-013,State Transition Testing,The system is in source state: completed.,Transition scenario for: ,"1. Reset or navigate the system to the source state
+2. Establish source state: completed
+3. Apply event/action: clear completed
+4. Observe the resulting system state",All completed todo items are removed; active items remain in the list.,High,3.0,Medium,Medium,Medium,State Transition,Partial,Rule fallback,TR-013: completed --clear completed--> deleted,
+TC-027,TS-007,Todo Cleanup Boundary,REQ-TODO-013,COV-065,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",all completed items are removed from list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-028,TS-007,Todo Cleanup Boundary,REQ-TODO-013,COV-065,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",all completed items are removed from list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-029,TS-007,Todo Cleanup Boundary,REQ-TODO-013,COV-065,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",all completed items are removed from list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-030,TS-008,Todo Cleanup Decision Rule,REQ-TODO-013,COV-063,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-031,TS-008,Todo Cleanup Decision Rule,REQ-TODO-013,COV-063,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-032,TS-008,Todo Cleanup Decision Rule,REQ-TODO-013,COV-064,Decision Table Testing,A completed todo item exists and is visible in the current list.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-033,TS-008,Todo Cleanup Decision Rule,REQ-TODO-013,COV-064,Decision Table Testing,A completed todo item exists and is visible in the current list.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-034,TS-009,Todo Cleanup Partition Error,REQ-TODO-013,COV-077,Equivalence Partitioning,A completed todo item exists and is visible in the current list.,completed todo item,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",all completed items are removed from list,Medium,3.0,Medium,Medium,Medium,Error,Partial,Rule fallback,Valid equivalence partition for: Verify clearing completed items when there are none does not cause error,
+TC-035,TS-009,Todo Cleanup Partition Error,REQ-TODO-013,COV-077,Equivalence Partitioning,A completed todo item exists and is visible in the current list.,completed todo item,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",all completed items are removed from list,Medium,3.0,Medium,Medium,Medium,Error,Partial,Rule fallback,Invalid equivalence partition for: Verify clearing completed items when there are none does not cause error,
+TC-036,TS-010,Todo Cleanup Partition Functional,REQ-TODO-013,COV-061,Equivalence Partitioning,A completed todo item exists and is visible in the current list.,completed todo item,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",all completed items are removed from list,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: clear all completed items,
+TC-037,TS-010,Todo Cleanup Partition Functional,REQ-TODO-013,COV-061,Equivalence Partitioning,A completed todo item exists and is visible in the current list.,completed todo item,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",all completed items are removed from list,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: clear all completed items,
+TC-038,TS-011,Todo Cleanup Partition Input,REQ-TODO-013,COV-062,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",all completed items are removed from list,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'listId' with valid and invalid data,
+TC-039,TS-011,Todo Cleanup Partition Input,REQ-TODO-013,COV-062,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",all completed items are removed from list,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'listId' with valid and invalid data,
+TC-040,TS-012,Todo Completion Boundary,REQ-TODO-005,COV-023,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item status changes,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-041,TS-012,Todo Completion Boundary,REQ-TODO-005,COV-023,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item status changes,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-042,TS-012,Todo Completion Boundary,REQ-TODO-005,COV-023,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item status changes,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-043,TS-013,Todo Completion Decision Rule,REQ-TODO-005,COV-022,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-044,TS-013,Todo Completion Decision Rule,REQ-TODO-005,COV-022,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-045,TS-014,Todo Completion Partition Input,REQ-TODO-005,COV-021,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item status changes,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-046,TS-014,Todo Completion Partition Input,REQ-TODO-005,COV-021,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item status changes,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-047,TS-015,Todo Completion State Functional,REQ-TODO-005,COV-020,State Transition Testing,The system under test is available and the relevant feature can be exercised.,Toggle active to completed,1. Create active todo. 2. Toggle status.,Todo item status changes to completed,High,3.0,Medium,Medium,Medium,Functional,Partial,LLM updated,LLM identified missing coverage in existing test cases.,Core toggle missing
+TC-048,TS-017,Todo Creation Boundary,REQ-TODO-001,COV-006,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-049,TS-017,Todo Creation Boundary,REQ-TODO-001,COV-006,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-050,TS-017,Todo Creation Boundary,REQ-TODO-001,COV-006,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-051,TS-017,Todo Creation Boundary,REQ-TODO-001,COV-007,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-052,TS-017,Todo Creation Boundary,REQ-TODO-001,COV-007,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-053,TS-017,Todo Creation Boundary,REQ-TODO-001,COV-007,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-054,TS-018,Todo Creation Decision Rule,REQ-TODO-001,COV-004,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-055,TS-018,Todo Creation Decision Rule,REQ-TODO-001,COV-004,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-056,TS-018,Todo Creation Decision Rule,REQ-TODO-001,COV-005,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-057,TS-018,Todo Creation Decision Rule,REQ-TODO-001,COV-005,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-058,TS-019,Todo Creation Partition Functional,REQ-TODO-001,COV-001,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: add todo item to list,
+TC-059,TS-019,Todo Creation Partition Functional,REQ-TODO-001,COV-001,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: add todo item to list,
+TC-060,TS-020,Todo Creation Partition Input,REQ-TODO-001,COV-002,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'listId' with valid and invalid data,
+TC-061,TS-020,Todo Creation Partition Input,REQ-TODO-001,COV-002,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'listId' with valid and invalid data,
+TC-062,TS-020,Todo Creation Partition Input,REQ-TODO-001,COV-003,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'title' with valid and invalid data,
+TC-063,TS-020,Todo Creation Partition Input,REQ-TODO-001,COV-003,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item appears in list,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'title' with valid and invalid data,
+TC-064,TS-022,Todo Deletion Boundary,REQ-TODO-010,COV-048,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item is removed from list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-065,TS-022,Todo Deletion Boundary,REQ-TODO-010,COV-048,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item is removed from list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-066,TS-022,Todo Deletion Boundary,REQ-TODO-010,COV-048,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item is removed from list,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-067,TS-023,Todo Deletion Decision Rule,REQ-TODO-010,COV-047,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-068,TS-023,Todo Deletion Decision Rule,REQ-TODO-010,COV-047,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-069,TS-024,Todo Deletion Partition Functional,REQ-TODO-010,COV-045,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item is removed from list,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: delete single todo item,
+TC-070,TS-024,Todo Deletion Partition Functional,REQ-TODO-010,COV-045,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item is removed from list,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: delete single todo item,
+TC-071,TS-025,Todo Deletion Partition Input,REQ-TODO-010,COV-046,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item is removed from list,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-072,TS-025,Todo Deletion Partition Input,REQ-TODO-010,COV-046,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item is removed from list,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-073,TS-026,Todo Deletion State Behavior Suite,REQ-TODO-010,COV-075,State Transition Testing,The referenced entity does not exist in the current dataset.,delete non-existent todoId,1. Call delete with non-existent todoId. 2. Verify error.,Error returned.,Medium,3.0,Medium,Medium,Medium,Error,Partial,LLM updated,LLM identified missing coverage in existing test cases.,Missing error test
+TC-074,TS-027,Todo Editing Boundary Suite,REQ-TODO-006,COV-027,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",edit field appears with current title,Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-075,TS-027,Todo Editing Boundary Suite,REQ-TODO-006,COV-027,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",edit field appears with current title,Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-076,TS-027,Todo Editing Boundary Suite,REQ-TODO-006,COV-027,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",edit field appears with current title,Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-077,TS-027,Todo Editing Boundary Suite,REQ-TODO-006,COV-027,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,todoId: null value,1. Double-click item with null id. 2. Observe behavior.,No edit mode triggered.,Medium,3.0,Medium,High,High,Boundary,Partial,LLM added,LLM identified missing coverage in existing test cases.,Missing boundary test
+TC-078,TS-027,Todo Editing Boundary Suite,REQ-TODO-007,COV-033,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item title is updated,Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-079,TS-027,Todo Editing Boundary Suite,REQ-TODO-007,COV-033,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item title is updated,Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-080,TS-027,Todo Editing Boundary Suite,REQ-TODO-007,COV-033,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item title is updated,Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-081,TS-027,Todo Editing Boundary Suite,REQ-TODO-007,COV-033,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,todoId: maximum integer,1. Update item with max id. 2. Verify.,Title updated or error.,Medium,3.0,Medium,High,High,Boundary,Partial,LLM added,LLM identified missing coverage in existing test cases.,Missing boundary test
+TC-082,TS-027,Todo Editing Boundary Suite,REQ-TODO-007,COV-034,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item title is updated,Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-083,TS-027,Todo Editing Boundary Suite,REQ-TODO-007,COV-034,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item title is updated,Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-084,TS-027,Todo Editing Boundary Suite,REQ-TODO-007,COV-034,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item title is updated,Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-085,TS-027,Todo Editing Boundary Suite,REQ-TODO-008,COV-039,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-086,TS-027,Todo Editing Boundary Suite,REQ-TODO-008,COV-039,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-087,TS-027,Todo Editing Boundary Suite,REQ-TODO-008,COV-039,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-088,TS-027,Todo Editing Boundary Suite,REQ-TODO-008,COV-040,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-089,TS-027,Todo Editing Boundary Suite,REQ-TODO-008,COV-040,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-090,TS-027,Todo Editing Boundary Suite,REQ-TODO-008,COV-040,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-091,TS-027,Todo Editing Boundary Suite,REQ-TODO-009,COV-044,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule","Editing is cancelled, edit mode exits, and the original title is restored.",Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-092,TS-027,Todo Editing Boundary Suite,REQ-TODO-009,COV-044,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule","Editing is cancelled, edit mode exits, and the original title is restored.",Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-093,TS-027,Todo Editing Boundary Suite,REQ-TODO-009,COV-044,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule","Editing is cancelled, edit mode exits, and the original title is restored.",Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-094,TS-027,Todo Editing Boundary Suite,REQ-TODO-007,COV-072,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: title length = 100 characters (valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule","A 100-character title is accepted, and a 101-character title is rejected with an error.",Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-095,TS-027,Todo Editing Boundary Suite,REQ-TODO-007,COV-072,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: title length = 101 characters (invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule","A 100-character title is accepted, and a 101-character title is rejected with an error.",Medium,3.0,Medium,High,High,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-096,TS-028,Todo Editing Decision Rule Suite,REQ-TODO-006,COV-026,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,High,High,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-097,TS-028,Todo Editing Decision Rule Suite,REQ-TODO-006,COV-026,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,High,High,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-098,TS-028,Todo Editing Decision Rule Suite,REQ-TODO-007,COV-031,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,High,High,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-099,TS-028,Todo Editing Decision Rule Suite,REQ-TODO-007,COV-031,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,High,High,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-100,TS-028,Todo Editing Decision Rule Suite,REQ-TODO-007,COV-032,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,High,High,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-101,TS-028,Todo Editing Decision Rule Suite,REQ-TODO-007,COV-032,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,High,High,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-102,TS-028,Todo Editing Decision Rule Suite,REQ-TODO-008,COV-038,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-103,TS-028,Todo Editing Decision Rule Suite,REQ-TODO-008,COV-038,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-104,TS-028,Todo Editing Decision Rule Suite,REQ-TODO-009,COV-043,Decision Table Testing,A todo item is in edit mode with an unsaved title change.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome","Editing is cancelled, edit mode exits, and the original title is restored.",Medium,3.0,Medium,High,High,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-105,TS-028,Todo Editing Decision Rule Suite,REQ-TODO-009,COV-043,Decision Table Testing,A todo item is in edit mode with an unsaved title change.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome","Editing is cancelled, edit mode exits, and the original title is restored.",Medium,3.0,Medium,High,High,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-106,TS-029,Todo Editing Partition Suite,REQ-TODO-007,COV-028,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item title is updated,Medium,3.0,Medium,High,High,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: update title of todo item,
+TC-107,TS-029,Todo Editing Partition Suite,REQ-TODO-007,COV-028,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item title is updated,Medium,3.0,Medium,High,High,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: update title of todo item,
+TC-108,TS-029,Todo Editing Partition Suite,REQ-TODO-008,COV-035,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: delete todo item,
+TC-109,TS-029,Todo Editing Partition Suite,REQ-TODO-008,COV-035,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: delete todo item,
+TC-110,TS-029,Todo Editing Partition Suite,REQ-TODO-009,COV-041,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response","Editing is cancelled, edit mode exits, and the original title is restored.",Medium,3.0,Medium,High,High,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: cancel editing,
+TC-111,TS-029,Todo Editing Partition Suite,REQ-TODO-009,COV-041,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling","Editing is cancelled, edit mode exits, and the original title is restored.",Medium,3.0,Medium,High,High,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: cancel editing,
+TC-112,TS-030,Todo Editing Input Partition Suite,REQ-TODO-006,COV-025,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",edit field appears with current title,Medium,3.0,Medium,High,High,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-113,TS-030,Todo Editing Input Partition Suite,REQ-TODO-006,COV-025,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",edit field appears with current title,Medium,3.0,Medium,High,High,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-114,TS-030,Todo Editing Input Partition Suite,REQ-TODO-007,COV-029,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item title is updated,Medium,3.0,Medium,High,High,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-115,TS-030,Todo Editing Input Partition Suite,REQ-TODO-007,COV-029,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item title is updated,Medium,3.0,Medium,High,High,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-116,TS-030,Todo Editing Input Partition Suite,REQ-TODO-007,COV-030,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item title is updated,Medium,3.0,Medium,High,High,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'newTitle' with valid and invalid data,
+TC-117,TS-030,Todo Editing Input Partition Suite,REQ-TODO-007,COV-030,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item title is updated,Medium,3.0,Medium,High,High,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'newTitle' with valid and invalid data,
+TC-118,TS-030,Todo Editing Input Partition Suite,REQ-TODO-008,COV-036,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-119,TS-030,Todo Editing Input Partition Suite,REQ-TODO-008,COV-036,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-120,TS-030,Todo Editing Input Partition Suite,REQ-TODO-008,COV-037,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'newTitle' with valid and invalid data,
+TC-121,TS-030,Todo Editing Input Partition Suite,REQ-TODO-008,COV-037,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",The todo item is deleted and removed from the list.,High,5.0,High,High,High,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'newTitle' with valid and invalid data,
+TC-122,TS-030,Todo Editing Input Partition Suite,REQ-TODO-009,COV-042,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response","Editing is cancelled, edit mode exits, and the original title is restored.",Medium,3.0,Medium,High,High,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-123,TS-030,Todo Editing Input Partition Suite,REQ-TODO-009,COV-042,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling","Editing is cancelled, edit mode exits, and the original title is restored.",Medium,3.0,Medium,High,High,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data,
+TC-124,TS-031,Todo Editing Error State Suite,REQ-TODO-006,COV-071,State Transition Testing,The referenced entity does not exist in the current dataset.,double-click non-existent item,1. Double-click on non-existent todoId. 2. Verify no edit mode.,No edit mode entered.,Medium,3.0,Medium,Medium,Medium,Error,Partial,LLM updated,LLM identified missing coverage in existing test cases.,Missing error test
+TC-125,TS-031,Todo Editing Error State Suite,REQ-TODO-008,COV-073,State Transition Testing,The system under test is available and the relevant feature can be exercised.,newTitle: '   ',"1. Establish the source state
+2. Trigger the transition event
+3. Verify the target state",The todo item is deleted and removed from the list.,Medium,3.0,Medium,Medium,Medium,Error,Partial,Rule fallback,"Verify deletion occurs when edited title is saved as empty after trimming, and confirm item is removed from list",
+TC-126,TS-032,Todo Editing Enter Edit Suite,REQ-TODO-006,COV-024,State Transition Testing,The system under test is available and the relevant feature can be exercised.,Double-click todo label,1. Create todo. 2. Double-click label.,Edit field appears with current title,Medium,3.0,Medium,Medium,Medium,Functional,Partial,LLM updated,LLM identified missing coverage in existing test cases.,Core edit missing
+TC-127,TS-034,Todo Filter Boundary Suite,REQ-TODO-012,COV-059,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-128,TS-034,Todo Filter Boundary Suite,REQ-TODO-012,COV-059,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-129,TS-034,Todo Filter Boundary Suite,REQ-TODO-012,COV-059,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-130,TS-035,Todo Filter Decision Rule Suite,REQ-TODO-012,COV-058,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-131,TS-035,Todo Filter Decision Rule Suite,REQ-TODO-012,COV-058,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-132,TS-036,Todo Filter Partition Suite,REQ-TODO-012,COV-060,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Valid equivalence partition for: Test data range and boundaries: filter:All or Active or Completed,
+TC-133,TS-036,Todo Filter Partition Suite,REQ-TODO-012,COV-060,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Invalid equivalence partition for: Test data range and boundaries: filter:All or Active or Completed,
+TC-134,TS-037,Todo Filter Functional Suite,REQ-TODO-012,COV-055,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: apply filter to todo items,
+TC-135,TS-037,Todo Filter Functional Suite,REQ-TODO-012,COV-055,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: apply filter to todo items,
+TC-136,TS-038,Todo Filter Input Partition Suite,REQ-TODO-012,COV-056,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'listId' with valid and invalid data,
+TC-137,TS-038,Todo Filter Input Partition Suite,REQ-TODO-012,COV-056,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'listId' with valid and invalid data,
+TC-138,TS-038,Todo Filter Input Partition Suite,REQ-TODO-012,COV-057,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'filter' with valid and invalid data,
+TC-139,TS-038,Todo Filter Input Partition Suite,REQ-TODO-012,COV-057,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",only items matching filter are displayed,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'filter' with valid and invalid data,
+TC-140,TS-039,Todo Validation Boundary Suite,REQ-TODO-002,COV-011,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",saved title has no leading/trailing whitespace,Low,1.0,Low,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-141,TS-039,Todo Validation Boundary Suite,REQ-TODO-002,COV-011,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",saved title has no leading/trailing whitespace,Low,1.0,Low,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-142,TS-039,Todo Validation Boundary Suite,REQ-TODO-002,COV-011,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",saved title has no leading/trailing whitespace,Low,1.0,Low,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-143,TS-039,Todo Validation Boundary Suite,REQ-TODO-003,COV-015,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-144,TS-039,Todo Validation Boundary Suite,REQ-TODO-003,COV-015,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-145,TS-039,Todo Validation Boundary Suite,REQ-TODO-003,COV-015,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-146,TS-039,Todo Validation Boundary Suite,REQ-TODO-004,COV-019,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: below lower boundary (generic lower invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-147,TS-039,Todo Validation Boundary Suite,REQ-TODO-004,COV-019,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: on lower boundary (generic lower valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-148,TS-039,Todo Validation Boundary Suite,REQ-TODO-004,COV-019,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: above upper boundary (generic upper boundary review),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-149,TS-039,Todo Validation Boundary Suite,REQ-TODO-002,COV-067,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: title = 1 whitespace character (trimmed empty),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",Whitespace-only titles are trimmed and then rejected or deleted according to the requirement.,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-150,TS-039,Todo Validation Boundary Suite,REQ-TODO-002,COV-067,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: title = 100 whitespace characters (trimmed empty),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",Whitespace-only titles are trimmed and then rejected or deleted according to the requirement.,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-151,TS-039,Todo Validation Boundary Suite,REQ-TODO-002,COV-067,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: title = 101 whitespace characters (trimmed empty),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule",Whitespace-only titles are trimmed and then rejected or deleted according to the requirement.,Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-152,TS-039,Todo Validation Boundary Suite,REQ-TODO-004,COV-069,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: title length = 100 characters (valid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule","A 100-character title is accepted, and a 101-character title is rejected with an error.",Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-153,TS-039,Todo Validation Boundary Suite,REQ-TODO-004,COV-069,Boundary Value Analysis,The system under test is available and the relevant feature can be exercised.,Boundary value: title length = 101 characters (invalid boundary),"1. Prepare data at the boundary point
+2. Execute the related action
+3. Verify the boundary rule","A 100-character title is accepted, and a 101-character title is rejected with an error.",Medium,3.0,Medium,Medium,Medium,Boundary,Partial,Rule fallback,Values are selected on and around identifiable or inferred boundaries.,
+TC-154,TS-040,Todo Validation Decision Rule Suite,REQ-TODO-002,COV-010,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Low,1.0,Low,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-155,TS-040,Todo Validation Decision Rule Suite,REQ-TODO-002,COV-010,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Low,1.0,Low,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-156,TS-040,Todo Validation Decision Rule Suite,REQ-TODO-003,COV-014,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-157,TS-040,Todo Validation Decision Rule Suite,REQ-TODO-003,COV-014,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-158,TS-040,Todo Validation Decision Rule Suite,REQ-TODO-004,COV-018,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 1: All required conditions are true,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The permitted action is completed successfully.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: All required conditions are true,
+TC-159,TS-040,Todo Validation Decision Rule Suite,REQ-TODO-004,COV-018,Decision Table Testing,The system under test is available and the relevant feature can be exercised.,Rule 2: At least one required condition is false,"1. Establish the condition combination
+2. Execute the action
+3. Verify the expected outcome",The action is rejected or the alternative specified outcome occurs.,Medium,3.0,Medium,Medium,Medium,Condition,Partial,Rule fallback,Decision rule based on requirement conditions: At least one required condition is false,
+TC-160,TS-041,Todo Validation Functional Suite,REQ-TODO-002,COV-008,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",saved title has no leading/trailing whitespace,Low,1.0,Low,Medium,Medium,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: trim whitespace from title before saving,
+TC-161,TS-041,Todo Validation Functional Suite,REQ-TODO-002,COV-008,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",saved title has no leading/trailing whitespace,Low,1.0,Low,Medium,Medium,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: trim whitespace from title before saving,
+TC-162,TS-041,Todo Validation Functional Suite,REQ-TODO-003,COV-012,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: reject creation or edit,
+TC-163,TS-041,Todo Validation Functional Suite,REQ-TODO-003,COV-012,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: reject creation or edit,
+TC-164,TS-041,Todo Validation Functional Suite,REQ-TODO-004,COV-016,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Valid equivalence partition for: Verify core behavior: reject creation or edit,
+TC-165,TS-041,Todo Validation Functional Suite,REQ-TODO-004,COV-016,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Functional,Partial,Rule fallback,Invalid equivalence partition for: Verify core behavior: reject creation or edit,
+TC-166,TS-042,Todo Validation Input Partition Suite,REQ-TODO-002,COV-009,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",saved title has no leading/trailing whitespace,Low,1.0,Low,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'title' with valid and invalid data,
+TC-167,TS-042,Todo Validation Input Partition Suite,REQ-TODO-002,COV-009,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",saved title has no leading/trailing whitespace,Low,1.0,Low,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'title' with valid and invalid data,
+TC-168,TS-042,Todo Validation Input Partition Suite,REQ-TODO-003,COV-013,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'title' with valid and invalid data,
+TC-169,TS-042,Todo Validation Input Partition Suite,REQ-TODO-003,COV-013,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'title' with valid and invalid data,
+TC-170,TS-042,Todo Validation Input Partition Suite,REQ-TODO-004,COV-017,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative valid partition data derived from the requirement,"1. Prepare representative valid data
+2. Execute the related action
+3. Observe the system response",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Valid equivalence partition for: Test input field 'title' with valid and invalid data,
+TC-171,TS-042,Todo Validation Input Partition Suite,REQ-TODO-004,COV-017,Equivalence Partitioning,The system under test is available and the relevant feature can be exercised.,Representative invalid partition data derived from the requirement,"1. Prepare representative invalid data
+2. Execute the related action
+3. Observe validation, rejection, or safe handling",todo item not saved; error shown,Medium,3.0,Medium,Medium,Medium,Input,Partial,Rule fallback,Invalid equivalence partition for: Test input field 'title' with valid and invalid data,
+TC-172,TS-043,Todo Validation Error State Suite,REQ-TODO-003,COV-068,State Transition Testing,The system under test is available and the relevant feature can be exercised.,Transition scenario for: Verify error message or status code when rejecting empty/whitespace-only title during creation and editing,"1. Establish the source state
+2. Trigger the transition event
+3. Verify the target state",The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.,Medium,3.0,Medium,Medium,Medium,Error,Partial,Rule fallback,Verify error message or status code when rejecting empty/whitespace-only title during creation and editing,
+TC-173,TS-021,Todo Creation State Transition,REQ-TODO-001,COV-066,State Transition Testing,The system under test is available and the relevant feature can be exercised.,list at max capacity,1. Fill list to max. 2. Try adding new todo. 3. Verify rejection.,Add rejected with error.,Medium,3.0,Medium,Medium,Medium,State Transition,Partial,LLM added,LLM identified missing coverage in existing test cases.,Missing state test
+TC-174,TS-016,Todo Completion State Transition,REQ-TODO-005,COV-070,State Transition Testing,The system under test is available and the relevant feature can be exercised.,toggle active to completed to active,1. Toggle active item to completed. 2. Toggle same item back to active. 3. Verify state.,Item returns to active.,High,3.0,Medium,Medium,Medium,State Transition,Partial,LLM added,LLM identified missing coverage in existing test cases.,Missing toggle cycle
+TC-175,TS-033,Todo Editing Escape State Suite,REQ-TODO-009,COV-074,State Transition Testing,The system under test is available and the relevant feature can be exercised.,press Escape during edit,1. Enter edit mode. 2. Change title. 3. Press Escape. 4. Verify original title.,"Title reverted, edit mode exited.",High,3.0,Medium,Medium,Medium,State Transition,Partial,LLM added,LLM identified missing coverage in existing test cases.,Missing escape test
+TC-176,TS-006,Todo Bulk Update State Behavior,REQ-TODO-011,COV-076,State Transition Testing,The system under test is available and the relevant feature can be exercised.,"some items completed, some active",1. Click 'Mark all completed' when some items are completed and some active. 2. Verify all become completed.,All items show completed state,High,3.0,Medium,Medium,Medium,State Transition,Partial,LLM added,LLM identified missing coverage in existing test cases.,Missing state transition test

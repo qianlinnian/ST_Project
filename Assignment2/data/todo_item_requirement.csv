@@ -12,5 +12,3 @@ REQ-TODO-010,Todo Deletion,Users shall be able to delete a single Todo item.
 REQ-TODO-011,Todo Bulk Update,Users shall be able to use a single control to mark all Todo items in the current List as completed or active.
 REQ-TODO-012,Todo Filter,"Users shall be able to filter Todo items by All, Active, and Completed status."
 REQ-TODO-013,Todo Cleanup,Users shall be able to clear all completed Todo items in the current List at once.
-REQ-TODO-014,Todo Persistence,The system shall persist Todo items so that they remain available after page reload or application restart.
-REQ-TODO-015,Todo List Scope,The system shall keep Todo items isolated by List so that items from one List do not appear in another List.
