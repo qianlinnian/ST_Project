@@ -25,6 +25,7 @@ RISK_ANALYSIS_COLUMNS = [
 STATE_TRANSITION_COLUMNS = [
     "sequence_id",
     "transition_id",
+    "coverage_id",
     "coverage_goal",
     "optimization_rule",
     "reset_required",

@@ -136,6 +136,18 @@ def _transition_identity(transition: dict) -> tuple[str, str, str]:
     )
 
 
+def state_sequence_coverage_id(sequence: pd.Series | dict, offset: int) -> str:
+    explicit = str(sequence.get("coverage_id", "")).strip()
+    if explicit:
+        return explicit
+
+    transition_id = str(sequence.get("transition_id", "")).strip()
+    if transition_id:
+        suffix = "".join(char if char.isalnum() else "-" for char in transition_id).strip("-").upper()
+        return f"COV-STATE-{suffix}" if suffix else f"COV-STATE-{offset:03d}"
+    return f"COV-STATE-{offset:03d}"
+
+
 def _dedupe_transitions(transitions: list[dict]) -> list[dict]:
     seen = set()
     unique = []
@@ -296,10 +308,12 @@ def generate_all_transitions_sequence(state_model: dict | None = None) -> pd.Dat
         source = transition.get("source_state", "Initial State")
         target = transition.get("target_state", "Expected Target State")
         test_data = transition.get("test_data", "Representative data for the transition")
+        coverage_id = state_sequence_coverage_id(transition, index)
         rows.append(
             {
                 "sequence_id": f"TRANS-{index:03d}",
                 "transition_id": transition.get("transition_id", f"TR-{index:03d}"),
+                "coverage_id": coverage_id,
                 "coverage_goal": "All Transitions",
                 "source_state": source,
                 "event": event,
@@ -336,6 +350,7 @@ def generate_optimized_transition_sequence(
         source = transition.get("source_state", "Initial State")
         target = transition.get("target_state", "Expected Target State")
         test_data = transition.get("test_data", "Representative data for the transition")
+        coverage_id = state_sequence_coverage_id(transition, index)
         reset_step = (
             "1. Reset or navigate the system to the source state\n"
             if reset_required
@@ -345,6 +360,7 @@ def generate_optimized_transition_sequence(
             {
                 "sequence_id": f"OPT-TRANS-{index:03d}",
                 "transition_id": transition.get("transition_id", f"TR-{index:03d}"),
+                "coverage_id": coverage_id,
                 "coverage_goal": coverage_goal,
                 "optimization_rule": "Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.",
                 "reset_required": reset_required,

@@ -11,6 +11,7 @@ from src.prompt_templates import (
     SUITE_DESIGN_IMPROVEMENT_SYSTEM,
     suite_improvement_prompt,
 )
+from src.state_modeler import state_sequence_coverage_id
 
 
 RISK_ORDER = {"High": 0, "Medium": 1, "Low": 2}
@@ -42,11 +43,7 @@ def _split_values(value: Any) -> list[str]:
 
 
 def _state_sequence_coverage_id(sequence: pd.Series | dict, offset: int) -> str:
-    transition_id = str(sequence.get("transition_id", "")).strip()
-    if transition_id:
-        suffix = re.sub(r"[^A-Za-z0-9]+", "-", transition_id).strip("-").upper()
-        return f"COV-STATE-{suffix}" if suffix else f"COV-STATE-{offset:03d}"
-    return f"COV-STATE-{offset:03d}"
+    return state_sequence_coverage_id(sequence, offset)
 
 
 def _best_risk(values: list[str]) -> str:

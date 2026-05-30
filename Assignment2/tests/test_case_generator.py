@@ -52,7 +52,8 @@ def test_generated_cases_include_black_box_and_state_techniques():
 
 def test_state_transition_sequences_cover_all_transitions():
     transitions = generate_all_transitions_sequence()
-    assert {"source_state", "event", "target_state", "expected_result"}.issubset(transitions.columns)
+    assert {"source_state", "event", "target_state", "expected_result","coverage_id",}.issubset(transitions.columns)
+    assert transitions["coverage_id"].astype(str).str.startswith("COV-STATE-TR-").all()
     assert len(transitions) >= 3
 
 
@@ -81,6 +82,7 @@ def test_optimized_transition_sequence_keeps_coverage_goal_and_removes_duplicate
     sequence = generate_optimized_transition_sequence(state_model)
     assert len(sequence) == 1
     assert sequence.iloc[0]["coverage_goal"] == "All Transitions"
+    assert sequence.iloc[0]["coverage_id"] == "COV-STATE-TR-001"
     assert "optimization_rule" in sequence.columns
 
 
@@ -256,10 +258,13 @@ def test_export_names_candidate_cases_and_optimized_suite_separately():
     exported_candidates = pd.read_csv(paths["test_cases_csv"])
     exported_optimized = pd.read_csv(paths["optimized_test_suite_csv"])
     exported_traceability = pd.read_csv(paths["traceability_csv"])
+    exported_state_transitions = pd.read_csv(paths["state_transitions_csv"])
     assert len(exported_risks) == len(risks)
     assert len(exported_candidates) == len(test_cases)
     assert len(exported_optimized) == len(optimized)
     assert len(exported_traceability) == len(test_cases)
+    assert "coverage_id" in exported_state_transitions.columns
+    assert exported_state_transitions["coverage_id"].astype(str).str.startswith("COV-STATE-TR-").all()
     payload = json.loads(paths["test_suite_json"].read_text(encoding="utf-8"))
     assert {
         "risk_analysis",

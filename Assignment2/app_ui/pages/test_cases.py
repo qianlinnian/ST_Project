@@ -205,7 +205,7 @@ def _sort_optimized_cases(test_cases: pd.DataFrame, sort_option: str) -> pd.Data
 
 def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
     section_header("Test Suites", "case")
-    suite_col, _, suite_llm_col = st.columns([1, 1, 1], gap="medium")
+    suite_col, suite_llm_col = st.columns([1, 1], gap="medium")
     with suite_col:
         suite_disabled = artifacts["test_strategies"].empty
         if st.button("Generate Test Suites", type="primary", disabled=suite_disabled):

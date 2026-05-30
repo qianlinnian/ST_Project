@@ -15,7 +15,11 @@ from src.prompt_templates import (
     missing_test_case_prompt,
     test_case_generation_prompt as build_test_case_generation_prompt,
 )
-from src.state_modeler import infer_state_model_from_requirements, generate_state_transition_tests
+from src.state_modeler import (
+    generate_state_transition_tests,
+    infer_state_model_from_requirements,
+    state_sequence_coverage_id,
+)
 from src.test_suite_designer import assign_test_suites_to_cases
 
 PRIORITY_BY_RISK = {"High": "High", "Medium": "Medium", "Low": "Low"}
@@ -199,11 +203,7 @@ def _state_sequence_cases(start: int, state_sequences: pd.DataFrame) -> list[dic
 
 
 def _state_sequence_coverage_id(sequence: pd.Series | dict, offset: int) -> str:
-    transition_id = str(sequence.get("transition_id", "")).strip()
-    if transition_id:
-        suffix = re.sub(r"[^A-Za-z0-9]+", "-", transition_id).strip("-").upper()
-        return f"COV-STATE-{suffix}" if suffix else f"COV-STATE-{offset:03d}"
-    return f"COV-STATE-{offset:03d}"
+    return state_sequence_coverage_id(sequence, offset)
 
 
 def _split_suite_coverage_ids(value: Any) -> list[str]:
