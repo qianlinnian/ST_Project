@@ -4,274 +4,131 @@
       "requirement_id": "REQ-TODO-001",
       "module": "Todo Creation",
       "requirement_text": "Users shall be able to add a new Todo item to a specified List.",
-      "input_fields": [
-        "listId",
-        "title"
-      ],
-      "data_ranges": [
-        "listId:any",
-        "title:non-empty string"
-      ],
-      "conditions": [
-        "listId exists",
-        "title is not empty"
-      ],
-      "actions": [
-        "add todo item to list"
-      ],
-      "expected_results": [
-        "todo item appears in list"
-      ]
+      "input_fields": "['listId', 'title']",
+      "data_ranges": "['listId:any', 'title:non-empty string']",
+      "conditions": "['listId exists', 'title is not empty']",
+      "actions": "['add todo item to list']",
+      "expected_results": "['todo item appears in list']"
     },
     {
       "requirement_id": "REQ-TODO-002",
       "module": "Todo Validation",
       "requirement_text": "The system shall trim leading and trailing whitespace from a Todo item title before saving it during creation or editing.",
-      "input_fields": [
-        "title"
-      ],
-      "data_ranges": [
-        "title:string"
-      ],
-      "conditions": [
-        "title has leading/trailing whitespace"
-      ],
-      "actions": [
-        "trim whitespace from title before saving"
-      ],
-      "expected_results": [
-        "saved title has no leading/trailing whitespace"
-      ]
+      "input_fields": "['title']",
+      "data_ranges": "['title:string']",
+      "conditions": "['title has leading/trailing whitespace']",
+      "actions": "['trim whitespace from title before saving']",
+      "expected_results": "['saved title has no leading/trailing whitespace']"
     },
     {
       "requirement_id": "REQ-TODO-003",
       "module": "Todo Validation",
       "requirement_text": "The system shall reject a Todo item title that is empty or contains only whitespace after trimming during creation or editing.",
-      "input_fields": [
-        "title"
-      ],
-      "data_ranges": [
-        "title:string"
-      ],
-      "conditions": [
-        "title is empty or whitespace only after trimming"
-      ],
-      "actions": [
-        "reject creation or edit"
-      ],
-      "expected_results": [
-        "todo item not saved; error shown"
-      ]
+      "input_fields": "['title']",
+      "data_ranges": "['title:string']",
+      "conditions": "['title is empty or whitespace only after trimming']",
+      "actions": "['reject creation or edit']",
+      "expected_results": "['todo item not saved; error shown']"
     },
     {
       "requirement_id": "REQ-TODO-004",
       "module": "Todo Validation",
       "requirement_text": "The system shall reject a Todo item title longer than 100 characters during creation or editing.",
-      "input_fields": [
-        "title"
-      ],
-      "data_ranges": [
-        "title:string"
-      ],
-      "conditions": [
-        "title length > 100 characters"
-      ],
-      "actions": [
-        "reject creation or edit"
-      ],
-      "expected_results": [
-        "todo item not saved; error shown"
-      ]
+      "input_fields": "['title']",
+      "data_ranges": "['title:string']",
+      "conditions": "['title length > 100 characters']",
+      "actions": "['reject creation or edit']",
+      "expected_results": "['todo item not saved; error shown']"
     },
     {
       "requirement_id": "REQ-TODO-005",
       "module": "Todo Completion",
       "requirement_text": "Users shall be able to toggle a Todo item between active and completed status.",
-      "input_fields": [
-        "todoId"
-      ],
-      "data_ranges": [
-        "todoId:any"
-      ],
-      "conditions": [
-        "todo item exists"
-      ],
-      "actions": [
-        "toggle status between active and completed"
-      ],
-      "expected_results": [
-        "todo item status changes"
-      ]
+      "input_fields": "['todoId']",
+      "data_ranges": "['todoId:any']",
+      "conditions": "['todo item exists']",
+      "actions": "['toggle status between active and completed']",
+      "expected_results": "['todo item status changes']"
     },
     {
       "requirement_id": "REQ-TODO-006",
       "module": "Todo Editing",
       "requirement_text": "Users shall be able to enter Todo item edit mode by double-clicking the item label.",
-      "input_fields": [
-        "todoId"
-      ],
-      "data_ranges": [
-        "todoId:any"
-      ],
-      "conditions": [
-        "double-click on item label"
-      ],
-      "actions": [
-        "enter edit mode"
-      ],
-      "expected_results": [
-        "edit field appears with current title"
-      ]
+      "input_fields": "['todoId']",
+      "data_ranges": "['todoId:any']",
+      "conditions": "['double-click on item label']",
+      "actions": "['enter edit mode']",
+      "expected_results": "['edit field appears with current title']"
     },
     {
       "requirement_id": "REQ-TODO-007",
       "module": "Todo Editing",
       "requirement_text": "Users shall be able to update the title of an existing Todo item.",
-      "input_fields": [
-        "todoId",
-        "newTitle"
-      ],
-      "data_ranges": [
-        "todoId:any",
-        "newTitle:non-empty string"
-      ],
-      "conditions": [
-        "todo item exists",
-        "newTitle is not empty"
-      ],
-      "actions": [
-        "update title of todo item"
-      ],
-      "expected_results": [
-        "todo item title is updated"
-      ]
+      "input_fields": "['todoId', 'newTitle']",
+      "data_ranges": "['todoId:any', 'newTitle:non-empty string']",
+      "conditions": "['todo item exists', 'newTitle is not empty']",
+      "actions": "['update title of todo item']",
+      "expected_results": "['todo item title is updated']"
     },
     {
       "requirement_id": "REQ-TODO-008",
       "module": "Todo Editing",
       "requirement_text": "The system shall delete a Todo item when the edited title is saved as empty after trimming.",
-      "input_fields": [
-        "todoId",
-        "newTitle"
-      ],
-      "data_ranges": [
-        "todoId:any",
-        "newTitle:string"
-      ],
-      "conditions": [
-        "newTitle after trimming is empty"
-      ],
-      "actions": [
-        "delete todo item"
-      ],
-      "expected_results": [
-        "todo item is removed from list"
-      ]
+      "input_fields": "['todoId', 'newTitle']",
+      "data_ranges": "['todoId:any', 'newTitle:string']",
+      "conditions": "['newTitle after trimming is empty']",
+      "actions": "['delete todo item']",
+      "expected_results": "['todo item is removed from list']"
     },
     {
       "requirement_id": "REQ-TODO-009",
       "module": "Todo Editing",
       "requirement_text": "The system shall cancel editing and keep the original title when the user presses Escape.",
-      "input_fields": [
-        "todoId"
-      ],
-      "data_ranges": [
-        "todoId:any"
-      ],
-      "conditions": [
-        "user presses Escape during edit"
-      ],
-      "actions": [
-        "cancel editing"
-      ],
-      "expected_results": [
-        "original title is restored"
-      ]
+      "input_fields": "['todoId']",
+      "data_ranges": "['todoId:any']",
+      "conditions": "['user presses Escape during edit']",
+      "actions": "['cancel editing']",
+      "expected_results": "['original title is restored']"
     },
     {
       "requirement_id": "REQ-TODO-010",
       "module": "Todo Deletion",
       "requirement_text": "Users shall be able to delete a single Todo item.",
-      "input_fields": [
-        "todoId"
-      ],
-      "data_ranges": [
-        "todoId:any"
-      ],
-      "conditions": [
-        "todo item exists"
-      ],
-      "actions": [
-        "delete single todo item"
-      ],
-      "expected_results": [
-        "todo item is removed from list"
-      ]
+      "input_fields": "['todoId']",
+      "data_ranges": "['todoId:any']",
+      "conditions": "['todo item exists']",
+      "actions": "['delete single todo item']",
+      "expected_results": "['todo item is removed from list']"
     },
     {
       "requirement_id": "REQ-TODO-011",
       "module": "Todo Bulk Update",
       "requirement_text": "Users shall be able to use a single control to mark all Todo items in the current List as completed or active.",
-      "input_fields": [
-        "listId",
-        "action"
-      ],
-      "data_ranges": [
-        "listId:any",
-        "action:markAllCompleted or markAllActive"
-      ],
-      "conditions": [
-        "list exists"
-      ],
-      "actions": [
-        "mark all items as completed or active"
-      ],
-      "expected_results": [
-        "all todo items in list have specified status"
-      ]
+      "input_fields": "['listId', 'action']",
+      "data_ranges": "['listId:any', 'action:markAllCompleted or markAllActive']",
+      "conditions": "['list exists']",
+      "actions": "['mark all items as completed or active']",
+      "expected_results": "['all todo items in list have specified status']"
     },
     {
       "requirement_id": "REQ-TODO-012",
       "module": "Todo Filter",
       "requirement_text": "Users shall be able to filter Todo items by All, Active, and Completed status.",
-      "input_fields": [
-        "listId",
-        "filter"
-      ],
-      "data_ranges": [
-        "listId:any",
-        "filter:All or Active or Completed"
-      ],
-      "conditions": [
-        "list exists"
-      ],
-      "actions": [
-        "apply filter to todo items"
-      ],
-      "expected_results": [
-        "only items matching filter are displayed"
-      ]
+      "input_fields": "['listId', 'filter']",
+      "data_ranges": "['listId:any', 'filter:All or Active or Completed']",
+      "conditions": "['list exists']",
+      "actions": "['apply filter to todo items']",
+      "expected_results": "['only items matching filter are displayed']"
     },
     {
       "requirement_id": "REQ-TODO-013",
       "module": "Todo Cleanup",
       "requirement_text": "Users shall be able to clear all completed Todo items in the current List at once.",
-      "input_fields": [
-        "listId"
-      ],
-      "data_ranges": [
-        "listId:any"
-      ],
-      "conditions": [
-        "list exists",
-        "there are completed items"
-      ],
-      "actions": [
-        "clear all completed items"
-      ],
-      "expected_results": [
-        "all completed items are removed from list"
-      ]
+      "input_fields": "['listId']",
+      "data_ranges": "['listId:any']",
+      "conditions": "['list exists', 'there are completed items']",
+      "actions": "['clear all completed items']",
+      "expected_results": "['all completed items are removed from list']"
     }
   ],
   "risk_analysis": [
@@ -452,15 +309,11 @@
       "description": "Verify core behavior: add todo item to list",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: todo item appears in list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-002",
@@ -468,16 +321,11 @@
       "description": "Test input field 'listId' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: todo item appears in list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-003",
@@ -485,16 +333,11 @@
       "description": "Test input field 'title' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: todo item appears in list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-004",
@@ -502,15 +345,11 @@
       "description": "Validate condition: listId exists",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: todo item appears in list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-005",
@@ -518,15 +357,11 @@
       "description": "Validate condition: title is not empty",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: todo item appears in list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-006",
@@ -534,16 +369,11 @@
       "description": "Test data range and boundaries: listId:any",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: todo item appears in list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-007",
@@ -551,16 +381,11 @@
       "description": "Test data range and boundaries: title:non-empty string",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: todo item appears in list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-008",
@@ -568,15 +393,11 @@
       "description": "Verify core behavior: trim whitespace from title before saving",
       "coverage_type": "Functional",
       "risk_level": "Low",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: saved title has no leading/trailing whitespace",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-009",
@@ -584,16 +405,11 @@
       "description": "Test input field 'title' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Low",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: saved title has no leading/trailing whitespace",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-010",
@@ -601,15 +417,11 @@
       "description": "Validate condition: title has leading/trailing whitespace",
       "coverage_type": "Condition",
       "risk_level": "Low",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: saved title has no leading/trailing whitespace",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-011",
@@ -617,16 +429,11 @@
       "description": "Test data range and boundaries: title:string",
       "coverage_type": "Boundary",
       "risk_level": "Low",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: saved title has no leading/trailing whitespace",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-012",
@@ -634,15 +441,11 @@
       "description": "Verify core behavior: reject creation or edit",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: todo item not saved; error shown",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-013",
@@ -650,16 +453,11 @@
       "description": "Test input field 'title' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: todo item not saved; error shown",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-014",
@@ -667,15 +465,11 @@
       "description": "Validate condition: title is empty or whitespace only after trimming",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: todo item not saved; error shown",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-015",
@@ -683,16 +477,11 @@
       "description": "Test data range and boundaries: title:string",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: todo item not saved; error shown",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-016",
@@ -700,15 +489,11 @@
       "description": "Verify core behavior: reject creation or edit",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: todo item not saved; error shown",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-017",
@@ -716,16 +501,11 @@
       "description": "Test input field 'title' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: todo item not saved; error shown",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-018",
@@ -733,15 +513,11 @@
       "description": "Validate condition: title length > 100 characters",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: todo item not saved; error shown",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-019",
@@ -749,16 +525,11 @@
       "description": "Test data range and boundaries: title:string",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: todo item not saved; error shown",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-020",
@@ -766,15 +537,11 @@
       "description": "Verify core behavior: toggle status between active and completed",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: todo item status changes",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-021",
@@ -782,16 +549,11 @@
       "description": "Test input field 'todoId' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: todo item status changes",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-022",
@@ -799,15 +561,11 @@
       "description": "Validate condition: todo item exists",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: todo item status changes",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-023",
@@ -815,16 +573,11 @@
       "description": "Test data range and boundaries: todoId:any",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: todo item status changes",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-024",
@@ -832,15 +585,11 @@
       "description": "Verify core behavior: enter edit mode",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: edit field appears with current title",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-025",
@@ -848,16 +597,11 @@
       "description": "Test input field 'todoId' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: edit field appears with current title",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-026",
@@ -865,15 +609,11 @@
       "description": "Validate condition: double-click on item label",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: edit field appears with current title",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-027",
@@ -881,16 +621,11 @@
       "description": "Test data range and boundaries: todoId:any",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: edit field appears with current title",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-028",
@@ -898,15 +633,11 @@
       "description": "Verify core behavior: update title of todo item",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: todo item title is updated",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-029",
@@ -914,16 +645,11 @@
       "description": "Test input field 'todoId' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: todo item title is updated",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-030",
@@ -931,16 +657,11 @@
       "description": "Test input field 'newTitle' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: todo item title is updated",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-031",
@@ -948,15 +669,11 @@
       "description": "Validate condition: todo item exists",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: todo item title is updated",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-032",
@@ -964,15 +681,11 @@
       "description": "Validate condition: newTitle is not empty",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: todo item title is updated",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-033",
@@ -980,16 +693,11 @@
       "description": "Test data range and boundaries: todoId:any",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: todo item title is updated",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-034",
@@ -997,16 +705,11 @@
       "description": "Test data range and boundaries: newTitle:non-empty string",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: todo item title is updated",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-035",
@@ -1014,15 +717,11 @@
       "description": "Verify core behavior: delete todo item",
       "coverage_type": "Functional",
       "risk_level": "High",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: todo item is removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-036",
@@ -1030,16 +729,11 @@
       "description": "Test input field 'todoId' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "High",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: todo item is removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-037",
@@ -1047,16 +741,11 @@
       "description": "Test input field 'newTitle' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "High",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: todo item is removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-038",
@@ -1064,15 +753,11 @@
       "description": "Validate condition: newTitle after trimming is empty",
       "coverage_type": "Condition",
       "risk_level": "High",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: todo item is removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-039",
@@ -1080,16 +765,11 @@
       "description": "Test data range and boundaries: todoId:any",
       "coverage_type": "Boundary",
       "risk_level": "High",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: todo item is removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-040",
@@ -1097,16 +777,11 @@
       "description": "Test data range and boundaries: newTitle:string",
       "coverage_type": "Boundary",
       "risk_level": "High",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: todo item is removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-041",
@@ -1114,15 +789,11 @@
       "description": "Verify core behavior: cancel editing",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: original title is restored",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-042",
@@ -1130,16 +801,11 @@
       "description": "Test input field 'todoId' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: original title is restored",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-043",
@@ -1147,15 +813,11 @@
       "description": "Validate condition: user presses Escape during edit",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: original title is restored",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-044",
@@ -1163,16 +825,11 @@
       "description": "Test data range and boundaries: todoId:any",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: original title is restored",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-045",
@@ -1180,15 +837,11 @@
       "description": "Verify core behavior: delete single todo item",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: todo item is removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-046",
@@ -1196,16 +849,11 @@
       "description": "Test input field 'todoId' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: todo item is removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-047",
@@ -1213,15 +861,11 @@
       "description": "Validate condition: todo item exists",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: todo item is removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-048",
@@ -1229,16 +873,11 @@
       "description": "Test data range and boundaries: todoId:any",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: todo item is removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-049",
@@ -1246,15 +885,11 @@
       "description": "Verify core behavior: mark all items as completed or active",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: all todo items in list have specified status",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-050",
@@ -1262,16 +897,11 @@
       "description": "Test input field 'listId' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: all todo items in list have specified status",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-051",
@@ -1279,16 +909,11 @@
       "description": "Test input field 'action' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: all todo items in list have specified status",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-052",
@@ -1296,15 +921,11 @@
       "description": "Validate condition: list exists",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: all todo items in list have specified status",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-053",
@@ -1312,16 +933,11 @@
       "description": "Test data range and boundaries: listId:any",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: all todo items in list have specified status",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-054",
@@ -1329,16 +945,11 @@
       "description": "Test data range and boundaries: action:markAllCompleted or markAllActive",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: all todo items in list have specified status",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-055",
@@ -1346,15 +957,11 @@
       "description": "Verify core behavior: apply filter to todo items",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: only items matching filter are displayed",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-056",
@@ -1362,16 +969,11 @@
       "description": "Test input field 'listId' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: only items matching filter are displayed",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-057",
@@ -1379,16 +981,11 @@
       "description": "Test input field 'filter' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: only items matching filter are displayed",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-058",
@@ -1396,15 +993,11 @@
       "description": "Verify filter returns correct items when list has items in all three states",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states. | reason: Missing condition for mixed state list",
       "source": "LLM updated",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-059",
@@ -1412,16 +1005,11 @@
       "description": "Test data range and boundaries: listId:any",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: only items matching filter are displayed",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-060",
@@ -1429,16 +1017,11 @@
       "description": "Test data range and boundaries: filter:All or Active or Completed",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: only items matching filter are displayed",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-061",
@@ -1446,15 +1029,11 @@
       "description": "Verify core behavior: clear all completed items",
       "coverage_type": "Functional",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "core"
-      ],
+      "related_techniques": "['Equivalence Partitioning']",
+      "tags": "['core']",
       "notes": "Expected result basis: all completed items are removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-062",
@@ -1462,16 +1041,11 @@
       "description": "Test input field 'listId' with valid and invalid data",
       "coverage_type": "Input",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Equivalence Partitioning",
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "input"
-      ],
+      "related_techniques": "['Equivalence Partitioning', 'Boundary Value Analysis']",
+      "tags": "['input']",
       "notes": "Expected result basis: all completed items are removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-063",
@@ -1479,15 +1053,11 @@
       "description": "Validate condition: list exists",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: all completed items are removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-064",
@@ -1495,15 +1065,11 @@
       "description": "Validate condition: there are completed items",
       "coverage_type": "Condition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Decision Table Testing"
-      ],
-      "tags": [
-        "condition"
-      ],
+      "related_techniques": "['Decision Table Testing']",
+      "tags": "['condition']",
       "notes": "Expected result basis: all completed items are removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-065",
@@ -1511,16 +1077,11 @@
       "description": "Test data range and boundaries: listId:any",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis",
-        "Equivalence Partitioning"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis', 'Equivalence Partitioning']",
+      "tags": "['boundary']",
       "notes": "Expected result basis: all completed items are removed from list",
       "source": "Rule",
-      "reason": ""
+      "reason": NaN
     },
     {
       "coverage_id": "COV-066",
@@ -1528,12 +1089,8 @@
       "description": "Verify adding a todo to a list that is full or has reached max capacity",
       "coverage_type": "State Transition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "State Transition Testing"
-      ],
-      "tags": [
-        "state"
-      ],
+      "related_techniques": "['State Transition Testing']",
+      "tags": "['state']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Missing coverage for list capacity boundary"
@@ -1544,12 +1101,8 @@
       "description": "Test title with only whitespace characters of varying lengths (1, 100, 101) after trimming",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis']",
+      "tags": "['boundary']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Current boundary test is too generic; needs specific whitespace-only values"
@@ -1560,12 +1113,8 @@
       "description": "Verify error message or status code when rejecting empty/whitespace-only title during creation and editing",
       "coverage_type": "Error",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Error Guessing"
-      ],
-      "tags": [
-        "error"
-      ],
+      "related_techniques": "['Error Guessing']",
+      "tags": "['error']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Missing error handling verification"
@@ -1576,12 +1125,8 @@
       "description": "Test title exactly 100 characters and 101 characters to confirm rejection boundary",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis']",
+      "tags": "['boundary']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Current boundary test is too generic; needs exact length values"
@@ -1592,12 +1137,8 @@
       "description": "Verify toggling a completed item back to active and vice versa multiple times",
       "coverage_type": "State Transition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "State Transition Testing"
-      ],
-      "tags": [
-        "state"
-      ],
+      "related_techniques": "['State Transition Testing']",
+      "tags": "['state']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Missing state transition sequence coverage"
@@ -1608,12 +1149,8 @@
       "description": "Verify double-clicking on a non-existent todo item does not enter edit mode",
       "coverage_type": "Error",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Error Guessing"
-      ],
-      "tags": [
-        "error"
-      ],
+      "related_techniques": "['Error Guessing']",
+      "tags": "['error']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Missing error case for invalid item"
@@ -1624,12 +1161,8 @@
       "description": "Test updating title to exactly 100 characters and 101 characters",
       "coverage_type": "Boundary",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Boundary Value Analysis"
-      ],
-      "tags": [
-        "boundary"
-      ],
+      "related_techniques": "['Boundary Value Analysis']",
+      "tags": "['boundary']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Current boundary test is too generic; needs exact length values"
@@ -1639,13 +1172,9 @@
       "requirement_id": "REQ-TODO-008",
       "description": "Verify deletion occurs when edited title is saved as empty after trimming, and confirm item is removed from list",
       "coverage_type": "Error",
-      "risk_level": "Medium",
-      "related_techniques": [
-        "Error Guessing"
-      ],
-      "tags": [
-        "error"
-      ],
+      "risk_level": "High",
+      "related_techniques": "['Error Guessing']",
+      "tags": "['error']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Missing verification of actual deletion outcome"
@@ -1656,12 +1185,8 @@
       "description": "Verify pressing Escape during edit reverts title to original and exits edit mode",
       "coverage_type": "State Transition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "State Transition Testing"
-      ],
-      "tags": [
-        "state"
-      ],
+      "related_techniques": "['State Transition Testing']",
+      "tags": "['state']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Missing state transition verification"
@@ -1672,12 +1197,8 @@
       "description": "Verify deleting a non-existent todo item returns appropriate error",
       "coverage_type": "Error",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Error Guessing"
-      ],
-      "tags": [
-        "error"
-      ],
+      "related_techniques": "['Error Guessing']",
+      "tags": "['error']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Missing error case for invalid item"
@@ -1688,12 +1209,8 @@
       "description": "Verify marking all items as completed when some are already completed, and marking all active when some are already active",
       "coverage_type": "State Transition",
       "risk_level": "Medium",
-      "related_techniques": [
-        "State Transition Testing"
-      ],
-      "tags": [
-        "state"
-      ],
+      "related_techniques": "['State Transition Testing']",
+      "tags": "['state']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Missing state transition for mixed states"
@@ -1704,12 +1221,8 @@
       "description": "Verify clearing completed items when there are none does not cause error",
       "coverage_type": "Error",
       "risk_level": "Medium",
-      "related_techniques": [
-        "Error Guessing"
-      ],
-      "tags": [
-        "error"
-      ],
+      "related_techniques": "['Error Guessing']",
+      "tags": "['error']",
       "notes": "Added specific boundary tests for whitespace and title length, error handling for invalid items, state transitions for toggling and editing, and condition tests for mixed states.",
       "source": "LLM added",
       "reason": "Missing error case for empty completed list"
@@ -3049,7 +2562,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-002",
@@ -3071,7 +2584,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-003",
@@ -3093,7 +2606,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-004",
@@ -3115,7 +2628,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-005",
@@ -3137,7 +2650,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-006",
@@ -3159,7 +2672,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test data range and boundaries: action:markAllCompleted or markAllActive",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-007",
@@ -3181,7 +2694,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test data range and boundaries: action:markAllCompleted or markAllActive",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-008",
@@ -3203,7 +2716,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: mark all items as completed or active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-009",
@@ -3225,7 +2738,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: mark all items as completed or active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-010",
@@ -3247,7 +2760,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-011",
@@ -3269,7 +2782,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-012",
@@ -3291,7 +2804,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'action' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-013",
@@ -3313,7 +2826,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'action' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-014",
@@ -3335,7 +2848,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-001: active --toggle status--> completed",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-015",
@@ -3357,7 +2870,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-002: completed --toggle status--> active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-016",
@@ -3379,7 +2892,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-003: active --double-click label--> editing",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-017",
@@ -3401,7 +2914,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-005: editing --save title--> active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-018",
@@ -3423,7 +2936,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-009: active --delete item--> deleted",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-019",
@@ -3445,7 +2958,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-004: completed --double-click label--> editing",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-020",
@@ -3467,7 +2980,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-006: editing --save title--> deleted",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-021",
@@ -3489,7 +3002,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-007: editing --press Escape--> active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-022",
@@ -3511,7 +3024,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-011: active --mark all as completed--> completed",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-023",
@@ -3533,7 +3046,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-010: completed --delete item--> deleted",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-024",
@@ -3555,7 +3068,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-008: editing --press Escape--> completed",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-025",
@@ -3577,7 +3090,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-012: completed --mark all as active--> active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-026",
@@ -3599,7 +3112,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-013: completed --clear completed--> deleted",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-027",
@@ -3621,7 +3134,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-028",
@@ -3643,7 +3156,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-029",
@@ -3665,7 +3178,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-030",
@@ -3687,7 +3200,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-031",
@@ -3709,7 +3222,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-032",
@@ -3731,7 +3244,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-033",
@@ -3753,7 +3266,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-034",
@@ -3775,7 +3288,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify clearing completed items when there are none does not cause error",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-035",
@@ -3797,7 +3310,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify clearing completed items when there are none does not cause error",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-036",
@@ -3819,7 +3332,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: clear all completed items",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-037",
@@ -3841,7 +3354,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: clear all completed items",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-038",
@@ -3863,7 +3376,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-039",
@@ -3885,7 +3398,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-040",
@@ -3907,7 +3420,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-041",
@@ -3929,7 +3442,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-042",
@@ -3951,7 +3464,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-043",
@@ -3973,7 +3486,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-044",
@@ -3995,7 +3508,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-045",
@@ -4017,7 +3530,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-046",
@@ -4039,7 +3552,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-047",
@@ -4083,7 +3596,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-049",
@@ -4105,7 +3618,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-050",
@@ -4127,7 +3640,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-051",
@@ -4149,7 +3662,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-052",
@@ -4171,7 +3684,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-053",
@@ -4193,7 +3706,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-054",
@@ -4215,7 +3728,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-055",
@@ -4237,7 +3750,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-056",
@@ -4259,7 +3772,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-057",
@@ -4281,7 +3794,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-058",
@@ -4303,7 +3816,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: add todo item to list",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-059",
@@ -4325,7 +3838,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: add todo item to list",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-060",
@@ -4347,7 +3860,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-061",
@@ -4369,7 +3882,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-062",
@@ -4391,7 +3904,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-063",
@@ -4413,7 +3926,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-064",
@@ -4435,7 +3948,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-065",
@@ -4457,7 +3970,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-066",
@@ -4479,7 +3992,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-067",
@@ -4501,7 +4014,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-068",
@@ -4523,7 +4036,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-069",
@@ -4545,7 +4058,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: delete single todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-070",
@@ -4567,7 +4080,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: delete single todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-071",
@@ -4589,7 +4102,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-072",
@@ -4611,7 +4124,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-073",
@@ -4655,7 +4168,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-075",
@@ -4677,7 +4190,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-076",
@@ -4699,7 +4212,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-077",
@@ -4743,7 +4256,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-079",
@@ -4765,7 +4278,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-080",
@@ -4787,7 +4300,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-081",
@@ -4831,7 +4344,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-083",
@@ -4853,7 +4366,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-084",
@@ -4875,7 +4388,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-085",
@@ -4897,7 +4410,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-086",
@@ -4919,7 +4432,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-087",
@@ -4941,7 +4454,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-088",
@@ -4963,7 +4476,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-089",
@@ -4985,7 +4498,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-090",
@@ -5007,7 +4520,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-091",
@@ -5029,7 +4542,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-092",
@@ -5051,7 +4564,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-093",
@@ -5073,7 +4586,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-094",
@@ -5095,7 +4608,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-095",
@@ -5117,7 +4630,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-096",
@@ -5139,7 +4652,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-097",
@@ -5161,7 +4674,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-098",
@@ -5183,7 +4696,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-099",
@@ -5205,7 +4718,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-100",
@@ -5227,7 +4740,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-101",
@@ -5249,7 +4762,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-102",
@@ -5271,7 +4784,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-103",
@@ -5293,7 +4806,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-104",
@@ -5315,7 +4828,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-105",
@@ -5337,7 +4850,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-106",
@@ -5359,7 +4872,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: update title of todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-107",
@@ -5381,7 +4894,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: update title of todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-108",
@@ -5403,7 +4916,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: delete todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-109",
@@ -5425,7 +4938,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: delete todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-110",
@@ -5447,7 +4960,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: cancel editing",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-111",
@@ -5469,7 +4982,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: cancel editing",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-112",
@@ -5491,7 +5004,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-113",
@@ -5513,7 +5026,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-114",
@@ -5535,7 +5048,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-115",
@@ -5557,7 +5070,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-116",
@@ -5579,7 +5092,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'newTitle' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-117",
@@ -5601,7 +5114,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'newTitle' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-118",
@@ -5623,7 +5136,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-119",
@@ -5645,7 +5158,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-120",
@@ -5667,7 +5180,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'newTitle' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-121",
@@ -5689,7 +5202,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'newTitle' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-122",
@@ -5711,7 +5224,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-123",
@@ -5733,7 +5246,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-124",
@@ -5768,16 +5281,16 @@
       "test_data": "newTitle: '   '",
       "steps": "1. Establish the source state\n2. Trigger the transition event\n3. Verify the target state",
       "expected_result": "The todo item is deleted and removed from the list.",
-      "priority": "Medium",
-      "risk_score": 3.0,
-      "risk_level": "Medium",
+      "priority": "High",
+      "risk_score": 5.0,
+      "risk_level": "High",
       "suite_risk_level": "Medium",
       "suite_priority": "Medium",
       "coverage_type": "Error",
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Verify deletion occurs when edited title is saved as empty after trimming, and confirm item is removed from list",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-126",
@@ -5821,7 +5334,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-128",
@@ -5843,7 +5356,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-129",
@@ -5865,7 +5378,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-130",
@@ -5887,7 +5400,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-131",
@@ -5909,7 +5422,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-132",
@@ -5931,7 +5444,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test data range and boundaries: filter:All or Active or Completed",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-133",
@@ -5953,7 +5466,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test data range and boundaries: filter:All or Active or Completed",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-134",
@@ -5975,7 +5488,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: apply filter to todo items",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-135",
@@ -5997,7 +5510,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: apply filter to todo items",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-136",
@@ -6019,7 +5532,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-137",
@@ -6041,7 +5554,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-138",
@@ -6063,7 +5576,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'filter' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-139",
@@ -6085,7 +5598,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'filter' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-140",
@@ -6107,7 +5620,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-141",
@@ -6129,7 +5642,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-142",
@@ -6151,7 +5664,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-143",
@@ -6173,7 +5686,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-144",
@@ -6195,7 +5708,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-145",
@@ -6217,7 +5730,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-146",
@@ -6239,7 +5752,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-147",
@@ -6261,7 +5774,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-148",
@@ -6283,7 +5796,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-149",
@@ -6305,7 +5818,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-150",
@@ -6327,7 +5840,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-151",
@@ -6349,7 +5862,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-152",
@@ -6371,7 +5884,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-153",
@@ -6393,7 +5906,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-154",
@@ -6415,7 +5928,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-155",
@@ -6437,7 +5950,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-156",
@@ -6459,7 +5972,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-157",
@@ -6481,7 +5994,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-158",
@@ -6503,7 +6016,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-159",
@@ -6525,7 +6038,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-160",
@@ -6547,7 +6060,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: trim whitespace from title before saving",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-161",
@@ -6569,7 +6082,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: trim whitespace from title before saving",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-162",
@@ -6591,7 +6104,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: reject creation or edit",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-163",
@@ -6613,7 +6126,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: reject creation or edit",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-164",
@@ -6635,7 +6148,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: reject creation or edit",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-165",
@@ -6657,7 +6170,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: reject creation or edit",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-166",
@@ -6679,7 +6192,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-167",
@@ -6701,7 +6214,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-168",
@@ -6723,7 +6236,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-169",
@@ -6745,7 +6258,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-170",
@@ -6767,7 +6280,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-171",
@@ -6789,7 +6302,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-172",
@@ -6811,7 +6324,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Verify error message or status code when rejecting empty/whitespace-only title during creation and editing",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-173",
@@ -6923,7 +6436,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-086",
@@ -6945,7 +6458,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-087",
@@ -6967,7 +6480,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-088",
@@ -6989,7 +6502,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-089",
@@ -7011,7 +6524,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-090",
@@ -7033,7 +6546,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-102",
@@ -7055,7 +6568,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-103",
@@ -7077,7 +6590,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-108",
@@ -7099,7 +6612,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: delete todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-109",
@@ -7121,7 +6634,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: delete todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-118",
@@ -7143,7 +6656,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-119",
@@ -7165,7 +6678,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-120",
@@ -7187,7 +6700,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'newTitle' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-121",
@@ -7209,7 +6722,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'newTitle' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-074",
@@ -7231,7 +6744,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-075",
@@ -7253,7 +6766,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-076",
@@ -7275,7 +6788,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-077",
@@ -7319,7 +6832,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-079",
@@ -7341,7 +6854,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-080",
@@ -7363,7 +6876,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-081",
@@ -7407,7 +6920,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-083",
@@ -7429,7 +6942,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-084",
@@ -7451,7 +6964,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-091",
@@ -7473,7 +6986,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-092",
@@ -7495,7 +7008,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-093",
@@ -7517,7 +7030,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-094",
@@ -7539,7 +7052,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-095",
@@ -7561,7 +7074,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-096",
@@ -7583,7 +7096,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-097",
@@ -7605,7 +7118,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-098",
@@ -7627,7 +7140,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-099",
@@ -7649,7 +7162,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-100",
@@ -7671,7 +7184,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-101",
@@ -7693,7 +7206,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-104",
@@ -7715,7 +7228,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-105",
@@ -7737,7 +7250,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-106",
@@ -7759,7 +7272,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: update title of todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-107",
@@ -7781,7 +7294,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: update title of todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-110",
@@ -7803,7 +7316,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: cancel editing",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-111",
@@ -7825,7 +7338,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: cancel editing",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-112",
@@ -7847,7 +7360,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-113",
@@ -7869,7 +7382,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-114",
@@ -7891,7 +7404,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-115",
@@ -7913,7 +7426,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-116",
@@ -7935,7 +7448,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'newTitle' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-117",
@@ -7957,7 +7470,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'newTitle' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-122",
@@ -7979,7 +7492,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-123",
@@ -8001,7 +7514,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-014",
@@ -8023,7 +7536,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-001: active --toggle status--> completed",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-015",
@@ -8045,7 +7558,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-002: completed --toggle status--> active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-016",
@@ -8067,7 +7580,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-003: active --double-click label--> editing",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-017",
@@ -8089,7 +7602,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-005: editing --save title--> active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-018",
@@ -8111,7 +7624,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-009: active --delete item--> deleted",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-019",
@@ -8133,7 +7646,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-004: completed --double-click label--> editing",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-020",
@@ -8155,7 +7668,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-006: editing --save title--> deleted",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-021",
@@ -8177,7 +7690,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-007: editing --press Escape--> active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-022",
@@ -8199,7 +7712,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-011: active --mark all as completed--> completed",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-023",
@@ -8221,7 +7734,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-010: completed --delete item--> deleted",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-024",
@@ -8243,7 +7756,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-008: editing --press Escape--> completed",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-025",
@@ -8265,7 +7778,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-012: completed --mark all as active--> active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-026",
@@ -8287,7 +7800,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "TR-013: completed --clear completed--> deleted",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-047",
@@ -8397,7 +7910,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-002",
@@ -8419,7 +7932,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-003",
@@ -8441,7 +7954,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-004",
@@ -8463,7 +7976,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-005",
@@ -8485,7 +7998,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-006",
@@ -8507,7 +8020,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test data range and boundaries: action:markAllCompleted or markAllActive",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-007",
@@ -8529,7 +8042,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test data range and boundaries: action:markAllCompleted or markAllActive",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-008",
@@ -8551,7 +8064,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: mark all items as completed or active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-009",
@@ -8573,7 +8086,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: mark all items as completed or active",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-010",
@@ -8595,7 +8108,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-011",
@@ -8617,7 +8130,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-012",
@@ -8639,7 +8152,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'action' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-013",
@@ -8661,7 +8174,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'action' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-027",
@@ -8683,7 +8196,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-028",
@@ -8705,7 +8218,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-029",
@@ -8727,7 +8240,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-030",
@@ -8749,7 +8262,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-031",
@@ -8771,7 +8284,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-032",
@@ -8793,7 +8306,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-033",
@@ -8815,7 +8328,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-034",
@@ -8837,7 +8350,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify clearing completed items when there are none does not cause error",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-036",
@@ -8859,7 +8372,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: clear all completed items",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-038",
@@ -8881,7 +8394,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-039",
@@ -8903,7 +8416,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-040",
@@ -8925,7 +8438,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-041",
@@ -8947,7 +8460,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-042",
@@ -8969,7 +8482,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-043",
@@ -8991,7 +8504,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-044",
@@ -9013,7 +8526,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-045",
@@ -9035,7 +8548,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-046",
@@ -9057,7 +8570,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-048",
@@ -9079,7 +8592,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-049",
@@ -9101,7 +8614,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-050",
@@ -9123,7 +8636,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-051",
@@ -9145,7 +8658,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-052",
@@ -9167,7 +8680,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-053",
@@ -9189,7 +8702,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-054",
@@ -9211,7 +8724,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-055",
@@ -9233,7 +8746,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-056",
@@ -9255,7 +8768,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-057",
@@ -9277,7 +8790,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-058",
@@ -9299,7 +8812,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: add todo item to list",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-059",
@@ -9321,7 +8834,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: add todo item to list",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-060",
@@ -9343,7 +8856,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-061",
@@ -9365,7 +8878,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-062",
@@ -9387,7 +8900,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-063",
@@ -9409,7 +8922,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-064",
@@ -9431,7 +8944,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-065",
@@ -9453,7 +8966,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-066",
@@ -9475,7 +8988,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-067",
@@ -9497,7 +9010,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-068",
@@ -9519,7 +9032,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-069",
@@ -9541,7 +9054,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: delete single todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-070",
@@ -9563,7 +9076,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: delete single todo item",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-071",
@@ -9585,7 +9098,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-072",
@@ -9607,7 +9120,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'todoId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-073",
@@ -9673,7 +9186,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Verify deletion occurs when edited title is saved as empty after trimming, and confirm item is removed from list",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-126",
@@ -9717,7 +9230,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-128",
@@ -9739,7 +9252,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-129",
@@ -9761,7 +9274,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-130",
@@ -9783,7 +9296,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-131",
@@ -9805,7 +9318,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-132",
@@ -9827,7 +9340,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test data range and boundaries: filter:All or Active or Completed",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-133",
@@ -9849,7 +9362,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test data range and boundaries: filter:All or Active or Completed",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-134",
@@ -9871,7 +9384,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: apply filter to todo items",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-135",
@@ -9893,7 +9406,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: apply filter to todo items",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-136",
@@ -9915,7 +9428,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-137",
@@ -9937,7 +9450,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'listId' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-138",
@@ -9959,7 +9472,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'filter' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-139",
@@ -9981,7 +9494,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'filter' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-143",
@@ -10003,7 +9516,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-144",
@@ -10025,7 +9538,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-145",
@@ -10047,7 +9560,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-146",
@@ -10069,7 +9582,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-147",
@@ -10091,7 +9604,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-148",
@@ -10113,7 +9626,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-149",
@@ -10135,7 +9648,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-150",
@@ -10157,7 +9670,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-151",
@@ -10179,7 +9692,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-152",
@@ -10201,7 +9714,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-153",
@@ -10223,7 +9736,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Values are selected on and around identifiable or inferred boundaries.",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-156",
@@ -10245,7 +9758,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-157",
@@ -10267,7 +9780,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-158",
@@ -10289,7 +9802,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: All required conditions are true",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-159",
@@ -10311,7 +9824,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Decision rule based on requirement conditions: At least one required condition is false",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-162",
@@ -10333,7 +9846,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: reject creation or edit",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-163",
@@ -10355,7 +9868,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: reject creation or edit",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-164",
@@ -10377,7 +9890,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: reject creation or edit",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-165",
@@ -10399,7 +9912,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: reject creation or edit",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-168",
@@ -10421,7 +9934,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-169",
@@ -10443,7 +9956,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-170",
@@ -10465,7 +9978,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-171",
@@ -10487,7 +10000,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-172",
@@ -10509,7 +10022,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Verify error message or status code when rejecting empty/whitespace-only title during creation and editing",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-173",
@@ -10553,7 +10066,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Verify core behavior: trim whitespace from title before saving",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-161",
@@ -10575,7 +10088,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Verify core behavior: trim whitespace from title before saving",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-166",
@@ -10597,7 +10110,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Valid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     },
     {
       "test_case_id": "TC-167",
@@ -10619,7 +10132,7 @@
       "automation_candidate": "Partial",
       "source": "Rule fallback",
       "design_basis": "Invalid equivalence partition for: Test input field 'title' with valid and invalid data",
-      "llm_reason": ""
+      "llm_reason": NaN
     }
   ],
   "traceability_matrix": [
@@ -12121,7 +11634,7 @@
       "suite_name": "Todo Editing Error State Suite",
       "test_case_id": "TC-125",
       "technique": "State Transition Testing",
-      "risk_level": "Medium"
+      "risk_level": "High"
     },
     {
       "requirement_id": "REQ-TODO-006",
@@ -12747,7 +12260,7 @@
       "source_state": "active",
       "event": "toggle status",
       "guard": "todo item exists",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "completed",
       "precondition": "The system is in source state: active.",
       "steps": "1. Reset or navigate the system to the source state\n2. Establish source state: active\n3. Apply event/action: toggle status\n4. Observe the resulting system state",
@@ -12763,7 +12276,7 @@
       "source_state": "completed",
       "event": "toggle status",
       "guard": "todo item exists",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "active",
       "precondition": "The system is in source state: completed.",
       "steps": "1. Establish source state: completed\n2. Apply event/action: toggle status\n3. Observe the resulting system state",
@@ -12779,7 +12292,7 @@
       "source_state": "active",
       "event": "double-click label",
       "guard": "todo item exists",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "editing",
       "precondition": "The system is in source state: active.",
       "steps": "1. Establish source state: active\n2. Apply event/action: double-click label\n3. Observe the resulting system state",
@@ -12811,7 +12324,7 @@
       "source_state": "active",
       "event": "delete item",
       "guard": "todo item exists",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "deleted",
       "precondition": "The system is in source state: active.",
       "steps": "1. Establish source state: active\n2. Apply event/action: delete item\n3. Observe the resulting system state",
@@ -12827,7 +12340,7 @@
       "source_state": "completed",
       "event": "double-click label",
       "guard": "todo item exists",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "editing",
       "precondition": "The system is in source state: completed.",
       "steps": "1. Reset or navigate the system to the source state\n2. Establish source state: completed\n3. Apply event/action: double-click label\n4. Observe the resulting system state",
@@ -12859,7 +12372,7 @@
       "source_state": "editing",
       "event": "press Escape",
       "guard": "original title restored",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "active",
       "precondition": "The system is in source state: editing.",
       "steps": "1. Reset or navigate the system to the source state\n2. Establish source state: editing\n3. Apply event/action: press Escape\n4. Observe the resulting system state",
@@ -12875,7 +12388,7 @@
       "source_state": "active",
       "event": "mark all as completed",
       "guard": "list exists",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "completed",
       "precondition": "The system is in source state: active.",
       "steps": "1. Establish source state: active\n2. Apply event/action: mark all as completed\n3. Observe the resulting system state",
@@ -12891,7 +12404,7 @@
       "source_state": "completed",
       "event": "delete item",
       "guard": "todo item exists",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "deleted",
       "precondition": "The system is in source state: completed.",
       "steps": "1. Establish source state: completed\n2. Apply event/action: delete item\n3. Observe the resulting system state",
@@ -12907,7 +12420,7 @@
       "source_state": "editing",
       "event": "press Escape",
       "guard": "original title restored",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "completed",
       "precondition": "The system is in source state: editing.",
       "steps": "1. Reset or navigate the system to the source state\n2. Establish source state: editing\n3. Apply event/action: press Escape\n4. Observe the resulting system state",
@@ -12923,7 +12436,7 @@
       "source_state": "completed",
       "event": "mark all as active",
       "guard": "list exists",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "active",
       "precondition": "The system is in source state: completed.",
       "steps": "1. Establish source state: completed\n2. Apply event/action: mark all as active\n3. Observe the resulting system state",
@@ -12939,7 +12452,7 @@
       "source_state": "completed",
       "event": "clear completed",
       "guard": "list exists, there are completed items",
-      "test_data": "",
+      "test_data": NaN,
       "target_state": "deleted",
       "precondition": "The system is in source state: completed.",
       "steps": "1. Reset or navigate the system to the source state\n2. Establish source state: completed\n3. Apply event/action: clear completed\n4. Observe the resulting system state",

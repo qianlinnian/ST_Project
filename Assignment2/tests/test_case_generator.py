@@ -4,6 +4,7 @@ import pandas as pd
 from src.coverage_identifier import identify_coverage_items
 from src.exporter import STATE_TRANSITION_COLUMNS, build_traceability_matrix, ensure_columns, export_test_artifacts
 from src.improvement_engine import merge_coverage_improvements
+from src.improvement_engine import review_and_improve_coverage_with_llm
 from src.improvement_engine import _apply_suite_minimization
 from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import structure_requirements
@@ -519,3 +520,57 @@ def test_merge_coverage_improvements_adds_specific_scenario_instead_of_replacing
     merged, stats = merge_coverage_improvements(existing, suggested)
     assert len(merged) == 2
     assert stats["added"] == 1
+
+
+def test_coverage_improvements_inherit_requirement_risk_when_llm_omits_it(monkeypatch):
+    requirements = pd.DataFrame(
+        [
+            {
+                "requirement_id": "REQ-TODO-008",
+                "risk_level": "High",
+                "requirement_text": "Delete item when edited title becomes empty after trimming.",
+            }
+        ]
+    )
+    coverage_items = pd.DataFrame(
+        [
+            {
+                "coverage_id": "COV-035",
+                "requirement_id": "REQ-TODO-008",
+                "description": "Verify core behavior: delete todo item",
+                "coverage_type": "Functional",
+                "risk_level": "High",
+            }
+        ]
+    )
+
+    def fake_enabled(_provider):
+        return True
+
+    def fake_completion(*args, **kwargs):
+        return {
+            "m": [
+                [
+                    "REQ-TODO-008",
+                    "Error",
+                    "Verify deletion occurs when edited title is saved as empty after trimming, and confirm item is removed from list",
+                    ["Error Guessing"],
+                    "Missing verification of actual deletion outcome",
+                ]
+            ],
+            "s": "summary",
+        }
+
+    monkeypatch.setattr("src.improvement_engine.is_llm_enabled", fake_enabled)
+    monkeypatch.setattr("src.improvement_engine.call_json_completion", fake_completion)
+
+    improved = review_and_improve_coverage_with_llm(
+        requirements,
+        coverage_items,
+        provider="fake",
+        model="fake",
+        use_llm=True,
+        batch_size=1,
+        concurrency=1,
+    )
+    assert improved.iloc[0]["risk_level"] == "High"

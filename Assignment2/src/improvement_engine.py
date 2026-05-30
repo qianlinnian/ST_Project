@@ -87,6 +87,23 @@ def _should_replace_existing_coverage(existing_description: str, suggested_descr
     return True
 
 
+def _requirement_risk_lookup(requirements: pd.DataFrame, coverage_items: pd.DataFrame) -> dict[str, str]:
+    risk_by_req: dict[str, str] = {}
+    if coverage_items is not None and not coverage_items.empty and {"requirement_id", "risk_level"}.issubset(coverage_items.columns):
+        for _, row in coverage_items.iterrows():
+            req_id = str(row.get("requirement_id", "")).strip()
+            risk = str(row.get("risk_level", "")).strip()
+            if req_id and risk and req_id not in risk_by_req:
+                risk_by_req[req_id] = risk
+    if requirements is not None and not requirements.empty and {"requirement_id", "risk_level"}.issubset(requirements.columns):
+        for _, row in requirements.iterrows():
+            req_id = str(row.get("requirement_id", "")).strip()
+            risk = str(row.get("risk_level", "")).strip()
+            if req_id and risk:
+                risk_by_req[req_id] = risk
+    return risk_by_req
+
+
 def review_and_improve_coverage_with_llm(
     requirements: pd.DataFrame,
     coverage_items: pd.DataFrame,
@@ -102,6 +119,7 @@ def review_and_improve_coverage_with_llm(
     requirement_records = requirements.to_dict("records")
     if not requirement_records:
         return pd.DataFrame(columns=coverage_items.columns.tolist() + ["reason"])
+    risk_by_req = _requirement_risk_lookup(requirements, coverage_items)
 
     def review_batch(_batch_index: int, batch: list[dict]) -> dict[str, Any]:
         batch_requirements = pd.DataFrame(batch)
@@ -166,7 +184,7 @@ def review_and_improve_coverage_with_llm(
                     "requirement_id": item.get("requirement_id", ""),
                     "description": item.get("description", ""),
                     "coverage_type": item.get("coverage_type", "Functional"),
-                    "risk_level": item.get("risk_level", "Medium"),
+                    "risk_level": item.get("risk_level", risk_by_req.get(str(item.get("requirement_id", "")).strip(), "Medium")),
                     "related_techniques": item.get("related_techniques", []),
                     "tags": _default_coverage_tags(item.get("coverage_type", "Functional")),
                     "notes": item.get("review_summary", parsed.get("s", "")),
