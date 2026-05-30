@@ -530,27 +530,27 @@ def _parse_missing_test_cases(parsed: dict, batch_size: int) -> pd.DataFrame:
                 flush=True,
             )
         for index, item in enumerate(_select_missing_case_items(items, max_items), start=1):
-            if not isinstance(item, list) or len(item) < 6:
+            if not isinstance(item, list) or len(item) < 7:
                 continue
-            risk_level = str(item[7] if len(item) > 7 else "Medium")
+            risk_level = str(item[8] if len(item) > 8 else "Medium")
             rows.append(
                 {
                     "test_case_id": "",
                     "requirement_id": item[0],
                     "coverage_id": item[1],
                     "technique": item[2],
+                    "coverage_type": item[3] if len(item) > 3 else "",
                     "precondition": "The system under test is available and the relevant feature can be exercised.",
-                    "test_data": item[3],
-                    "steps": item[4],
-                    "expected_result": item[5],
-                    "priority": item[6] if len(item) > 6 else risk_level,
+                    "test_data": item[4],
+                    "steps": item[5],
+                    "expected_result": item[6],
+                    "priority": item[7] if len(item) > 7 else risk_level,
                     "risk_score": RISK_SCORE_BY_LEVEL.get(risk_level, 3.0),
                     "risk_level": risk_level,
-                    "coverage_type": "",
                     "automation_candidate": "Partial",
                     "source": "LLM added",
                     "design_basis": "LLM identified missing coverage in existing test cases.",
-                    "llm_reason": item[8] if len(item) > 8 else "",
+                    "llm_reason": item[9] if len(item) > 9 else "",
                 }
             )
     return pd.DataFrame(rows)
@@ -666,8 +666,8 @@ def _extract_complete_missing_case_items(text: str) -> list[list]:
 def _looks_like_compact_missing_case(value: Any) -> bool:
     return (
         isinstance(value, list)
-        and len(value) >= 6
-        and all(not isinstance(part, (list, dict)) for part in value[:6])
+        and len(value) >= 7
+        and all(not isinstance(part, (list, dict)) for part in value[:7])
         and str(value[0]).startswith("REQ")
         and str(value[1]).startswith("COV")
     )
