@@ -22,6 +22,82 @@ RISK_ANALYSIS_COLUMNS = [
     "reason",
     "test_suggestion",
 ]
+STRUCTURED_REQUIREMENT_COLUMNS = [
+    "requirement_id",
+    "module",
+    "requirement_text",
+    "input_fields",
+    "data_ranges",
+    "conditions",
+    "actions",
+    "expected_results",
+]
+COVERAGE_ITEM_COLUMNS = [
+    "coverage_id",
+    "requirement_id",
+    "description",
+    "coverage_type",
+    "risk_level",
+    "related_techniques",
+    "tags",
+    "notes",
+    "source",
+]
+TEST_STRATEGY_COLUMNS = [
+    "coverage_id",
+    "requirement_id",
+    "coverage_type",
+    "risk_level",
+    "technique",
+    "strategy_reason",
+    "source",
+]
+TEST_SUITE_COLUMNS = [
+    "suite_id",
+    "suite_name",
+    "module",
+    "risk_level",
+    "priority",
+    "coverage_ids",
+    "techniques",
+    "coverage_types",
+    "suite_objective",
+    "optimization_basis",
+    "source",
+    "llm_changes",
+]
+TEST_CASE_COLUMNS = [
+    "test_case_id",
+    "suite_id",
+    "suite_name",
+    "requirement_id",
+    "coverage_id",
+    "technique",
+    "precondition",
+    "test_data",
+    "steps",
+    "expected_result",
+    "priority",
+    "risk_score",
+    "risk_level",
+    "suite_risk_level",
+    "suite_priority",
+    "coverage_type",
+    "automation_candidate",
+    "source",
+    "design_basis",
+]
+TRACEABILITY_COLUMNS = [
+    "requirement_id",
+    "requirement_text",
+    "coverage_id",
+    "coverage_description",
+    "suite_id",
+    "suite_name",
+    "test_case_id",
+    "technique",
+    "risk_level",
+]
 STATE_TRANSITION_COLUMNS = [
     "sequence_id",
     "transition_id",
@@ -48,10 +124,20 @@ def _safe_filename(filename: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.-]", "_", filename)
 
 
-def _with_default_columns(data: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
-    if data.empty and len(data.columns) == 0:
+def ensure_columns(data: pd.DataFrame | None, columns: list[str]) -> pd.DataFrame:
+    if data is None:
         return pd.DataFrame(columns=columns)
-    return data
+    normalized = data.copy()
+    for column in columns:
+        if column not in normalized.columns:
+            normalized[column] = pd.NA
+    ordered = [column for column in columns if column in normalized.columns]
+    remaining = [column for column in normalized.columns if column not in ordered]
+    return normalized[ordered + remaining]
+
+
+def _with_default_columns(data: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
+    return ensure_columns(data, columns)
 
 
 def export_csv(data: pd.DataFrame, filename: str) -> Path:
@@ -141,7 +227,7 @@ def build_traceability_matrix(
 
     matrix = test_cases[tc_cols].copy() if tc_cols else pd.DataFrame()
 
-    if not matrix.empty and cov_cols:
+    if not matrix.empty and cov_cols and "coverage_id" in matrix.columns:
         coverage = coverage_items[cov_cols].drop_duplicates("coverage_id")
         coverage = coverage.rename(
             columns={
@@ -153,43 +239,17 @@ def build_traceability_matrix(
         )
         matrix = matrix.merge(coverage, on="coverage_id", how="left", suffixes=("", "_coverage"))
 
-    if not matrix.empty and strategy_cols:
+    if not matrix.empty and strategy_cols and "coverage_id" in matrix.columns:
         strategy = strategies[strategy_cols].drop_duplicates("coverage_id")
         matrix = matrix.merge(strategy, on="coverage_id", how="left", suffixes=("", "_strategy"))
 
-    if not matrix.empty and req_cols:
+    if not matrix.empty and req_cols and "requirement_id" in matrix.columns:
         requirements = structured_requirements[req_cols].drop_duplicates("requirement_id")
         matrix = matrix.merge(requirements, on="requirement_id", how="left", suffixes=("", "_requirement"))
 
-    desired_order = [
-        "requirement_id",
-        "coverage_id",
-        "suite_id",
-        "suite_name",
-        "test_case_id",
-        "technique",
-        "priority",
-        "risk_level",
-        "coverage_risk_level",
-        "source",
-        "coverage_source",
-        "module",
-        "requirement_text",
-        "coverage_description",
-        "coverage_type",
-        "related_techniques",
-        "tags",
-        "notes",
-        "test_data",
-        "expected_result",
-        "design_basis",
-        "llm_reason",
-        "strategy_reason",
-    ]
-    ordered = [column for column in desired_order if column in matrix.columns]
-    remaining = [column for column in matrix.columns if column not in ordered]
-    matrix = matrix[ordered + remaining]
-    return _fill_state_model_traceability(matrix, structured_requirements)
+    matrix = _fill_state_model_traceability(matrix, structured_requirements)
+    ordered = [column for column in TRACEABILITY_COLUMNS if column in matrix.columns]
+    return matrix[ordered]
 
 
 def _fill_state_model_traceability(
@@ -255,7 +315,12 @@ def export_test_artifacts(
         test_cases,
     )
     final_suite = optimized_test_cases if optimized_test_cases is not None else test_cases
-    test_suites = test_suites if test_suites is not None else pd.DataFrame()
+    structured_requirements = ensure_columns(structured_requirements, STRUCTURED_REQUIREMENT_COLUMNS)
+    coverage_items = ensure_columns(coverage_items, COVERAGE_ITEM_COLUMNS)
+    strategies = ensure_columns(strategies, TEST_STRATEGY_COLUMNS)
+    test_cases = ensure_columns(test_cases, TEST_CASE_COLUMNS)
+    final_suite = ensure_columns(final_suite, TEST_CASE_COLUMNS)
+    test_suites = ensure_columns(test_suites if test_suites is not None else pd.DataFrame(), TEST_SUITE_COLUMNS)
     risk_analysis = _with_default_columns(
         risk_analysis if risk_analysis is not None else pd.DataFrame(),
         RISK_ANALYSIS_COLUMNS,

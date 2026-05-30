@@ -1,13 +1,15 @@
-import pandas as pd
 import json
+import pandas as pd
 
 from src.coverage_identifier import identify_coverage_items
-from src.exporter import build_traceability_matrix, export_test_artifacts
+from src.exporter import STATE_TRANSITION_COLUMNS, build_traceability_matrix, ensure_columns, export_test_artifacts
 from src.improvement_engine import _apply_suite_minimization
 from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import structure_requirements
 from src.risk_analyzer import analyze_risks
 from src.state_modeler import (
+    build_state_model,
+    build_state_model_from_sequences,
     generate_all_transitions_sequence,
     generate_optimized_transition_sequence,
     infer_state_model_from_requirements,
@@ -84,6 +86,54 @@ def test_optimized_transition_sequence_keeps_coverage_goal_and_removes_duplicate
     assert sequence.iloc[0]["coverage_goal"] == "All Transitions"
     assert sequence.iloc[0]["coverage_id"] == "COV-STATE-TR-001"
     assert "optimization_rule" in sequence.columns
+
+
+def test_build_state_model_adds_states_found_in_transitions():
+    state_model = build_state_model(
+        states=["Active", "Completed", "Editing"],
+        transitions=[
+            {
+                "transition_id": "TR-001",
+                "source_state": "Completed",
+                "event": "delete",
+                "target_state": "Deleted",
+            }
+        ],
+    )
+    assert state_model["states"] == ["Active", "Completed", "Editing", "Deleted"]
+
+
+def test_build_state_model_from_sequences_syncs_states_with_targets():
+    sequences = pd.DataFrame(
+        [
+            {
+                "transition_id": "TR-001",
+                "coverage_id": "COV-STATE-TR-001",
+                "source_state": "Completed",
+                "event": "delete",
+                "target_state": "Deleted",
+                "guard": "todo exists",
+                "test_data": "",
+            }
+        ]
+    )
+    state_model = build_state_model_from_sequences(sequences, states=["Active", "Completed"])
+    assert state_model["states"] == ["Active", "Completed", "Deleted"]
+
+
+def test_build_state_model_from_empty_sequences_does_not_restore_default_transitions():
+    sequences = pd.DataFrame(columns=STATE_TRANSITION_COLUMNS)
+    state_model = build_state_model_from_sequences(sequences, states=["Active"])
+    assert state_model["states"] == ["Active"]
+    assert state_model["transition_details"] == []
+
+
+def test_ensure_columns_backfills_missing_state_transition_fields_for_nonempty_frames():
+    partial = pd.DataFrame([{"sequence_id": "OPT-TRANS-001", "transition_id": "TR-001"}])
+    normalized = ensure_columns(partial, STATE_TRANSITION_COLUMNS)
+    assert list(normalized.columns[: len(STATE_TRANSITION_COLUMNS)]) == STATE_TRANSITION_COLUMNS
+    assert pd.isna(normalized.loc[0, "coverage_id"])
+    assert pd.isna(normalized.loc[0, "coverage_goal"])
 
 
 def test_optimize_suite_keeps_traceability_columns():
@@ -192,7 +242,17 @@ def test_suite_minimization_protects_high_value_unique_coverage_and_nonempty_sui
 def test_traceability_matrix_links_requirement_coverage_strategy_and_cases():
     structured, coverage, strategies, _, test_cases = _pipeline()
     matrix = build_traceability_matrix(structured, coverage, strategies, test_cases)
-    assert {"requirement_id", "coverage_id", "suite_id", "suite_name", "test_case_id", "technique"}.issubset(matrix.columns)
+    assert list(matrix.columns) == [
+        "requirement_id",
+        "requirement_text",
+        "coverage_id",
+        "coverage_description",
+        "suite_id",
+        "suite_name",
+        "test_case_id",
+        "technique",
+        "risk_level",
+    ]
     assert len(matrix) == len(test_cases)
 
 
@@ -226,8 +286,35 @@ def test_traceability_matrix_labels_state_model_derived_rows():
     )
     row = matrix.iloc[0]
     assert row["requirement_text"] == "State model derived requirement"
-    assert row["module"] == "TodoItem"
     assert row["coverage_description"] == "State transition coverage derived from the generated behavior model"
+
+
+def test_traceability_matrix_tolerates_test_cases_missing_coverage_id_column():
+    structured = pd.DataFrame([{"requirement_id": "REQ-1", "module": "M", "requirement_text": "R"}])
+    coverage = pd.DataFrame([{"coverage_id": "C1", "requirement_id": "REQ-1", "description": "d"}])
+    strategies = pd.DataFrame([{"coverage_id": "C1", "technique": "Equivalence Partitioning"}])
+    test_cases = pd.DataFrame([{"test_case_id": "TC-1", "requirement_id": "REQ-1"}])
+    matrix = build_traceability_matrix(structured, coverage, strategies, test_cases)
+    assert list(matrix["test_case_id"]) == ["TC-1"]
+
+
+def test_export_backfills_missing_nonempty_coverage_and_strategy_columns():
+    structured = pd.DataFrame([{"requirement_id": "REQ-1", "module": "M", "requirement_text": "R"}])
+    coverage = pd.DataFrame([{"requirement_id": "REQ-1", "description": "d"}])
+    strategies = pd.DataFrame([{"requirement_id": "REQ-1", "technique": "Equivalence Partitioning"}])
+    test_cases = pd.DataFrame([{"test_case_id": "TC-1", "requirement_id": "REQ-1"}])
+    paths = export_test_artifacts(
+        structured,
+        coverage,
+        strategies,
+        test_cases,
+        prefix="pytest_schema_backfill",
+        export_format="csv",
+    )
+    exported_coverage = pd.read_csv(paths["coverage_csv"])
+    exported_strategies = pd.read_csv(paths["strategies_csv"])
+    assert "coverage_id" in exported_coverage.columns
+    assert "coverage_id" in exported_strategies.columns
 
 
 def test_export_names_candidate_cases_and_optimized_suite_separately():

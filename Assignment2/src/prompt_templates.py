@@ -223,7 +223,7 @@ Rules:
 - Prefer stable, reusable state names across runs.
 - Reuse the same state name when the meaning is equivalent.
 - Do not create multiple states with the same meaning.
-- Keep the number of states as small as possible while preserving important behavior.
+- Keep the model concise, but do not collapse distinct lifecycle or business-relevant states when requirements support them.
 - Prefer one coherent state-machine scope for the main business entity or workflow.
 - Do not mix entity lifecycle states with page/view/filter/context states in the same model unless the requirements clearly define them as one state machine.
 - Treat preconditions, environment facts, list existence, page mode, filter mode, and similar context as guards or test data unless they are explicit states of the same workflow.
@@ -235,7 +235,8 @@ Rules:
 - Avoid duplicate transitions with the same source_state, event, and target_state.
 - Prefer user-observable events and guards.
 - Prefer lifecycle states such as created, active, completed, editing, rejected, deleted, persisted, or equivalent domain-specific states when supported.
-- Prefer 4 to 8 states and 5 to 12 transitions.
+- Use as many states and transitions as needed to preserve important behavior, without inventing unsupported states.
+- When requirements are rich, prefer a more expressive model rather than collapsing distinct business states too aggressively.
 """.strip()
 
 SUITE_DESIGN_IMPROVEMENT_SYSTEM = (

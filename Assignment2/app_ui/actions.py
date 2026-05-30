@@ -5,7 +5,16 @@ import streamlit as st
 
 from src.ai_client import is_llm_enabled
 from src.coverage_identifier import identify_coverage_items
-from src.exporter import build_traceability_matrix
+from src.exporter import (
+    COVERAGE_ITEM_COLUMNS,
+    RISK_ANALYSIS_COLUMNS,
+    STATE_TRANSITION_COLUMNS,
+    TEST_CASE_COLUMNS,
+    TEST_STRATEGY_COLUMNS,
+    TEST_SUITE_COLUMNS,
+    build_traceability_matrix,
+    ensure_columns,
+)
 from src.improvement_engine import (
     improve_optimized_suite_with_llm,
     merge_coverage_improvements,
@@ -15,6 +24,7 @@ from src.performance_tracker import measure_time
 from src.requirement_parser import enhance_requirements_with_llm, structure_requirements
 from src.risk_analyzer import analyze_risks_with_llm_fallback
 from src.state_modeler import (
+    build_state_model_from_sequences,
     generate_optimized_transition_sequence,
     infer_state_model_from_requirements,
     improve_state_model_with_llm,
@@ -303,8 +313,16 @@ def improve_current_state_model_with_llm() -> None:
 
 
 def save_state_transition_sequences(state_sequences: pd.DataFrame) -> None:
-    st.session_state.state_transition_sequences = state_sequences.copy()
-    st.session_state.state_transition_sequences_draft = state_sequences.copy()
+    normalized_sequences = ensure_columns(state_sequences, STATE_TRANSITION_COLUMNS)
+    st.session_state.state_transition_sequences = normalized_sequences.copy()
+    st.session_state.state_transition_sequences_draft = normalized_sequences.copy()
+    existing_states = None
+    if isinstance(st.session_state.state_model, dict):
+        existing_states = st.session_state.state_model.get("states", [])
+    st.session_state.state_model = build_state_model_from_sequences(
+        normalized_sequences,
+        states=existing_states,
+    )
     st.session_state.test_suites = pd.DataFrame()
     st.session_state.test_suites_draft = pd.DataFrame()
     st.session_state.test_cases = pd.DataFrame()
@@ -401,7 +419,7 @@ def improve_current_optimized_suite_with_llm() -> None:
 
 def save_test_cases(test_cases: pd.DataFrame) -> None:
     st.session_state.test_cases = assign_test_suites_to_cases(
-        test_cases.copy(),
+        ensure_columns(test_cases, TEST_CASE_COLUMNS),
         st.session_state.test_suites,
     )
     st.session_state.test_cases_draft = st.session_state.test_cases.copy()
@@ -417,8 +435,9 @@ def save_test_cases(test_cases: pd.DataFrame) -> None:
 
 
 def save_test_suites(test_suites: pd.DataFrame) -> None:
-    st.session_state.test_suites = test_suites.copy()
-    st.session_state.test_suites_draft = test_suites.copy()
+    normalized_suites = ensure_columns(test_suites, TEST_SUITE_COLUMNS)
+    st.session_state.test_suites = normalized_suites.copy()
+    st.session_state.test_suites_draft = normalized_suites.copy()
     st.session_state.suite_design_improvement = None
     if not st.session_state.test_cases.empty:
         st.session_state.test_cases = assign_test_suites_to_cases(
@@ -438,14 +457,16 @@ def save_test_suites(test_suites: pd.DataFrame) -> None:
 
 
 def save_risk_analysis(risk_analysis: pd.DataFrame) -> None:
-    st.session_state.risk_analysis = risk_analysis.copy()
-    st.session_state.risk_analysis_draft = risk_analysis.copy()
+    normalized_risks = ensure_columns(risk_analysis, RISK_ANALYSIS_COLUMNS)
+    st.session_state.risk_analysis = normalized_risks.copy()
+    st.session_state.risk_analysis_draft = normalized_risks.copy()
     reset_downstream("risk")
 
 
 def save_coverage_items(coverage_items: pd.DataFrame) -> None:
-    st.session_state.coverage_items = coverage_items.copy()
-    st.session_state.coverage_items_draft = coverage_items.copy()
+    normalized_coverage = ensure_columns(coverage_items, COVERAGE_ITEM_COLUMNS)
+    st.session_state.coverage_items = normalized_coverage.copy()
+    st.session_state.coverage_items_draft = normalized_coverage.copy()
     st.session_state.coverage_ai_improvement = None
     st.session_state.test_strategies = pd.DataFrame()
     st.session_state.test_strategies_draft = pd.DataFrame()
@@ -455,8 +476,9 @@ def save_coverage_items(coverage_items: pd.DataFrame) -> None:
 
 
 def save_test_strategies(test_strategies: pd.DataFrame) -> None:
-    st.session_state.test_strategies = test_strategies.copy()
-    st.session_state.test_strategies_draft = test_strategies.copy()
+    normalized_strategies = ensure_columns(test_strategies, TEST_STRATEGY_COLUMNS)
+    st.session_state.test_strategies = normalized_strategies.copy()
+    st.session_state.test_strategies_draft = normalized_strategies.copy()
     st.session_state.ai_improvement_result = None
     st.session_state.suite_minimization_result = None
     reset_downstream("strategy")

@@ -50,6 +50,25 @@ def _as_text(value: Any) -> str:
     return str(value or "")
 
 
+def _ordered_unique_states(
+    states: list[str] | None,
+    transitions: list[dict] | None,
+) -> list[str]:
+    ordered: list[str] = []
+
+    def add(value: Any) -> None:
+        text = str(value or "").strip()
+        if text and text not in ordered:
+            ordered.append(text)
+
+    for state in states or []:
+        add(state)
+    for transition in transitions or []:
+        add(transition.get("source_state", ""))
+        add(transition.get("target_state", ""))
+    return ordered
+
+
 def _state_model_focus_frame(structured_requirements: pd.DataFrame) -> pd.DataFrame:
     if structured_requirements.empty:
         return structured_requirements
@@ -102,7 +121,7 @@ def _state_model_focus_frame(structured_requirements: pd.DataFrame) -> pd.DataFr
     else:
         prioritized = sorted(prioritized, key=lambda item: (item[0], -item[1]), reverse=True)
 
-    selected_count = min(len(prioritized), max(4, min(10, len(scored_rows))))
+    selected_count = min(len(prioritized), max(8, min(25, len(scored_rows))))
     selected = prioritized[:selected_count]
     selected_indexes = sorted(item[1] for item in selected)
     return structured_requirements.iloc[selected_indexes].reset_index(drop=True)
@@ -112,8 +131,15 @@ def build_state_model(
     states: list[str] | None = None,
     transitions: list[dict] | None = None,
 ) -> dict:
-    selected_states = states or DEFAULT_GENERIC_STATE_MODEL["states"]
-    selected_transitions = transitions or DEFAULT_GENERIC_STATE_MODEL["transitions"]
+    selected_transitions = (
+        DEFAULT_GENERIC_STATE_MODEL["transitions"]
+        if transitions is None
+        else transitions
+    )
+    selected_states = _ordered_unique_states(
+        DEFAULT_GENERIC_STATE_MODEL["states"] if states is None else states,
+        selected_transitions,
+    )
     return {
         "states": selected_states,
         "transitions": [
@@ -126,6 +152,29 @@ def build_state_model(
         ],
         "transition_details": selected_transitions,
     }
+
+
+def build_state_model_from_sequences(
+    state_sequences: pd.DataFrame,
+    states: list[str] | None = None,
+) -> dict:
+    if state_sequences is None or state_sequences.empty:
+        return build_state_model(states=states, transitions=[])
+
+    transitions: list[dict[str, Any]] = []
+    for index, (_, row) in enumerate(state_sequences.iterrows(), start=1):
+        transitions.append(
+            {
+                "transition_id": row.get("transition_id", f"TR-{index:03d}"),
+                "coverage_id": row.get("coverage_id", state_sequence_coverage_id(row, index)),
+                "source_state": row.get("source_state", ""),
+                "event": row.get("event", ""),
+                "target_state": row.get("target_state", ""),
+                "guard": row.get("guard", ""),
+                "test_data": row.get("test_data", ""),
+            }
+        )
+    return build_state_model(states=states, transitions=transitions)
 
 
 def _transition_identity(transition: dict) -> tuple[str, str, str]:
@@ -271,7 +320,7 @@ def improve_state_model_with_llm(
         prompt,
         provider=provider,
         model=model,
-        max_tokens=1800,
+        max_tokens=min(5000, max(1800, 140 * len(focused_requirements) + 800)),
         task_label="State Model Improvement",
     )
 
