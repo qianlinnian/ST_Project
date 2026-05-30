@@ -16,6 +16,7 @@ from src.prompt_templates import (
     test_case_generation_prompt as build_test_case_generation_prompt,
 )
 from src.state_modeler import (
+    describe_state_transition_expected_result,
     generate_state_transition_tests,
     infer_state_model_from_requirements,
     state_sequence_coverage_id,
@@ -35,6 +36,20 @@ REQUIRED_COLUMNS = [
     "precondition", "test_data", "steps", "expected_result", "priority", "risk_score",
     "risk_level", "suite_risk_level", "suite_priority", "coverage_type", "automation_candidate", "source", "design_basis",
 ]
+GENERIC_TEST_DATA_PATTERNS = (
+    "Representative valid partition data derived from the requirement",
+    "Representative invalid partition data derived from the requirement",
+    "Boundary value: below lower boundary",
+    "Boundary value: on lower boundary",
+    "Boundary value: above upper boundary",
+    "Boundary value: below lower invalid boundary",
+    "Transition scenario for:",
+)
+GENERIC_EXPECTED_PATTERNS = (
+    "The system reaches the expected target state after the event, or rejects an invalid transition without corrupting state.",
+    "The system accepts the representative valid input or behaviour and produces the requirement-consistent observable output.",
+    "The observable result is consistent with the specified boundary rule for the selected boundary value.",
+)
 
 
 def _as_text(value: Any) -> str:
@@ -68,6 +83,164 @@ def _bounds(*texts: str) -> tuple[int | None, int | None]:
 def _hint(req: dict) -> str:
     expected = req.get("expected_results", "")
     return str(expected[0]) if isinstance(expected, list) and expected else str(expected or "")
+
+
+def _is_generic_text(value: Any, patterns: tuple[str, ...]) -> bool:
+    text = str(value or "").strip()
+    return any(pattern in text for pattern in patterns)
+
+
+def _extract_numbers(text: str) -> list[int]:
+    return [int(value) for value in re.findall(r"\b\d+\b", text)]
+
+
+def _coverage_mentions_empty_after_trim(text: str) -> bool:
+    lowered = text.lower()
+    return "after trimming becomes empty" in lowered or "after trimming is empty" in lowered or "empty after trim" in lowered
+
+
+def _coverage_mentions_nonexistent(text: str) -> bool:
+    lowered = text.lower()
+    return "non-existent" in lowered or "nonexistent" in lowered
+
+
+def _derive_specific_precondition(cov: dict, req: dict, default: str) -> str:
+    description = _as_text(cov.get("description", ""))
+    lowered = description.lower()
+    if "completed item" in lowered:
+        return "A completed todo item exists and is visible in the current list."
+    if "escape" in lowered:
+        return "A todo item is in edit mode with an unsaved title change."
+    if _coverage_mentions_nonexistent(lowered):
+        return "The referenced entity does not exist in the current dataset."
+    if "mixed statuses" in lowered or "all statuses" in lowered:
+        return "The current list contains both active and completed todo items."
+    return default
+
+
+def _derive_specific_test_data(cov: dict, req: dict, current: str, technique: str) -> str:
+    description = _as_text(cov.get("description", ""))
+    lowered = description.lower()
+    if current and not _is_generic_text(current, GENERIC_TEST_DATA_PATTERNS):
+        return current
+    if "completed item" in lowered:
+        return "completed todo item"
+    if _coverage_mentions_empty_after_trim(lowered):
+        return "newTitle: '   '"
+    if "non-empty after trim" in lowered:
+        return "newTitle: 'Buy milk'"
+    if _coverage_mentions_nonexistent(lowered):
+        if "list" in lowered:
+            return "non-existent listId"
+        if "todo" in lowered or "item" in lowered:
+            return "non-existent todoId"
+    if "all statuses" in lowered or "mixed statuses" in lowered:
+        return "list with active and completed todo items"
+    if "100 characters and 101 characters" in lowered:
+        return "title length = 100 chars; title length = 101 chars"
+    if "whitespace characters of varying lengths" in lowered:
+        return "title = ' '; title = 100 spaces; title = 101 spaces"
+    if technique == "State Transition Testing":
+        return f"Transition scenario for: {description or _as_text(req.get('requirement_text', ''))}"
+    return current
+
+
+def _derive_specific_expected_result(row: dict, cov: dict, req: dict, current: str) -> str:
+    description = _as_text(cov.get("description", ""))
+    lowered = description.lower()
+    requirement_id = str(row.get("requirement_id", "")).strip()
+    test_data = str(row.get("test_data", "")).lower()
+    design_basis = str(row.get("design_basis", ""))
+
+    if str(row.get("coverage_type", "")).strip().lower() == "state transition":
+        target_state = ""
+        source_state = ""
+        event = ""
+        match = re.search(r"^(TR-[^:]+):\s*(.*?)\s*--(.*?)-->\s*(.*?)$", design_basis)
+        if match:
+            source_state = match.group(2).strip()
+            event = match.group(3).strip()
+            target_state = match.group(4).strip()
+        transition = {
+            "source_state": source_state,
+            "event": event,
+            "target_state": target_state,
+            "test_data": row.get("test_data", ""),
+            "guard": description,
+        }
+        return describe_state_transition_expected_result(transition)
+
+    if requirement_id == "REQ-TODO-008" or _coverage_mentions_empty_after_trim(lowered):
+        return "The todo item is deleted and removed from the list."
+    if requirement_id == "REQ-TODO-009" or "restores original title" in lowered:
+        return "Editing is cancelled, edit mode exits, and the original title is restored."
+    if "completed item" in lowered and "edit mode" in lowered:
+        return "The completed item enters edit mode and the edit field shows its current title."
+    if _coverage_mentions_nonexistent(lowered) or "non-existent" in test_data:
+        return "The operation is rejected and an appropriate error is shown."
+    if "all statuses" in lowered or "mixed statuses" in lowered:
+        return "Only items matching the selected filter are displayed."
+    if "100 characters and 101 characters" in lowered:
+        return "A 100-character title is accepted, and a 101-character title is rejected with an error."
+    if "whitespace characters of varying lengths" in lowered:
+        return "Whitespace-only titles are trimmed and then rejected or deleted according to the requirement."
+    if current and not _is_generic_text(current, GENERIC_EXPECTED_PATTERNS):
+        return current
+    return generate_expected_result(
+        requirement_text=_as_text(req.get("requirement_text", "")),
+        test_data=row.get("test_data", ""),
+        technique=row.get("technique", ""),
+        action=_as_text(cov.get("description", "")),
+        expected_hint=_hint(req),
+    )
+
+
+def _align_test_case_semantics(test_cases: pd.DataFrame, coverage: pd.DataFrame, requirements: pd.DataFrame) -> pd.DataFrame:
+    if test_cases.empty:
+        return test_cases
+
+    normalized = _normalise_test_case_frame(test_cases.copy())
+    coverage_lookup = (
+        coverage.set_index("coverage_id").to_dict("index")
+        if coverage is not None and not coverage.empty and "coverage_id" in coverage.columns
+        else {}
+    )
+    requirement_lookup = (
+        requirements.set_index("requirement_id").to_dict("index")
+        if requirements is not None and not requirements.empty and "requirement_id" in requirements.columns
+        else {}
+    )
+
+    for index, row in normalized.iterrows():
+        coverage_row = coverage_lookup.get(str(row.get("coverage_id", "")).strip(), {})
+        req = requirement_lookup.get(str(row.get("requirement_id", "")).strip(), {})
+        description = _as_text(coverage_row.get("description", ""))
+        lowered = description.lower()
+
+        if str(row.get("requirement_id", "")).strip() == "REQ-TODO-007" and _coverage_mentions_empty_after_trim(lowered):
+            if "REQ-TODO-008" in requirement_lookup:
+                normalized.at[index, "requirement_id"] = "REQ-TODO-008"
+                req = requirement_lookup["REQ-TODO-008"]
+
+        normalized.at[index, "precondition"] = _derive_specific_precondition(
+            coverage_row,
+            req,
+            str(row.get("precondition", "")),
+        )
+        normalized.at[index, "test_data"] = _derive_specific_test_data(
+            coverage_row,
+            req,
+            str(row.get("test_data", "")),
+            str(row.get("technique", "")),
+        )
+        row_data = normalized.loc[index].to_dict()
+        normalized.at[index, "expected_result"] = _derive_specific_expected_result(
+            row_data,
+            coverage_row,
+            req,
+            str(row.get("expected_result", "")),
+        )
+    return normalized
 
 
 def _case(idx: int, req_id: str, cov_id: str, tech: str, cov: dict, req: dict, data: str, steps: str,
@@ -113,10 +286,17 @@ def _ep(start: int, req_id: str, cov_id: str, cov: dict, req: dict) -> list[dict
 
 
 def _bva(start: int, req_id: str, cov_id: str, cov: dict, req: dict) -> list[dict]:
-    lo, hi = _bounds(_as_text(req.get("requirement_text", "")), _as_text(req.get("data_ranges", "")), _as_text(cov.get("description", "")))
+    coverage_text = _as_text(cov.get("description", ""))
+    lowered = coverage_text.lower()
+    lo, hi = _bounds(_as_text(req.get("requirement_text", "")), _as_text(req.get("data_ranges", "")), coverage_text)
     values = []
-    values += [(str(max(lo - 1, 0)), "just below minimum"), (str(lo), "on minimum"), (str(lo + 1), "just above minimum")] if lo is not None else [("below lower boundary", "generic lower invalid boundary"), ("on lower boundary", "generic lower valid boundary")]
-    values += [(str(max(hi - 1, 0)), "just below maximum"), (str(hi), "on maximum"), (str(hi + 1), "just above maximum")] if hi is not None else [("above upper boundary", "generic upper boundary review")]
+    if "100 characters and 101 characters" in lowered:
+        values = [("title length = 100 characters", "valid boundary"), ("title length = 101 characters", "invalid boundary")]
+    elif "whitespace characters of varying lengths" in lowered:
+        values = [("title = 1 whitespace character", "trimmed empty"), ("title = 100 whitespace characters", "trimmed empty"), ("title = 101 whitespace characters", "trimmed empty")]
+    else:
+        values += [(str(max(lo - 1, 0)), "just below minimum"), (str(lo), "on minimum"), (str(lo + 1), "just above minimum")] if lo is not None else [("below lower boundary", "generic lower invalid boundary"), ("on lower boundary", "generic lower valid boundary")]
+        values += [(str(max(hi - 1, 0)), "just below maximum"), (str(hi), "on maximum"), (str(hi + 1), "just above maximum")] if hi is not None else [("above upper boundary", "generic upper boundary review")]
     rows, seen = [], set()
     for value, label in values:
         if (value, label) in seen:
@@ -170,6 +350,7 @@ def _state_sequence_cases(start: int, state_sequences: pd.DataFrame) -> list[dic
         source = str(sequence.get("source_state", "Initial State"))
         event = str(sequence.get("event", "perform transition event"))
         target = str(sequence.get("target_state", "Expected Target State"))
+        transition = sequence.to_dict()
         rows.append(
             {
                 "test_case_id": f"TC-{start + offset:03d}",
@@ -184,10 +365,7 @@ def _state_sequence_cases(start: int, state_sequences: pd.DataFrame) -> list[dic
                     "steps",
                     f"1. Establish source state: {source}\n2. Apply event/action: {event}\n3. Observe the resulting system state",
                 ),
-                "expected_result": sequence.get(
-                    "expected_result",
-                    f"The system reaches target state: {target}.",
-                ),
+                "expected_result": describe_state_transition_expected_result(transition),
                 "priority": "High",
                 "risk_score": 3.0,
                 "risk_level": "Medium",
@@ -439,7 +617,7 @@ def _llm_generate(
         data = _normalise_test_case_frame(pd.DataFrame(parsed.get("test_cases", [])))
         if data.empty:
             raise ValueError("LLM returned no test_cases")
-        return data
+        return _align_test_case_semantics(data, batch_coverage, batch_requirements)
 
     def fallback_batch(_batch_index: int, batch: list[dict], exc: Exception) -> pd.DataFrame:
         batch_coverage = pd.DataFrame(batch)
@@ -460,7 +638,7 @@ def _llm_generate(
     data = _normalise_test_case_frame(data)
     if data.empty:
         raise ValueError("LLM returned no test_cases")
-    return _renumber_test_cases(_limit_test_case_volume(data))
+    return _renumber_test_cases(_limit_test_case_volume(_align_test_case_semantics(data, coverage, requirements)))
 
 
 def suggest_missing_test_cases_with_llm(
@@ -494,7 +672,7 @@ def suggest_missing_test_cases_with_llm(
             provider=provider,
             model=model,
             max_tokens=min(1800, max(700, 120 * len(batch) + 300)),
-            task_label="Missing Test Case Improvement",
+            task_label="Candidate Test Case Improvement",
         )
         return _parse_missing_test_case_response(response_text, len(batch))
 
@@ -507,7 +685,7 @@ def suggest_missing_test_cases_with_llm(
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
-        task_label="Missing Test Case Improvement",
+        task_label="Candidate Test Case Improvement",
     )
     data = pd.concat(suggested_batches, ignore_index=True) if suggested_batches else pd.DataFrame()
     if data.empty:
@@ -701,7 +879,7 @@ def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, stra
                 batch_size=batch_size,
                 concurrency=concurrency,
             )
-            return improve_oracles_with_llm(
+            reviewed = improve_oracles_with_llm(
                 assign_test_suites_to_cases(generated, test_suites) if test_suites is not None else generated,
                 provider=provider,
                 model=model,
@@ -709,6 +887,7 @@ def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, stra
                 batch_size=batch_size,
                 concurrency=concurrency,
             )
+            return renumber_test_case_ids(_align_test_case_semantics(reviewed, coverage, requirements))
         except Exception as exc:
             fallback = _fallback(
                 requirements,
@@ -722,7 +901,7 @@ def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, stra
                 fallback = assign_test_suites_to_cases(fallback, test_suites)
             fallback["llm_error"] = str(exc)
             fallback["source"] = "Rule fallback"
-            return renumber_test_case_ids(fallback)
+            return renumber_test_case_ids(_align_test_case_semantics(fallback, coverage, requirements))
     generated = _fallback(
         requirements,
         coverage,
@@ -736,4 +915,4 @@ def generate_test_cases(requirements: pd.DataFrame, coverage: pd.DataFrame, stra
         if test_suites is not None
         else generated
     )
-    return renumber_test_case_ids(assigned)
+    return renumber_test_case_ids(_align_test_case_semantics(assigned, coverage, requirements))

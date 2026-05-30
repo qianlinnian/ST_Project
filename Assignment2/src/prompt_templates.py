@@ -333,7 +333,15 @@ def test_case_generation_prompt(
         "    }\n"
         "  ]\n"
         "}\n\n"
-        "Preserve existing requirement_id and coverage_id values."
+        "Preserve existing requirement_id and coverage_id values.\n"
+        "Additional rules:\n"
+        "- Reuse concrete details from the coverage item in test_data, steps, and expected_result.\n"
+        "- If the coverage item mentions exact values, statuses, or errors, copy them explicitly.\n"
+        "- Do not replace concrete scenarios with generic placeholders.\n"
+        "- Do not use generic test_data such as 'Representative valid partition data derived from the requirement'.\n"
+        "- Do not use generic boundary labels such as 'below lower boundary' when the coverage item names exact values.\n"
+        "- If the scenario is 'empty after trimming', the expected_result must describe deletion or rejection as required, not title update.\n"
+        "- If the scenario names a specific state target, the expected_result must describe reaching that target state."
     )
 
 

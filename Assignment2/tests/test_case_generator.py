@@ -3,6 +3,7 @@ import pandas as pd
 
 from src.coverage_identifier import identify_coverage_items
 from src.exporter import STATE_TRANSITION_COLUMNS, build_traceability_matrix, ensure_columns, export_test_artifacts
+from src.improvement_engine import merge_coverage_improvements
 from src.improvement_engine import _apply_suite_minimization
 from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import structure_requirements
@@ -57,6 +58,33 @@ def test_state_transition_sequences_cover_all_transitions():
     assert {"source_state", "event", "target_state", "expected_result","coverage_id",}.issubset(transitions.columns)
     assert transitions["coverage_id"].astype(str).str.startswith("COV-STATE-TR-").all()
     assert len(transitions) >= 3
+
+
+def test_state_transition_expected_results_describe_successful_business_transitions():
+    state_model = {
+        "states": ["Editing", "Active", "Deleted"],
+        "transition_details": [
+            {
+                "transition_id": "TR-005",
+                "source_state": "Editing",
+                "event": "save title (non-empty after trim)",
+                "target_state": "Active",
+                "guard": "newTitle is not empty after trimming",
+                "test_data": "newTitle: 'Buy milk'",
+            },
+            {
+                "transition_id": "TR-006",
+                "source_state": "Editing",
+                "event": "save title (empty after trim)",
+                "target_state": "Deleted",
+                "guard": "newTitle after trimming is empty",
+                "test_data": "newTitle: '   '",
+            },
+        ],
+    }
+    transitions = generate_optimized_transition_sequence(state_model)
+    assert "saved successfully" in transitions.iloc[0]["expected_result"]
+    assert "deletes the todo item" in transitions.iloc[1]["expected_result"]
 
 
 def test_optimized_transition_sequence_keeps_coverage_goal_and_removes_duplicates():
@@ -245,6 +273,7 @@ def test_traceability_matrix_links_requirement_coverage_strategy_and_cases():
     assert list(matrix.columns) == [
         "requirement_id",
         "requirement_text",
+        "requirement_type",
         "coverage_id",
         "coverage_description",
         "suite_id",
@@ -286,7 +315,37 @@ def test_traceability_matrix_labels_state_model_derived_rows():
     )
     row = matrix.iloc[0]
     assert row["requirement_text"] == "State model derived requirement"
+    assert row["requirement_type"] == "derived"
     assert row["coverage_description"] == "State transition coverage derived from the generated behavior model"
+
+
+def test_traceability_matrix_labels_original_rows():
+    structured = pd.DataFrame(
+        [
+            {
+                "requirement_id": "REQ-1",
+                "module": "TodoItem",
+                "requirement_text": "Users can update the title.",
+            }
+        ]
+    )
+    coverage = pd.DataFrame([{"coverage_id": "COV-1", "requirement_id": "REQ-1", "description": "Update title"}])
+    strategies = pd.DataFrame([{"coverage_id": "COV-1", "technique": "Equivalence Partitioning"}])
+    test_cases = pd.DataFrame(
+        [
+            {
+                "test_case_id": "TC-001",
+                "suite_id": "TS-001",
+                "suite_name": "Title Update Suite",
+                "requirement_id": "REQ-1",
+                "coverage_id": "COV-1",
+                "technique": "Equivalence Partitioning",
+                "risk_level": "Medium",
+            }
+        ]
+    )
+    matrix = build_traceability_matrix(structured, coverage, strategies, test_cases)
+    assert matrix.iloc[0]["requirement_type"] == "original"
 
 
 def test_traceability_matrix_tolerates_test_cases_missing_coverage_id_column():
@@ -363,3 +422,100 @@ def test_export_names_candidate_cases_and_optimized_suite_separately():
     }.issubset(payload)
     assert len(payload["risk_analysis"]) == len(risks)
     assert len(payload["state_transition_sequences"]) == len(state_sequences)
+
+
+def test_generate_test_cases_preserves_specific_boundary_values_and_expected_results():
+    requirements = pd.DataFrame(
+        [
+            {
+                "requirement_id": "REQ-TODO-004",
+                "module": "Todo Validation",
+                "requirement_text": "The system shall reject a Todo item title longer than 100 characters during creation or editing.",
+                "data_ranges": "title:string",
+                "expected_results": "todo item not saved; error shown",
+            }
+        ]
+    )
+    coverage = pd.DataFrame(
+        [
+            {
+                "coverage_id": "COV-019",
+                "requirement_id": "REQ-TODO-004",
+                "description": "Test title exactly 100 characters and 101 characters to verify boundary rejection",
+                "coverage_type": "Boundary",
+                "risk_level": "Medium",
+            }
+        ]
+    )
+    strategies = pd.DataFrame(
+        [
+            {
+                "coverage_id": "COV-019",
+                "technique": "Boundary Value Analysis",
+            }
+        ]
+    )
+    cases = generate_test_cases(requirements, coverage, strategies, include_state_tests=False, use_llm=False)
+    assert cases["test_data"].astype(str).str.contains("100 characters").any()
+    assert cases["test_data"].astype(str).str.contains("101 characters").any()
+    assert cases["expected_result"].astype(str).str.contains("101-character title is rejected").any()
+
+
+def test_generate_test_cases_moves_trim_empty_editing_scenario_to_delete_requirement():
+    requirements = pd.DataFrame(
+        [
+            {"requirement_id": "REQ-TODO-007", "requirement_text": "Users shall be able to update the title of an existing Todo item."},
+            {"requirement_id": "REQ-TODO-008", "requirement_text": "The system shall delete a Todo item when the edited title is saved as empty after trimming."},
+        ]
+    )
+    coverage = pd.DataFrame(
+        [
+            {
+                "coverage_id": "COV-069",
+                "requirement_id": "REQ-TODO-007",
+                "description": "Test updating title with a string that after trimming becomes empty (e.g., '   ')",
+                "coverage_type": "Input",
+                "risk_level": "Medium",
+            }
+        ]
+    )
+    strategies = pd.DataFrame([{"coverage_id": "COV-069", "technique": "Equivalence Partitioning"}])
+    cases = generate_test_cases(requirements, coverage, strategies, include_state_tests=False, use_llm=False)
+    assert (cases["requirement_id"] == "REQ-TODO-008").all()
+    assert cases["expected_result"].astype(str).str.contains("deleted").all()
+
+
+def test_merge_coverage_improvements_adds_specific_scenario_instead_of_replacing_generic_input_coverage():
+    existing = pd.DataFrame(
+        [
+            {
+                "coverage_id": "COV-030",
+                "requirement_id": "REQ-TODO-007",
+                "description": "Test input field 'newTitle' with valid and invalid data",
+                "coverage_type": "Input",
+                "risk_level": "Medium",
+                "related_techniques": ["Equivalence Partitioning"],
+                "tags": ["input"],
+                "notes": "",
+                "source": "Rule",
+            }
+        ]
+    )
+    suggested = pd.DataFrame(
+        [
+            {
+                "requirement_id": "REQ-TODO-007",
+                "description": "Test updating title with a string that after trimming becomes empty (e.g., '   ')",
+                "coverage_type": "Input",
+                "risk_level": "Medium",
+                "related_techniques": ["Equivalence Partitioning"],
+                "tags": ["input"],
+                "notes": "",
+                "reason": "specific scenario",
+                "source": "LLM added",
+            }
+        ]
+    )
+    merged, stats = merge_coverage_improvements(existing, suggested)
+    assert len(merged) == 2
+    assert stats["added"] == 1

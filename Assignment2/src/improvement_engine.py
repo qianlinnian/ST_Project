@@ -51,6 +51,42 @@ def _default_coverage_tags(coverage_type: str) -> list[str]:
     return mapping.get(normalized, ["core"])
 
 
+def _is_specific_coverage_scenario(description: str) -> bool:
+    lowered = str(description or "").strip().lower()
+    keywords = [
+        "exactly",
+        "100 characters",
+        "101 characters",
+        "whitespace",
+        "after trimming becomes empty",
+        "after trimming is empty",
+        "completed item",
+        "original title",
+        "all statuses",
+        "mixed statuses",
+        "non-existent",
+        "nonexistent",
+        "no items are completed",
+    ]
+    return any(keyword in lowered for keyword in keywords)
+
+
+def _should_replace_existing_coverage(existing_description: str, suggested_description: str) -> bool:
+    existing_text = str(existing_description or "").strip()
+    suggested_text = str(suggested_description or "").strip()
+    if not existing_text:
+        return True
+    generic_prefixes = (
+        "Verify core behavior:",
+        "Test input field",
+        "Validate condition:",
+        "Test data range and boundaries:",
+    )
+    if any(existing_text.startswith(prefix) for prefix in generic_prefixes) and _is_specific_coverage_scenario(suggested_text):
+        return False
+    return True
+
+
 def review_and_improve_coverage_with_llm(
     requirements: pd.DataFrame,
     coverage_items: pd.DataFrame,
@@ -170,18 +206,20 @@ def merge_coverage_improvements(
 
         if len(matches) == 1:
             idx = matches.index[0]
-            for column in ["description", "related_techniques", "notes"]:
-                if column in suggestion and column in merged.columns:
-                    merged.at[idx, column] = suggestion.get(column)
-            if "reason" in suggestion:
-                merged.at[idx, "notes"] = (
-                    f"{str(merged.at[idx, 'notes']).strip()} | reason: {suggestion.get('reason', '')}".strip(" |")
-                    if "notes" in merged.columns and str(merged.at[idx, "notes"]).strip()
-                    else suggestion.get("reason", "")
-                )
-            merged.at[idx, "source"] = "LLM updated"
-            reviewed += 1
-            continue
+            existing_description = merged.at[idx, "description"] if "description" in merged.columns else ""
+            if _should_replace_existing_coverage(existing_description, suggestion.get("description", "")):
+                for column in ["description", "related_techniques", "notes"]:
+                    if column in suggestion and column in merged.columns:
+                        merged.at[idx, column] = suggestion.get(column)
+                if "reason" in suggestion:
+                    merged.at[idx, "notes"] = (
+                        f"{str(merged.at[idx, 'notes']).strip()} | reason: {suggestion.get('reason', '')}".strip(" |")
+                        if "notes" in merged.columns and str(merged.at[idx, "notes"]).strip()
+                        else suggestion.get("reason", "")
+                    )
+                merged.at[idx, "source"] = "LLM updated"
+                reviewed += 1
+                continue
 
         row = suggestion.to_dict()
         row["source"] = row.get("source", "LLM added") or "LLM added"
@@ -305,7 +343,7 @@ def improve_optimized_suite_with_llm(
             provider=provider,
             model=model,
             max_tokens=max(700, 80 * len(suite_payload.get("test_cases", [])) + 300),
-            task_label="Suite LLM Minimization",
+            task_label="Suite LLM Improve",
         )
         return parsed
 
@@ -318,7 +356,7 @@ def improve_optimized_suite_with_llm(
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
-        task_label="Suite LLM Minimization",
+        task_label="Suite LLM Improve",
     )
 
     decisions = _parse_suite_minimization_decisions(batch_results)

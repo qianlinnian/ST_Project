@@ -38,7 +38,7 @@ All major LLM features use shared performance settings from the sidebar:
 - `LLM batch size`: controls how many requirements, coverage items, suites, or test cases are sent in one LLM batch.
 - `LLM concurrency`: controls how many LLM batches can run in parallel.
 
-LLM requests use a shared client with session reuse and connection pooling. DeepSeek calls run with deterministic settings, including `temperature = 0` and disabled thinking mode where supported. Backend logs include task labels such as `Risk Analysis`, `Coverage Improvement`, `Test Case Generation`, and `Suite LLM Minimization`.
+LLM requests use a shared client with session reuse and connection pooling. DeepSeek calls run with deterministic settings, including `temperature = 0` and disabled thinking mode where supported. Backend logs include task labels such as `Risk Analysis`, `Coverage Improvement`, `Test Case Generation`, and `Suite LLM Improve`.
 
 Risk analysis uses compact prompts and compact JSON responses. With the default settings (`LLM batch size = 25`, `LLM concurrency = 4`), a 100-requirement file is processed as four parallel LLM batches. Total runtime is mainly bounded by the slowest batch, not by the sum of all batch durations. Recent 3-4 second and earlier 5-6 second runs are both consistent with normal LLM service latency variation; the timing is an observed runtime, not a guaranteed algorithmic bound.
 

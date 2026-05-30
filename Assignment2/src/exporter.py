@@ -90,6 +90,7 @@ TEST_CASE_COLUMNS = [
 TRACEABILITY_COLUMNS = [
     "requirement_id",
     "requirement_text",
+    "requirement_type",
     "coverage_id",
     "coverage_description",
     "suite_id",
@@ -259,12 +260,19 @@ def _fill_state_model_traceability(
         return matrix
 
     filled = matrix.copy()
+    if "requirement_type" not in filled.columns:
+        filled["requirement_type"] = pd.NA
     state_rows = filled["requirement_id"].astype(str) == "REQ-STATE-MODEL"
+    non_state_rows = ~state_rows
+    current = filled.loc[non_state_rows, "requirement_type"]
+    missing = current.isna() | current.astype(str).str.strip().isin(["", "None", "nan"])
+    filled.loc[non_state_rows & missing, "requirement_type"] = "original"
     if not state_rows.any():
         return filled
 
     defaults = {
         "requirement_text": "State model derived requirement",
+        "requirement_type": "derived",
         "module": _state_model_module(structured_requirements),
         "coverage_description": "State transition coverage derived from the generated behavior model",
         "coverage_type": "State Transition",

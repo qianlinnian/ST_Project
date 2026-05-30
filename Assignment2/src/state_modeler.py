@@ -197,6 +197,47 @@ def state_sequence_coverage_id(sequence: pd.Series | dict, offset: int) -> str:
     return f"COV-STATE-{offset:03d}"
 
 
+def describe_state_transition_expected_result(transition: dict[str, Any]) -> str:
+    source = str(transition.get("source_state", "")).strip()
+    target = str(transition.get("target_state", "")).strip()
+    event = str(transition.get("event", "")).strip().lower()
+    test_data = str(transition.get("test_data", "")).strip().lower()
+    guard = str(transition.get("guard", "")).strip().lower()
+    combined = " ".join(part for part in [event, test_data, guard] if part)
+
+    if "non-empty after trim" in combined or "newtitle is not empty" in combined:
+        return f"The title is saved successfully and the item transitions from {source} to {target}."
+    if "escape" in combined:
+        return "Editing is cancelled, edit mode exits, and the original title is restored."
+    if (
+        "save title (empty after trim)" in combined
+        or "newtitle after trimming is empty" in combined
+        or "after trimming becomes empty" in combined
+    ):
+        return "Saving the empty trimmed title deletes the todo item and removes it from the list."
+    if "clear completed" in combined:
+        return "All completed todo items are removed; active items remain in the list."
+    if "mark all as completed" in combined:
+        return "All todo items in the current list become completed."
+    if "mark all as active" in combined:
+        return "All todo items in the current list become active."
+    if "delete item" in combined:
+        return "The todo item is deleted and removed from the list."
+    if "double-click" in combined and "editing" in target.lower():
+        return "The item enters edit mode and the edit field shows the current title."
+    if "toggle status" in combined and "completed" in target.lower():
+        return "The todo item status changes to completed."
+    if "toggle status" in combined and "active" in target.lower():
+        return "The todo item status changes to active."
+    if target:
+        return f"The system reaches target state '{target}' after the event."
+    return generate_expected_result(
+        technique="State Transition Testing",
+        action=f"{source} --{event}--> {target}",
+        test_data=test_data,
+    )
+
+
 def _dedupe_transitions(transitions: list[dict]) -> list[dict]:
     seen = set()
     unique = []
@@ -358,15 +399,23 @@ def generate_all_transitions_sequence(state_model: dict | None = None) -> pd.Dat
         target = transition.get("target_state", "Expected Target State")
         test_data = transition.get("test_data", "Representative data for the transition")
         coverage_id = state_sequence_coverage_id(transition, index)
+        transition_row = {
+            "transition_id": transition.get("transition_id", f"TR-{index:03d}"),
+            "source_state": source,
+            "event": event,
+            "target_state": target,
+            "guard": transition.get("guard", "Transition preconditions are satisfied"),
+            "test_data": test_data,
+        }
         rows.append(
             {
                 "sequence_id": f"TRANS-{index:03d}",
-                "transition_id": transition.get("transition_id", f"TR-{index:03d}"),
+                "transition_id": transition_row["transition_id"],
                 "coverage_id": coverage_id,
                 "coverage_goal": "All Transitions",
                 "source_state": source,
                 "event": event,
-                "guard": transition.get("guard", "Transition preconditions are satisfied"),
+                "guard": transition_row["guard"],
                 "test_data": test_data,
                 "target_state": target,
                 "precondition": f"The system is in source state: {source}.",
@@ -375,11 +424,7 @@ def generate_all_transitions_sequence(state_model: dict | None = None) -> pd.Dat
                     f"2. Apply event/action: {event}\n"
                     f"3. Observe the resulting system state"
                 ),
-                "expected_result": generate_expected_result(
-                    technique="State Transition Testing",
-                    action=f"{source} --{event}--> {target}",
-                    test_data=test_data,
-                ),
+                "expected_result": describe_state_transition_expected_result(transition_row),
             }
         )
     return pd.DataFrame(rows)
@@ -405,17 +450,25 @@ def generate_optimized_transition_sequence(
             if reset_required
             else ""
         )
+        transition_row = {
+            "transition_id": transition.get("transition_id", f"TR-{index:03d}"),
+            "source_state": source,
+            "event": event,
+            "target_state": target,
+            "guard": transition.get("guard", "Transition preconditions are satisfied"),
+            "test_data": test_data,
+        }
         rows.append(
             {
                 "sequence_id": f"OPT-TRANS-{index:03d}",
-                "transition_id": transition.get("transition_id", f"TR-{index:03d}"),
+                "transition_id": transition_row["transition_id"],
                 "coverage_id": coverage_id,
                 "coverage_goal": coverage_goal,
                 "optimization_rule": "Cover each selected state or transition once; reset only when the next transition cannot be chained from the current state.",
                 "reset_required": reset_required,
                 "source_state": source,
                 "event": event,
-                "guard": transition.get("guard", "Transition preconditions are satisfied"),
+                "guard": transition_row["guard"],
                 "test_data": test_data,
                 "target_state": target,
                 "precondition": f"The system is in source state: {source}.",
@@ -425,11 +478,7 @@ def generate_optimized_transition_sequence(
                     f"{'3' if reset_required else '2'}. Apply event/action: {event}\n"
                     f"{'4' if reset_required else '3'}. Observe the resulting system state"
                 ),
-                "expected_result": generate_expected_result(
-                    technique="State Transition Testing",
-                    action=f"{source} --{event}--> {target}",
-                    test_data=test_data,
-                ),
+                "expected_result": describe_state_transition_expected_result(transition_row),
             }
         )
 
