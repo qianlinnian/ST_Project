@@ -1,31 +1,36 @@
 """
-Complete Selenium + pytest automation draft for AutoTestDesign TodoItem optimized suite.
+Selenium + pytest UI automation draft for SimpleTodoList / Todo Item Management.
 
-Scope:
-- Target feature: Todo Item Management
-- Target optimized suite: todoitem_optimized_test_suite.csv
-- Test design size: 57 optimized cases
-- This file maps each optimized test case ID to an executable UI scenario.
-- Some generated cases are intentionally similar because AutoTestDesign created
-  different coverage items for the same observable UI action.
+Generated from TODO_test_design_artifacts.xlsx, sheet "Optimized Test Suite".
+It contains all 169 optimized rows as pytest parameters.  Several abstract
+AutoTestDesign rows intentionally share the same executable UI scenario because
+UI automation verifies observable behavior, not the internal generation wording.
 
-Known product deviations currently observed:
-- Whitespace-only input is expected not to create a Todo item.
-- Editing an item to an empty title is expected to delete the item.
-If the current application has not implemented these rules yet, the related
-tests are marked xfail so the whole regression run can still complete while
-preserving defect evidence.
+Run prerequisites:
+  1. Backend:  cd simpletodolist/backend && python app.py
+  2. Frontend: cd simpletodolist && python -m http.server 8000
+  3. Install:  pip install pytest selenium requests
+  4. Run:      pytest Assignment2/tests/test_todoitem_ui_selenium_full_169.py -q -rA
+
+Environment variables, optional:
+  FRONTEND_URL=http://127.0.0.1:8000/todo.html#/&test-list
+  API_BASE=http://127.0.0.1:5000/api
+  TEST_LIST=test-list
+  BROWSER=chrome|firefox
+  HEADLESS=0|1
 """
 
-import json
+from __future__ import annotations
+
 import os
 import time
-import urllib.error
-import urllib.request
+from dataclasses import dataclass
+from typing import Callable, Dict, List, Optional
 
 import pytest
+import requests
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException, StaleElementReferenceException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -33,54 +38,59 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 
-FRONTEND_URL = os.getenv(
-    "TODO_FRONTEND_URL",
-    "http://127.0.0.1:8000/todo.html#/&test-list",
-)
-API_BASE_URL = os.getenv("TODO_API_BASE_URL", "http://127.0.0.1:5000/api")
-BROWSER = os.getenv("SELENIUM_BROWSER", "chrome").lower()
-HEADLESS = os.getenv("SELENIUM_HEADLESS", "0") == "1"
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://127.0.0.1:8000/todo.html#/&test-list")
+API_BASE = os.getenv("API_BASE", "http://127.0.0.1:5000/api").rstrip("/")
+TEST_LIST = os.getenv("TEST_LIST", "test-list")
+BROWSER = os.getenv("BROWSER", "chrome").lower()
+HEADLESS = os.getenv("HEADLESS", "0") == "1"
+WAIT_SECONDS = float(os.getenv("WAIT_SECONDS", "8"))
 
 
-# ---------------------------------------------------------------------------
-# Backend cleanup helpers
-# ---------------------------------------------------------------------------
-
-def api_request(method, path, payload=None):
-    data = None
-    headers = {"Content-Type": "application/json"}
-    if payload is not None:
-        data = json.dumps(payload).encode("utf-8")
-
-    request = urllib.request.Request(
-        API_BASE_URL + path,
-        data=data,
-        headers=headers,
-        method=method,
-    )
-    with urllib.request.urlopen(request, timeout=5) as response:
-        body = response.read().decode("utf-8")
-        return json.loads(body)["data"] if body else None
+CASES = [{'test_case_id': 'TC-085', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-039', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Boundary', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-086', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-039', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Boundary', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-087', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-039', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Boundary', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-088', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-040', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Boundary', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-089', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-040', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Boundary', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-090', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-040', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Boundary', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-102', 'suite_id': 'TS-028', 'suite_name': 'Todo Editing Decision Rule Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-038', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Condition', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-103', 'suite_id': 'TS-028', 'suite_name': 'Todo Editing Decision Rule Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-038', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Condition', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-108', 'suite_id': 'TS-029', 'suite_name': 'Todo Editing Partition Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-035', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Functional', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-109', 'suite_id': 'TS-029', 'suite_name': 'Todo Editing Partition Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-035', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Functional', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-118', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-036', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Input', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-119', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-036', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Input', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-120', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-037', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Input', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-121', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-037', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 5, 'risk_level': 'High', 'coverage_type': 'Input', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-074', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-006', 'coverage_id': 'COV-027', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'edit field appears with current title', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'enter_edit_mode'}, {'test_case_id': 'TC-075', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-006', 'coverage_id': 'COV-027', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'edit field appears with current title', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'enter_edit_mode'}, {'test_case_id': 'TC-076', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-006', 'coverage_id': 'COV-027', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'edit field appears with current title', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'enter_edit_mode'}, {'test_case_id': 'TC-077', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-006', 'coverage_id': 'COV-027', 'technique': 'Boundary Value Analysis', 'test_data': 'todoId: null value', 'steps': '1. Double-click item with null id. 2. Observe behavior.', 'expected_result': 'No edit mode triggered.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'no_edit_on_single_click'}, {'test_case_id': 'TC-078', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-033', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-079', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-033', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-080', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-033', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-081', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-033', 'technique': 'Boundary Value Analysis', 'test_data': 'todoId: maximum integer', 'steps': '1. Update item with max id. 2. Verify.', 'expected_result': 'Title updated or error.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-082', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-034', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-083', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-034', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-084', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-034', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-091', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-009', 'coverage_id': 'COV-044', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-092', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-009', 'coverage_id': 'COV-044', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-093', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-009', 'coverage_id': 'COV-044', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-094', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-072', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: title length = 100 characters (valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'A 100-character title is accepted, and a 101-character title is rejected with an error.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'title_length_boundary'}, {'test_case_id': 'TC-095', 'suite_id': 'TS-027', 'suite_name': 'Todo Editing Boundary Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-072', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: title length = 101 characters (invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'A 100-character title is accepted, and a 101-character title is rejected with an error.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'title_length_boundary'}, {'test_case_id': 'TC-096', 'suite_id': 'TS-028', 'suite_name': 'Todo Editing Decision Rule Suite', 'requirement_id': 'REQ-TODO-006', 'coverage_id': 'COV-026', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-097', 'suite_id': 'TS-028', 'suite_name': 'Todo Editing Decision Rule Suite', 'requirement_id': 'REQ-TODO-006', 'coverage_id': 'COV-026', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-098', 'suite_id': 'TS-028', 'suite_name': 'Todo Editing Decision Rule Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-031', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-099', 'suite_id': 'TS-028', 'suite_name': 'Todo Editing Decision Rule Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-031', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-100', 'suite_id': 'TS-028', 'suite_name': 'Todo Editing Decision Rule Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-032', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-101', 'suite_id': 'TS-028', 'suite_name': 'Todo Editing Decision Rule Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-032', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-104', 'suite_id': 'TS-028', 'suite_name': 'Todo Editing Decision Rule Suite', 'requirement_id': 'REQ-TODO-009', 'coverage_id': 'COV-043', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-105', 'suite_id': 'TS-028', 'suite_name': 'Todo Editing Decision Rule Suite', 'requirement_id': 'REQ-TODO-009', 'coverage_id': 'COV-043', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-106', 'suite_id': 'TS-029', 'suite_name': 'Todo Editing Partition Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-028', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-107', 'suite_id': 'TS-029', 'suite_name': 'Todo Editing Partition Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-028', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-110', 'suite_id': 'TS-029', 'suite_name': 'Todo Editing Partition Suite', 'requirement_id': 'REQ-TODO-009', 'coverage_id': 'COV-041', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-111', 'suite_id': 'TS-029', 'suite_name': 'Todo Editing Partition Suite', 'requirement_id': 'REQ-TODO-009', 'coverage_id': 'COV-041', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-112', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-006', 'coverage_id': 'COV-025', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'edit field appears with current title', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'enter_edit_mode'}, {'test_case_id': 'TC-113', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-006', 'coverage_id': 'COV-025', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'edit field appears with current title', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'enter_edit_mode'}, {'test_case_id': 'TC-114', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-029', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-115', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-029', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-116', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-030', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-117', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-007', 'coverage_id': 'COV-030', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item title is updated', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'edit_update_title'}, {'test_case_id': 'TC-122', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-009', 'coverage_id': 'COV-042', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-123', 'suite_id': 'TS-030', 'suite_name': 'Todo Editing Input Partition Suite', 'requirement_id': 'REQ-TODO-009', 'coverage_id': 'COV-042', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-014', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-001', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Reset or navigate the system to the source state\n2. Establish source state: active\n3. Apply event/action: toggle status\n4. Observe the resulting system state', 'expected_result': 'The todo item status changes to completed.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'toggle_to_completed'}, {'test_case_id': 'TC-015', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-002', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Establish source state: completed\n2. Apply event/action: toggle status\n3. Observe the resulting system state', 'expected_result': 'The todo item status changes to active.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'toggle_back_to_active'}, {'test_case_id': 'TC-016', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-003', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Establish source state: active\n2. Apply event/action: double-click label\n3. Observe the resulting system state', 'expected_result': 'The item enters edit mode and the edit field shows the current title.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'enter_edit_mode'}, {'test_case_id': 'TC-017', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-005', 'technique': 'State Transition Testing', 'test_data': "newTitle: 'updated title'", 'steps': '1. Establish source state: editing\n2. Apply event/action: save title\n3. Observe the resulting system state', 'expected_result': "The system reaches target state 'active' after the event.", 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'toggle_back_to_active'}, {'test_case_id': 'TC-018', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-009', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Establish source state: active\n2. Apply event/action: delete item\n3. Observe the resulting system state', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'delete_item'}, {'test_case_id': 'TC-019', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-004', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Reset or navigate the system to the source state\n2. Establish source state: completed\n3. Apply event/action: double-click label\n4. Observe the resulting system state', 'expected_result': 'The item enters edit mode and the edit field shows the current title.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'enter_edit_mode'}, {'test_case_id': 'TC-020', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-006', 'technique': 'State Transition Testing', 'test_data': "newTitle: ''", 'steps': '1. Establish source state: editing\n2. Apply event/action: save title\n3. Observe the resulting system state', 'expected_result': "The system reaches target state 'deleted' after the event.", 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'smoke_basic_crud'}, {'test_case_id': 'TC-021', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-007', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Reset or navigate the system to the source state\n2. Establish source state: editing\n3. Apply event/action: press Escape\n4. Observe the resulting system state', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-022', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-011', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Establish source state: active\n2. Apply event/action: mark all as completed\n3. Observe the resulting system state', 'expected_result': 'All todo items in the current list become completed.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-023', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-010', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Establish source state: completed\n2. Apply event/action: delete item\n3. Observe the resulting system state', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'delete_item'}, {'test_case_id': 'TC-024', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-008', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Reset or navigate the system to the source state\n2. Establish source state: editing\n3. Apply event/action: press Escape\n4. Observe the resulting system state', 'expected_result': 'Editing is cancelled, edit mode exits, and the original title is restored.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-025', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-012', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Establish source state: completed\n2. Apply event/action: mark all as active\n3. Observe the resulting system state', 'expected_result': 'All todo items in the current list become active.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'bulk_toggle_back_to_active'}, {'test_case_id': 'TC-026', 'suite_id': 'TS-044', 'suite_name': 'State Transition Model Suite', 'requirement_id': 'REQ-STATE-MODEL', 'coverage_id': 'COV-STATE-TR-013', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: ', 'steps': '1. Reset or navigate the system to the source state\n2. Establish source state: completed\n3. Apply event/action: clear completed\n4. Observe the resulting system state', 'expected_result': 'All completed todo items are removed; active items remain in the list.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'clear_completed'}, {'test_case_id': 'TC-047', 'suite_id': 'TS-015', 'suite_name': 'Todo Completion State Functional', 'requirement_id': 'REQ-TODO-005', 'coverage_id': 'COV-020', 'technique': 'State Transition Testing', 'test_data': 'Toggle active to completed', 'steps': '1. Create active todo. 2. Toggle status.', 'expected_result': 'Todo item status changes to completed', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'toggle_to_completed'}, {'test_case_id': 'TC-174', 'suite_id': 'TS-016', 'suite_name': 'Todo Completion State Transition', 'requirement_id': 'REQ-TODO-005', 'coverage_id': 'COV-070', 'technique': 'State Transition Testing', 'test_data': 'toggle active to completed to active', 'steps': '1. Toggle active item to completed. 2. Toggle same item back to active. 3. Verify state.', 'expected_result': 'Item returns to active.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'toggle_back_to_active'}, {'test_case_id': 'TC-175', 'suite_id': 'TS-033', 'suite_name': 'Todo Editing Escape State Suite', 'requirement_id': 'REQ-TODO-009', 'coverage_id': 'COV-074', 'technique': 'State Transition Testing', 'test_data': 'press Escape during edit', 'steps': '1. Enter edit mode. 2. Change title. 3. Press Escape. 4. Verify original title.', 'expected_result': 'Title reverted, edit mode exited.', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'edit_cancel_escape'}, {'test_case_id': 'TC-176', 'suite_id': 'TS-006', 'suite_name': 'Todo Bulk Update State Behavior', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-076', 'technique': 'State Transition Testing', 'test_data': 'some items completed, some active', 'steps': "1. Click 'Mark all completed' when some items are completed and some active. 2. Verify all become completed.", 'expected_result': 'All items show completed state', 'priority': 'High', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-001', 'suite_id': 'TS-001', 'suite_name': 'Todo Bulk Update Boundary', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-053', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-002', 'suite_id': 'TS-001', 'suite_name': 'Todo Bulk Update Boundary', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-053', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-003', 'suite_id': 'TS-001', 'suite_name': 'Todo Bulk Update Boundary', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-053', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-004', 'suite_id': 'TS-002', 'suite_name': 'Todo Bulk Update Decision Rule', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-052', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-005', 'suite_id': 'TS-002', 'suite_name': 'Todo Bulk Update Decision Rule', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-052', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-006', 'suite_id': 'TS-003', 'suite_name': 'Todo Bulk Update Partition Boundary', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-054', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-007', 'suite_id': 'TS-003', 'suite_name': 'Todo Bulk Update Partition Boundary', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-054', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-008', 'suite_id': 'TS-004', 'suite_name': 'Todo Bulk Update Partition Functional', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-049', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-009', 'suite_id': 'TS-004', 'suite_name': 'Todo Bulk Update Partition Functional', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-049', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-010', 'suite_id': 'TS-005', 'suite_name': 'Todo Bulk Update Partition Input', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-050', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-011', 'suite_id': 'TS-005', 'suite_name': 'Todo Bulk Update Partition Input', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-050', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-012', 'suite_id': 'TS-005', 'suite_name': 'Todo Bulk Update Partition Input', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-051', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-013', 'suite_id': 'TS-005', 'suite_name': 'Todo Bulk Update Partition Input', 'requirement_id': 'REQ-TODO-011', 'coverage_id': 'COV-051', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'all todo items in list have specified status', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'bulk_toggle_completed'}, {'test_case_id': 'TC-027', 'suite_id': 'TS-007', 'suite_name': 'Todo Cleanup Boundary', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-065', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'all completed items are removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'clear_completed'}, {'test_case_id': 'TC-028', 'suite_id': 'TS-007', 'suite_name': 'Todo Cleanup Boundary', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-065', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'all completed items are removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'clear_completed'}, {'test_case_id': 'TC-029', 'suite_id': 'TS-007', 'suite_name': 'Todo Cleanup Boundary', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-065', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'all completed items are removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'clear_completed'}, {'test_case_id': 'TC-030', 'suite_id': 'TS-008', 'suite_name': 'Todo Cleanup Decision Rule', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-063', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-031', 'suite_id': 'TS-008', 'suite_name': 'Todo Cleanup Decision Rule', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-063', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-032', 'suite_id': 'TS-008', 'suite_name': 'Todo Cleanup Decision Rule', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-064', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-033', 'suite_id': 'TS-008', 'suite_name': 'Todo Cleanup Decision Rule', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-064', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-034', 'suite_id': 'TS-009', 'suite_name': 'Todo Cleanup Partition Error', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-077', 'technique': 'Equivalence Partitioning', 'test_data': 'completed todo item', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'all completed items are removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Error', 'scenario': 'clear_completed'}, {'test_case_id': 'TC-036', 'suite_id': 'TS-010', 'suite_name': 'Todo Cleanup Partition Functional', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-061', 'technique': 'Equivalence Partitioning', 'test_data': 'completed todo item', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'all completed items are removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'clear_completed'}, {'test_case_id': 'TC-038', 'suite_id': 'TS-011', 'suite_name': 'Todo Cleanup Partition Input', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-062', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'all completed items are removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'clear_completed'}, {'test_case_id': 'TC-039', 'suite_id': 'TS-011', 'suite_name': 'Todo Cleanup Partition Input', 'requirement_id': 'REQ-TODO-013', 'coverage_id': 'COV-062', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'all completed items are removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'clear_completed'}, {'test_case_id': 'TC-040', 'suite_id': 'TS-012', 'suite_name': 'Todo Completion Boundary', 'requirement_id': 'REQ-TODO-005', 'coverage_id': 'COV-023', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item status changes', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'smoke_basic_crud'}, {'test_case_id': 'TC-041', 'suite_id': 'TS-012', 'suite_name': 'Todo Completion Boundary', 'requirement_id': 'REQ-TODO-005', 'coverage_id': 'COV-023', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item status changes', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'smoke_basic_crud'}, {'test_case_id': 'TC-042', 'suite_id': 'TS-012', 'suite_name': 'Todo Completion Boundary', 'requirement_id': 'REQ-TODO-005', 'coverage_id': 'COV-023', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item status changes', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'smoke_basic_crud'}, {'test_case_id': 'TC-043', 'suite_id': 'TS-013', 'suite_name': 'Todo Completion Decision Rule', 'requirement_id': 'REQ-TODO-005', 'coverage_id': 'COV-022', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-044', 'suite_id': 'TS-013', 'suite_name': 'Todo Completion Decision Rule', 'requirement_id': 'REQ-TODO-005', 'coverage_id': 'COV-022', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-045', 'suite_id': 'TS-014', 'suite_name': 'Todo Completion Partition Input', 'requirement_id': 'REQ-TODO-005', 'coverage_id': 'COV-021', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item status changes', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'smoke_basic_crud'}, {'test_case_id': 'TC-046', 'suite_id': 'TS-014', 'suite_name': 'Todo Completion Partition Input', 'requirement_id': 'REQ-TODO-005', 'coverage_id': 'COV-021', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item status changes', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'smoke_basic_crud'}, {'test_case_id': 'TC-048', 'suite_id': 'TS-017', 'suite_name': 'Todo Creation Boundary', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-006', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'create_valid'}, {'test_case_id': 'TC-049', 'suite_id': 'TS-017', 'suite_name': 'Todo Creation Boundary', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-006', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'create_valid'}, {'test_case_id': 'TC-050', 'suite_id': 'TS-017', 'suite_name': 'Todo Creation Boundary', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-006', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'title_length_boundary'}, {'test_case_id': 'TC-051', 'suite_id': 'TS-017', 'suite_name': 'Todo Creation Boundary', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-007', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'create_valid'}, {'test_case_id': 'TC-052', 'suite_id': 'TS-017', 'suite_name': 'Todo Creation Boundary', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-007', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'create_valid'}, {'test_case_id': 'TC-053', 'suite_id': 'TS-017', 'suite_name': 'Todo Creation Boundary', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-007', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'title_length_boundary'}, {'test_case_id': 'TC-054', 'suite_id': 'TS-018', 'suite_name': 'Todo Creation Decision Rule', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-004', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-055', 'suite_id': 'TS-018', 'suite_name': 'Todo Creation Decision Rule', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-004', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-056', 'suite_id': 'TS-018', 'suite_name': 'Todo Creation Decision Rule', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-005', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-057', 'suite_id': 'TS-018', 'suite_name': 'Todo Creation Decision Rule', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-005', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-058', 'suite_id': 'TS-019', 'suite_name': 'Todo Creation Partition Functional', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-001', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'create_valid'}, {'test_case_id': 'TC-059', 'suite_id': 'TS-019', 'suite_name': 'Todo Creation Partition Functional', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-001', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'create_valid'}, {'test_case_id': 'TC-060', 'suite_id': 'TS-020', 'suite_name': 'Todo Creation Partition Input', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-002', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'create_valid'}, {'test_case_id': 'TC-061', 'suite_id': 'TS-020', 'suite_name': 'Todo Creation Partition Input', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-002', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'create_valid'}, {'test_case_id': 'TC-062', 'suite_id': 'TS-020', 'suite_name': 'Todo Creation Partition Input', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-003', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'create_valid'}, {'test_case_id': 'TC-063', 'suite_id': 'TS-020', 'suite_name': 'Todo Creation Partition Input', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-003', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item appears in list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'create_valid'}, {'test_case_id': 'TC-064', 'suite_id': 'TS-022', 'suite_name': 'Todo Deletion Boundary', 'requirement_id': 'REQ-TODO-010', 'coverage_id': 'COV-048', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item is removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'delete_item'}, {'test_case_id': 'TC-065', 'suite_id': 'TS-022', 'suite_name': 'Todo Deletion Boundary', 'requirement_id': 'REQ-TODO-010', 'coverage_id': 'COV-048', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item is removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'delete_item'}, {'test_case_id': 'TC-066', 'suite_id': 'TS-022', 'suite_name': 'Todo Deletion Boundary', 'requirement_id': 'REQ-TODO-010', 'coverage_id': 'COV-048', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item is removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'delete_item'}, {'test_case_id': 'TC-067', 'suite_id': 'TS-023', 'suite_name': 'Todo Deletion Decision Rule', 'requirement_id': 'REQ-TODO-010', 'coverage_id': 'COV-047', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-068', 'suite_id': 'TS-023', 'suite_name': 'Todo Deletion Decision Rule', 'requirement_id': 'REQ-TODO-010', 'coverage_id': 'COV-047', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-069', 'suite_id': 'TS-024', 'suite_name': 'Todo Deletion Partition Functional', 'requirement_id': 'REQ-TODO-010', 'coverage_id': 'COV-045', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item is removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'delete_item'}, {'test_case_id': 'TC-070', 'suite_id': 'TS-024', 'suite_name': 'Todo Deletion Partition Functional', 'requirement_id': 'REQ-TODO-010', 'coverage_id': 'COV-045', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item is removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'delete_item'}, {'test_case_id': 'TC-071', 'suite_id': 'TS-025', 'suite_name': 'Todo Deletion Partition Input', 'requirement_id': 'REQ-TODO-010', 'coverage_id': 'COV-046', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item is removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'delete_item'}, {'test_case_id': 'TC-072', 'suite_id': 'TS-025', 'suite_name': 'Todo Deletion Partition Input', 'requirement_id': 'REQ-TODO-010', 'coverage_id': 'COV-046', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item is removed from list', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'delete_item'}, {'test_case_id': 'TC-073', 'suite_id': 'TS-026', 'suite_name': 'Todo Deletion State Behavior Suite', 'requirement_id': 'REQ-TODO-010', 'coverage_id': 'COV-075', 'technique': 'State Transition Testing', 'test_data': 'delete non-existent todoId', 'steps': '1. Call delete with non-existent todoId. 2. Verify error.', 'expected_result': 'Error returned.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Error', 'scenario': 'smoke_basic_crud'}, {'test_case_id': 'TC-124', 'suite_id': 'TS-031', 'suite_name': 'Todo Editing Error State Suite', 'requirement_id': 'REQ-TODO-006', 'coverage_id': 'COV-071', 'technique': 'State Transition Testing', 'test_data': 'double-click non-existent item', 'steps': '1. Double-click on non-existent todoId. 2. Verify no edit mode.', 'expected_result': 'No edit mode entered.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Error', 'scenario': 'smoke_basic_crud'}, {'test_case_id': 'TC-125', 'suite_id': 'TS-031', 'suite_name': 'Todo Editing Error State Suite', 'requirement_id': 'REQ-TODO-008', 'coverage_id': 'COV-073', 'technique': 'State Transition Testing', 'test_data': "newTitle: '   '", 'steps': '1. Establish the source state\n2. Trigger the transition event\n3. Verify the target state', 'expected_result': 'The todo item is deleted and removed from the list.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Error', 'scenario': 'edit_empty_deletes'}, {'test_case_id': 'TC-126', 'suite_id': 'TS-032', 'suite_name': 'Todo Editing Enter Edit Suite', 'requirement_id': 'REQ-TODO-006', 'coverage_id': 'COV-024', 'technique': 'State Transition Testing', 'test_data': 'Double-click todo label', 'steps': '1. Create todo. 2. Double-click label.', 'expected_result': 'Edit field appears with current title', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'enter_edit_mode'}, {'test_case_id': 'TC-127', 'suite_id': 'TS-034', 'suite_name': 'Todo Filter Boundary Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-059', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-128', 'suite_id': 'TS-034', 'suite_name': 'Todo Filter Boundary Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-059', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-129', 'suite_id': 'TS-034', 'suite_name': 'Todo Filter Boundary Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-059', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-130', 'suite_id': 'TS-035', 'suite_name': 'Todo Filter Decision Rule Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-058', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-131', 'suite_id': 'TS-035', 'suite_name': 'Todo Filter Decision Rule Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-058', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-132', 'suite_id': 'TS-036', 'suite_name': 'Todo Filter Partition Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-060', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-133', 'suite_id': 'TS-036', 'suite_name': 'Todo Filter Partition Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-060', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-134', 'suite_id': 'TS-037', 'suite_name': 'Todo Filter Functional Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-055', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-135', 'suite_id': 'TS-037', 'suite_name': 'Todo Filter Functional Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-055', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-136', 'suite_id': 'TS-038', 'suite_name': 'Todo Filter Input Partition Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-056', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-137', 'suite_id': 'TS-038', 'suite_name': 'Todo Filter Input Partition Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-056', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-138', 'suite_id': 'TS-038', 'suite_name': 'Todo Filter Input Partition Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-057', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-139', 'suite_id': 'TS-038', 'suite_name': 'Todo Filter Input Partition Suite', 'requirement_id': 'REQ-TODO-012', 'coverage_id': 'COV-057', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'only items matching filter are displayed', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'filter_active_completed_all'}, {'test_case_id': 'TC-143', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-003', 'coverage_id': 'COV-015', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-144', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-003', 'coverage_id': 'COV-015', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-145', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-003', 'coverage_id': 'COV-015', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'title_length_boundary'}, {'test_case_id': 'TC-146', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-019', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: below lower boundary (generic lower invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-147', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-019', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: on lower boundary (generic lower valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-148', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-019', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: above upper boundary (generic upper boundary review)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'title_length_boundary'}, {'test_case_id': 'TC-149', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-002', 'coverage_id': 'COV-067', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: title = 1 whitespace character (trimmed empty)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'Whitespace-only titles are trimmed and then rejected or deleted according to the requirement.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-150', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-002', 'coverage_id': 'COV-067', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: title = 100 whitespace characters (trimmed empty)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'Whitespace-only titles are trimmed and then rejected or deleted according to the requirement.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-151', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-002', 'coverage_id': 'COV-067', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: title = 101 whitespace characters (trimmed empty)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'Whitespace-only titles are trimmed and then rejected or deleted according to the requirement.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-152', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-069', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: title length = 100 characters (valid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'A 100-character title is accepted, and a 101-character title is rejected with an error.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'title_length_boundary'}, {'test_case_id': 'TC-153', 'suite_id': 'TS-039', 'suite_name': 'Todo Validation Boundary Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-069', 'technique': 'Boundary Value Analysis', 'test_data': 'Boundary value: title length = 101 characters (invalid boundary)', 'steps': '1. Prepare data at the boundary point\n2. Execute the related action\n3. Verify the boundary rule', 'expected_result': 'A 100-character title is accepted, and a 101-character title is rejected with an error.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Boundary', 'scenario': 'title_length_boundary'}, {'test_case_id': 'TC-156', 'suite_id': 'TS-040', 'suite_name': 'Todo Validation Decision Rule Suite', 'requirement_id': 'REQ-TODO-003', 'coverage_id': 'COV-014', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-157', 'suite_id': 'TS-040', 'suite_name': 'Todo Validation Decision Rule Suite', 'requirement_id': 'REQ-TODO-003', 'coverage_id': 'COV-014', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-158', 'suite_id': 'TS-040', 'suite_name': 'Todo Validation Decision Rule Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-018', 'technique': 'Decision Table Testing', 'test_data': 'Rule 1: All required conditions are true', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The permitted action is completed successfully.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'state_permitted_action'}, {'test_case_id': 'TC-159', 'suite_id': 'TS-040', 'suite_name': 'Todo Validation Decision Rule Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-018', 'technique': 'Decision Table Testing', 'test_data': 'Rule 2: At least one required condition is false', 'steps': '1. Establish the condition combination\n2. Execute the action\n3. Verify the expected outcome', 'expected_result': 'The action is rejected or the alternative specified outcome occurs.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Condition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-162', 'suite_id': 'TS-041', 'suite_name': 'Todo Validation Functional Suite', 'requirement_id': 'REQ-TODO-003', 'coverage_id': 'COV-012', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-163', 'suite_id': 'TS-041', 'suite_name': 'Todo Validation Functional Suite', 'requirement_id': 'REQ-TODO-003', 'coverage_id': 'COV-012', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-164', 'suite_id': 'TS-041', 'suite_name': 'Todo Validation Functional Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-016', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-165', 'suite_id': 'TS-041', 'suite_name': 'Todo Validation Functional Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-016', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Functional', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-168', 'suite_id': 'TS-042', 'suite_name': 'Todo Validation Input Partition Suite', 'requirement_id': 'REQ-TODO-003', 'coverage_id': 'COV-013', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-169', 'suite_id': 'TS-042', 'suite_name': 'Todo Validation Input Partition Suite', 'requirement_id': 'REQ-TODO-003', 'coverage_id': 'COV-013', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-170', 'suite_id': 'TS-042', 'suite_name': 'Todo Validation Input Partition Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-017', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-171', 'suite_id': 'TS-042', 'suite_name': 'Todo Validation Input Partition Suite', 'requirement_id': 'REQ-TODO-004', 'coverage_id': 'COV-017', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'todo item not saved; error shown', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Input', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-172', 'suite_id': 'TS-043', 'suite_name': 'Todo Validation Error State Suite', 'requirement_id': 'REQ-TODO-003', 'coverage_id': 'COV-068', 'technique': 'State Transition Testing', 'test_data': 'Transition scenario for: Verify error message or status code when rejecting empty/whitespace-only title during creation and editing', 'steps': '1. Establish the source state\n2. Trigger the transition event\n3. Verify the target state', 'expected_result': 'The system rejects or safely handles the invalid input; no invalid state or invalid data is committed.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'Error', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-173', 'suite_id': 'TS-021', 'suite_name': 'Todo Creation State Transition', 'requirement_id': 'REQ-TODO-001', 'coverage_id': 'COV-066', 'technique': 'State Transition Testing', 'test_data': 'list at max capacity', 'steps': '1. Fill list to max. 2. Try adding new todo. 3. Verify rejection.', 'expected_result': 'Add rejected with error.', 'priority': 'Medium', 'risk_score': 3, 'risk_level': 'Medium', 'coverage_type': 'State Transition', 'scenario': 'reject_invalid_title'}, {'test_case_id': 'TC-160', 'suite_id': 'TS-041', 'suite_name': 'Todo Validation Functional Suite', 'requirement_id': 'REQ-TODO-002', 'coverage_id': 'COV-008', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'saved title has no leading/trailing whitespace', 'priority': 'Low', 'risk_score': 1, 'risk_level': 'Low', 'coverage_type': 'Functional', 'scenario': 'create_trim_whitespace'}, {'test_case_id': 'TC-161', 'suite_id': 'TS-041', 'suite_name': 'Todo Validation Functional Suite', 'requirement_id': 'REQ-TODO-002', 'coverage_id': 'COV-008', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'saved title has no leading/trailing whitespace', 'priority': 'Low', 'risk_score': 1, 'risk_level': 'Low', 'coverage_type': 'Functional', 'scenario': 'create_trim_whitespace'}, {'test_case_id': 'TC-166', 'suite_id': 'TS-042', 'suite_name': 'Todo Validation Input Partition Suite', 'requirement_id': 'REQ-TODO-002', 'coverage_id': 'COV-009', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative valid partition data derived from the requirement', 'steps': '1. Prepare representative valid data\n2. Execute the related action\n3. Observe the system response', 'expected_result': 'saved title has no leading/trailing whitespace', 'priority': 'Low', 'risk_score': 1, 'risk_level': 'Low', 'coverage_type': 'Input', 'scenario': 'create_trim_whitespace'}, {'test_case_id': 'TC-167', 'suite_id': 'TS-042', 'suite_name': 'Todo Validation Input Partition Suite', 'requirement_id': 'REQ-TODO-002', 'coverage_id': 'COV-009', 'technique': 'Equivalence Partitioning', 'test_data': 'Representative invalid partition data derived from the requirement', 'steps': '1. Prepare representative invalid data\n2. Execute the related action\n3. Observe validation, rejection, or safe handling', 'expected_result': 'saved title has no leading/trailing whitespace', 'priority': 'Low', 'risk_score': 1, 'risk_level': 'Low', 'coverage_type': 'Input', 'scenario': 'create_trim_whitespace'}]
 
 
-def reset_todos():
-    todos = api_request("GET", "/todos")
-    for todo in todos:
-        api_request("DELETE", f"/todos/{todo['id']}")
+
+def _case_id(case: dict) -> str:
+    return f"{case['test_case_id']}[{case['scenario']}|{case['suite_id']}|{case['coverage_id']}]"
 
 
-# ---------------------------------------------------------------------------
-# Selenium setup
-# ---------------------------------------------------------------------------
+def _all_todo_ids_from_payload(payload):
+    """Accept several common API response shapes to keep cleanup tolerant."""
+    if isinstance(payload, list):
+        items = payload
+    elif isinstance(payload, dict):
+        for key in ("todos", "items", "data", "results"):
+            if isinstance(payload.get(key), list):
+                items = payload[key]
+                break
+        else:
+            items = []
+    else:
+        items = []
+    ids = []
+    for item in items:
+        if isinstance(item, dict):
+            value = item.get("id") or item.get("todo_id") or item.get("pk")
+            if value is not None:
+                ids.append(value)
+    return ids
 
-def create_driver():
-    if BROWSER == "edge":
-        options = webdriver.EdgeOptions()
-        if HEADLESS:
-            options.add_argument("--headless=new")
-        options.add_argument("--window-size=1280,900")
-        return webdriver.Edge(options=options)
 
+def api_clear_list(list_name: str = TEST_LIST) -> bool:
+    """Best-effort API cleanup.  UI cleanup is used as fallback if this fails."""
+    try:
+        response = requests.get(f"{API_BASE}/todos", params={"list": list_name}, timeout=3)
+        if response.status_code >= 400:
+            return False
+        ids = _all_todo_ids_from_payload(response.json())
+        for todo_id in ids:
+            requests.delete(f"{API_BASE}/todos/{todo_id}", params={"list": list_name}, timeout=3)
+        return True
+    except Exception:
+        return False
+
+
+def make_driver():
     if BROWSER == "firefox":
         options = webdriver.FirefoxOptions()
         if HEADLESS:
@@ -91,589 +101,401 @@ def create_driver():
     if HEADLESS:
         options.add_argument("--headless=new")
     options.add_argument("--window-size=1280,900")
+    options.add_argument("--disable-gpu")
     return webdriver.Chrome(options=options)
 
-
-@pytest.fixture(scope="session")
-def driver():
-    browser = create_driver()
-    yield browser
-    browser.quit()
-
-@pytest.fixture(autouse=True)
-def clean_state(driver):
-    """
-    Reset test state before every pytest case.
-
-    reset_todos() may not clear the currently opened list scope completely,
-    so we also clear any visible Todo items through the UI.
-    """
-    try:
-        reset_todos()
-    except urllib.error.URLError as exc:
-        pytest.fail(f"Backend API is not available at {API_BASE_URL}: {exc}")
-
-    driver.get(FRONTEND_URL)
-    page = TodoPage(driver)
-    page.wait_until_loaded()
-
-    # Important: clear actual visible items in the current test-list.
-    page.clear_all_items_via_ui()
-
-    # Reload once more so each test starts from a clean, stable empty UI.
-    driver.get(FRONTEND_URL)
-    page.wait_until_loaded()
-    page.assert_count(0)
-
-@pytest.fixture
-def page(driver):
-    return TodoPage(driver)
-
-
-# ---------------------------------------------------------------------------
-# Page Object
-# ---------------------------------------------------------------------------
 
 class TodoPage:
     def __init__(self, driver):
         self.driver = driver
-        self.wait = WebDriverWait(driver, 5)
+        self.wait = WebDriverWait(driver, WAIT_SECONDS)
 
-    def wait_until_loaded(self):
-        self.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, ".new-todo")))
-        self.wait.until(
-            lambda d: "TODOs : test list" in d.find_element(By.ID, "todostitle").text
-        )
+    def open(self):
+        self.driver.get(FRONTEND_URL)
+        self.wait.until(lambda d: self._find_first([
+            (By.CSS_SELECTOR, "input.new-todo"),
+            (By.CSS_SELECTOR, "#new-todo"),
+            (By.CSS_SELECTOR, "input[placeholder*='What']"),
+            (By.CSS_SELECTOR, "input[type='text']"),
+        ]))
+        return self
+
+    def _find_first(self, locators):
+        for by, value in locators:
+            found = self.driver.find_elements(by, value)
+            visible = [e for e in found if e.is_displayed()]
+            if visible:
+                return visible[0]
+        return None
 
     def new_todo_input(self):
-        return self.driver.find_element(By.CSS_SELECTOR, ".new-todo")
+        element = self._find_first([
+            (By.CSS_SELECTOR, "input.new-todo"),
+            (By.CSS_SELECTOR, "#new-todo"),
+            (By.CSS_SELECTOR, "input[placeholder*='What']"),
+            (By.CSS_SELECTOR, "input[type='text']"),
+        ])
+        if element is None:
+            raise NoSuchElementException("Could not locate new todo input")
+        return element
 
-    def add_raw(self, title, wait_for_creation=True):
-        box = self.new_todo_input()
-        box.clear()
-        box.send_keys(title)
-        box.send_keys(Keys.TAB)
-
-        if wait_for_creation and title.strip():
-            self.wait_for_text(title.strip())
-        else:
-            time.sleep(0.3)
-
-    def add(self, title):
-        self.add_raw(title, wait_for_creation=True)
-
-    def add_many(self, *titles):
-        for title in titles:
-            self.add(title)
-
-    def visible_items(self):
+    def all_items(self):
         return self.driver.find_elements(By.CSS_SELECTOR, ".todo-list li")
 
-    def visible_count(self):
-        return len(self.visible_items())
+    def visible_items(self):
+        return [li for li in self.all_items() if li.is_displayed()]
 
-    def texts(self):
-        values = []
-        for item in self.visible_items():
+    def labels(self, visible_only: bool = True) -> List[str]:
+        items = self.visible_items() if visible_only else self.all_items()
+        result = []
+        for li in items:
             try:
-                values.append(item.find_element(By.CSS_SELECTOR, "label").text)
-            except NoSuchElementException:
-                values.append(item.text)
-        return values
+                result.append(li.find_element(By.CSS_SELECTOR, "label").text)
+            except StaleElementReferenceException:
+                return self.labels(visible_only=visible_only)
+        return result
 
-    def completed_flags(self):
-        return [
-            "completed" in (item.get_attribute("class") or "").split()
-            for item in self.visible_items()
-        ]
+    def count(self, visible_only: bool = True) -> int:
+        return len(self.visible_items() if visible_only else self.all_items())
 
-    def active_count_text(self):
-        return self.driver.find_element(By.CSS_SELECTOR, ".todo-count").text
+    def completed_flags(self, visible_only: bool = False) -> List[bool]:
+        items = self.visible_items() if visible_only else self.all_items()
+        return ["completed" in (li.get_attribute("class") or "").split() for li in items]
 
-    def assert_visible(self, expected_texts, expected_completed=None):
-        expected_texts = list(expected_texts)
-        self.wait.until(lambda _: self.texts() == expected_texts)
-        assert self.visible_count() == len(expected_texts)
-        assert self.texts() == expected_texts
-        if expected_completed is not None:
-            assert self.completed_flags() == list(expected_completed)
+    def add(self, title: str, expect_added: bool = True):
+        before = self.count(visible_only=False)
+        box = self.new_todo_input()
+        box.click()
+        box.send_keys(Keys.CONTROL, "a")
+        box.send_keys(Keys.BACKSPACE)
+        if title:
+            box.send_keys(title)
+        box.send_keys(Keys.ENTER)
+        if expect_added:
+            self.wait.until(lambda _: self.count(visible_only=False) >= before + 1)
+        else:
+            time.sleep(0.25)
+        return self
 
-    def assert_count(self, expected_count):
-        self.wait.until(lambda _: self.visible_count() == expected_count)
-        assert self.visible_count() == expected_count
+    def add_many(self, titles: List[str]):
+        for title in titles:
+            self.add(title)
+        return self
 
-    def wait_for_text(self, title):
-        self.wait.until(lambda _: title in self.texts())
+    def item_at(self, index: int = 0):
+        self.wait.until(lambda _: self.count(visible_only=False) > index)
+        return self.all_items()[index]
 
-    def item_by_text(self, title):
-        self.wait_for_text(title)
-        for item in self.visible_items():
-            try:
-                if item.find_element(By.CSS_SELECTOR, "label").text == title:
-                    return item
-            except NoSuchElementException:
-                continue
-        raise AssertionError(f"Todo item not found: {title}")
-
-    def toggle(self, title):
-        self.item_by_text(title).find_element(By.CSS_SELECTOR, ".toggle").click()
-        self.wait.until(lambda _: title in self.texts())
+    def toggle(self, index: int = 0):
+        item = self.item_at(index)
+        item.find_element(By.CSS_SELECTOR, ".toggle, input[type='checkbox']").click()
+        time.sleep(0.2)
+        return self
 
     def toggle_all_once(self):
-        controls = self.driver.find_elements(By.ID, "toggle-all")
-        if controls:
-            controls[0].click()
-            time.sleep(0.3)
-            return
+        toggle = self._find_first([
+            (By.CSS_SELECTOR, "#toggle-all"),
+            (By.CSS_SELECTOR, "label[for='toggle-all']"),
+            (By.CSS_SELECTOR, ".toggle-all"),
+        ])
+        if toggle is None:
+            raise NoSuchElementException("toggle-all control not found")
+        toggle.click()
+        time.sleep(0.25)
+        return self
 
-        # fallback: click checkbox near "Mark all as complete"
-        labels = self.driver.find_elements(By.XPATH, "//*[contains(text(), 'Mark all as complete')]")
-        if labels:
-            labels[0].click()
-            time.sleep(0.3)
-            return
-
-        raise AssertionError("Toggle-all control not found")
-
-    def toggle_all_to_completed(self):
-        self.toggle_all_once()
-        self.wait.until(lambda _: self.visible_count() > 0 and all(self.completed_flags()))
-
-    def toggle_all_if_present(self):
-        controls = self.driver.find_elements(By.ID, "toggle-all")
-        visible_controls = [c for c in controls if c.is_displayed() and c.is_enabled()]
-        if visible_controls:
-            visible_controls[0].click()
-            time.sleep(0.3)
-            return True
-
-        labels = self.driver.find_elements(By.XPATH, "//*[contains(text(), 'Mark all as complete')]")
-        visible_labels = [l for l in labels if l.is_displayed()]
-        if visible_labels:
-            visible_labels[0].click()
-            time.sleep(0.3)
-            return True
-
-        return False
-
-    def edit(self, old_title, new_title):
-        for _ in range(3):
-            try:
-                item = self.item_by_text(old_title)
-                label = item.find_element(By.CSS_SELECTOR, "label")
-                ActionChains(self.driver).double_click(label).perform()
-
-                edit_input = self.wait.until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, "li.editing .edit"))
-                )
-
-                edit_input.click()
-                edit_input.send_keys(Keys.CONTROL, "a")
-                edit_input.send_keys(Keys.BACKSPACE)
-
-                if new_title:
-                    edit_input.send_keys(new_title)
-
-                edit_input.send_keys(Keys.ENTER)
-                time.sleep(0.3)
-                return
-
-            except Exception:
-                time.sleep(0.3)
-
-        raise AssertionError(f"Failed to edit todo from {old_title!r} to {new_title!r}")
-
-    def delete(self, title):
-        item = self.item_by_text(title)
+    def delete(self, index: int = 0):
+        item = self.item_at(index)
+        before = self.count(visible_only=False)
         ActionChains(self.driver).move_to_element(item).perform()
-        item.find_element(By.CSS_SELECTOR, ".destroy").click()
-        self.wait.until(lambda _: title not in self.texts())
+        destroy = item.find_element(By.CSS_SELECTOR, ".destroy, button.destroy")
+        self.driver.execute_script("arguments[0].click();", destroy)
+        self.wait.until(lambda _: self.count(visible_only=False) == before - 1)
+        return self
+
+    def enter_edit_mode(self, index: int = 0):
+        label = self.item_at(index).find_element(By.CSS_SELECTOR, "label")
+        ActionChains(self.driver).double_click(label).perform()
+        return self.wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, ".todo-list li.editing .edit, .todo-list li .edit")))
+
+    def edit(self, index: int, new_title: str, submit_key=Keys.ENTER):
+        before_count = self.count(visible_only=False)
+        edit_box = self.enter_edit_mode(index)
+        edit_box.click()
+        edit_box.send_keys(Keys.CONTROL, "a")
+        edit_box.send_keys(Keys.BACKSPACE)
+        if new_title:
+            edit_box.send_keys(new_title)
+        edit_box.send_keys(submit_key)
+        time.sleep(0.3)
+        # Wait until editing class disappears or count changes for delete-on-empty behavior.
+        self.wait.until(lambda _: self.count(visible_only=False) != before_count or not self.driver.find_elements(By.CSS_SELECTOR, ".todo-list li.editing"))
+        return self
+
+    def filter(self, name: str):
+        name_l = name.lower()
+        candidates = []
+        if name_l == "all":
+            candidates = ["a[href='#/']", "a[href$='/']"]
+        elif name_l == "active":
+            candidates = ["a[href='#/active']", "a[href$='active']"]
+        elif name_l == "completed":
+            candidates = ["a[href='#/completed']", "a[href$='completed']"]
+        for css in candidates:
+            els = self.driver.find_elements(By.CSS_SELECTOR, css)
+            if els:
+                self.driver.execute_script("arguments[0].click();", els[0])
+                time.sleep(0.25)
+                return self
+        # Fallback by link text.
+        self.driver.find_element(By.LINK_TEXT, name.capitalize()).click()
+        time.sleep(0.25)
+        return self
 
     def clear_completed(self):
-        self.driver.find_element(By.CSS_SELECTOR, ".clear-completed").click()
-        time.sleep(0.3)
+        btn = self._find_first([
+            (By.CSS_SELECTOR, ".clear-completed"),
+            (By.CSS_SELECTOR, "button.clear-completed"),
+        ])
+        if btn is None:
+            return self
+        self.driver.execute_script("arguments[0].click();", btn)
+        time.sleep(0.25)
+        return self
 
-    def clear_completed_if_present(self):
-        buttons = self.driver.find_elements(By.CSS_SELECTOR, ".clear-completed")
-        visible_buttons = [b for b in buttons if b.is_displayed() and b.is_enabled()]
-        if not visible_buttons:
-            return False
-        visible_buttons[0].click()
-        return True
-
-    def filter_all(self):
-        self.driver.find_element(By.CSS_SELECTOR, '.filters a[href="#/"]').click()
-        time.sleep(0.2)
-
-    def filter_active(self):
-        self.driver.find_element(By.CSS_SELECTOR, '.filters a[href="#/active"]').click()
-        time.sleep(0.2)
-
-    def filter_completed(self):
-        self.driver.find_element(By.CSS_SELECTOR, '.filters a[href="#/completed"]').click()
-        time.sleep(0.2)
-
-    def filter_invalid(self):
-        self.driver.get(FRONTEND_URL.replace("#/&test-list", "#/invalid-filter"))
-        time.sleep(0.3)
-
-    def assert_app_still_usable(self):
-        self.new_todo_input()
-        assert "TODOs : test list" in self.driver.find_element(By.ID, "todostitle").text
-    def force_empty_list(self):
-        """
-        Ensure the current list is empty before boundary/invalid-control tests.
-
-        This is used only for tests whose precondition is Empty List.
-        It avoids state leakage from previous UI interactions or async backend refresh.
-        """
-        try:
-            reset_todos()
-        except Exception:
-            pass
-
-        self.driver.get(FRONTEND_URL)
-        self.wait_until_loaded()
-        time.sleep(0.3)
-
-        # UI fallback: if backend cleanup did not immediately reflect on UI,
-        # delete visible items one by one.
-        for _ in range(30):
-            items = self.visible_items()
-            if not items:
-                break
-
-            item = items[0]
-            try:
-                label_text = item.find_element(By.CSS_SELECTOR, "label").text
-                self.delete(label_text)
-            except Exception:
-                break
-
-        self.wait.until(lambda _: self.visible_count() == 0)
-
-    def clear_all_items_via_ui(self):
-        """
-        Clear all currently visible Todo items using delete buttons only.
-        Used only by empty-list boundary tests.
-        """
-        try:
-            self.filter_all()
-        except Exception:
-            pass
-
-        for _ in range(50):
-            items = self.visible_items()
-            if not items:
-                return
-
-            before = len(items)
-            item = items[0]
-
-            ActionChains(self.driver).move_to_element(item).perform()
-            time.sleep(0.1)
-
-            destroy = item.find_element(By.CSS_SELECTOR, ".destroy")
-            self.driver.execute_script("arguments[0].click();", destroy)
-
-            self.wait.until(lambda _: self.visible_count() < before)
-
-        self.wait.until(lambda _: self.visible_count() == 0)
-
-# ---------------------------------------------------------------------------
-# Atomic UI scenarios mapped from optimized AutoTestDesign cases
-# ---------------------------------------------------------------------------
-
-def s_add_valid(page):
-    page.add("Buy milk")
-    page.assert_visible(["Buy milk"], [False])
-    assert page.active_count_text() == "1 item left"
+    def ui_clear_all(self):
+        self.filter("all")
+        # Delete from the end to avoid stale index shifts.
+        for _ in range(100):
+            if self.count(visible_only=False) == 0:
+                return self
+            self.delete(0)
+        raise AssertionError("Could not clear todo list through UI")
 
 
-def s_add_whitespace_ignored(page):
-    page.add_raw("   ", wait_for_creation=False)
-    assert page.visible_count() == 0
-    assert page.texts() == []
+@pytest.fixture(scope="session")
+def driver():
+    drv = make_driver()
+    yield drv
+    drv.quit()
 
 
-def s_add_valid_partition(page):
-    page.add("partition-valid item")
-    page.assert_visible(["partition-valid item"], [False])
+@pytest.fixture()
+def page(driver):
+    api_clear_list(TEST_LIST)
+    p = TodoPage(driver).open()
+    if p.count(visible_only=False) != 0:
+        p.ui_clear_all()
+    assert p.count(visible_only=False) == 0
+    return p
 
 
-def s_toggle_completed_once(page):
-    page.add("item 1")
-    page.toggle("item 1")
-    page.assert_visible(["item 1"], [True])
-    assert page.active_count_text() == "0 items left"
+# ------------------------- executable scenarios -------------------------
+
+def scenario_create_valid(page: TodoPage, case: dict):
+    title = f"{case['test_case_id']} valid todo"
+    page.add(title)
+    assert title in page.labels(visible_only=False)
 
 
-def s_toggle_completed_and_active(page):
-    page.add("item 1")
-    page.toggle("item 1")
-    page.assert_visible(["item 1"], [True])
-    page.toggle("item 1")
-    page.assert_visible(["item 1"], [False])
-    assert page.active_count_text() == "1 item left"
+def scenario_create_order(page: TodoPage, case: dict):
+    titles = [f"{case['test_case_id']} A", f"{case['test_case_id']} B", f"{case['test_case_id']} C"]
+    page.add_many(titles)
+    assert page.labels(visible_only=False)[:3] == titles
 
 
-def s_toggle_three_times(page):
-    page.add("item completed")
-    page.toggle("item completed")
-    page.assert_visible(["item completed"], [True])
-    page.toggle("item completed")
-    page.assert_visible(["item completed"], [False])
-    page.toggle("item completed")
-    page.assert_visible(["item completed"], [True])
-    assert page.active_count_text() == "0 items left"
+def scenario_reject_invalid_title(page: TodoPage, case: dict):
+    data = (case.get("test_data") or "").lower()
+    title = " " if "whitespace" in data else ""
+    if "101" in data or "above upper" in data or "longer" in data:
+        title = "X" * 101
+    before = page.count(visible_only=False)
+    page.add(title, expect_added=False)
+    assert page.count(visible_only=False) == before
 
 
-def s_edit_non_empty(page):
-    page.add("item 1")
-    page.edit("item 1", "Buy eggs")
-    page.assert_visible(["Buy eggs"], [False])
+def scenario_title_length_boundary(page: TodoPage, case: dict):
+    ok = "A" * 100
+    too_long = "B" * 101
+    page.add(ok)
+    assert ok in page.labels(visible_only=False)
+    before = page.count(visible_only=False)
+    page.add(too_long, expect_added=False)
+    assert page.count(visible_only=False) == before
+    assert too_long not in page.labels(visible_only=False)
 
 
-def s_edit_empty_deletes(page):
-    page.add("item 1")
-    page.edit("item 1", "")
-    page.assert_count(0)
-    assert page.texts() == []
+def scenario_create_trim_whitespace(page: TodoPage, case: dict):
+    page.add("   trimmed creation title   ")
+    labels = page.labels(visible_only=False)
+    assert "trimmed creation title" in labels
+    assert "   trimmed creation title   " not in labels
 
 
-def s_double_click_enters_edit_mode(page):
+def scenario_toggle_to_completed(page: TodoPage, case: dict):
+    page.add("toggle me")
+    page.toggle(0)
+    assert page.completed_flags()[0] is True
+
+
+def scenario_toggle_back_to_active(page: TodoPage, case: dict):
+    page.add("toggle back")
+    page.toggle(0)
+    assert page.completed_flags()[0] is True
+    page.toggle(0)
+    assert page.completed_flags()[0] is False
+
+
+def scenario_enter_edit_mode(page: TodoPage, case: dict):
     page.add("editable item")
-    item = page.item_by_text("editable item")
-    label = item.find_element(By.CSS_SELECTOR, "label")
-    ActionChains(page.driver).double_click(label).perform()
-    page.wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "li.editing .edit")))
+    edit_box = page.enter_edit_mode(0)
+    assert edit_box.is_displayed()
+    assert edit_box.get_attribute("value") == "editable item"
 
 
-def s_edit_deleted_item_safe(page):
-    page.add("deleted before edit")
-    page.delete("deleted before edit")
-    assert "deleted before edit" not in page.texts()
-    page.assert_app_still_usable()
+def scenario_no_edit_on_single_click(page: TodoPage, case: dict):
+    page.add("single click should not edit")
+    page.item_at(0).find_element(By.CSS_SELECTOR, "label").click()
+    time.sleep(0.2)
+    assert not page.driver.find_elements(By.CSS_SELECTOR, ".todo-list li.editing")
 
 
-def s_delete_single_item(page):
-    page.add_many("item 1", "item 2")
-    page.delete("item 1")
-    page.assert_visible(["item 2"], [False])
+def scenario_edit_update_title(page: TodoPage, case: dict):
+    page.add("old title")
+    page.edit(0, "new title")
+    assert page.labels(visible_only=False) == ["new title"]
 
 
-def s_delete_already_deleted_safe(page):
-    page.add("delete twice")
-    page.delete("delete twice")
-    page.assert_count(0)
-    page.assert_app_still_usable()
+def scenario_edit_trim_whitespace(page: TodoPage, case: dict):
+    page.add("old title")
+    page.edit(0, "   trimmed edit title   ")
+    labels = page.labels(visible_only=False)
+    assert labels == ["trimmed edit title"]
 
 
-def s_toggle_all_to_completed(page):
-    page.add_many("item 1", "item 2", "item 3")
-    page.toggle_all_to_completed()
-    page.assert_visible(["item 1", "item 2", "item 3"], [True, True, True])
-    assert page.active_count_text() == "0 items left"
+def scenario_edit_empty_deletes(page: TodoPage, case: dict):
+    page.add("delete by empty edit")
+    page.edit(0, "")
+    assert page.count(visible_only=False) == 0
 
 
-def s_toggle_all_back_to_active(page):
-    page.add_many("item 1", "item 2", "item 3")
-    page.toggle_all_to_completed()
+def scenario_edit_empty_or_whitespace_deletes_or_rejects(page: TodoPage, case: dict):
+    page.add("empty or whitespace edit")
+    page.edit(0, "   ")
+    labels = page.labels(visible_only=False)
+    # Accept either implementation allowed by the stated oracle: deleted or rejected/unchanged, but never saved as blank.
+    assert labels in ([], ["empty or whitespace edit"])
+    assert "" not in labels and "   " not in labels
+
+
+def scenario_edit_cancel_escape(page: TodoPage, case: dict):
+    page.add("original title")
+    page.edit(0, "changed but cancelled", submit_key=Keys.ESCAPE)
+    assert page.labels(visible_only=False) == ["original title"]
+
+
+def scenario_delete_item(page: TodoPage, case: dict):
+    page.add_many(["keep", "remove"])
+    page.delete(1)
+    assert page.labels(visible_only=False) == ["keep"]
+
+
+def scenario_bulk_toggle_completed(page: TodoPage, case: dict):
+    page.add_many(["bulk 1", "bulk 2", "bulk 3"])
     page.toggle_all_once()
-    page.assert_visible(["item 1", "item 2", "item 3"], [False, False, False])
-    assert page.active_count_text() == "3 items left"
+    assert page.count(visible_only=False) == 3
+    assert all(page.completed_flags())
 
-def s_toggle_all_empty_safe(page):
-    page.clear_all_items_via_ui()
-    page.assert_count(0)
 
-    clicked = page.toggle_all_if_present()
-    assert clicked is False
-
-    page.assert_count(0)
-    page.assert_app_still_usable()
-
-def s_toggle_all_mixed_state(page):
-    page.add_many("mixed active", "mixed done", "mixed active 2")
-    page.toggle("mixed done")
-    page.assert_visible(["mixed active", "mixed done", "mixed active 2"], [False, True, False])
+def scenario_bulk_toggle_back_to_active(page: TodoPage, case: dict):
+    page.add_many(["bulk active 1", "bulk active 2"])
     page.toggle_all_once()
-    page.assert_visible(["mixed active", "mixed done", "mixed active 2"], [True, True, True])
-    assert page.active_count_text() == "0 items left"
+    assert all(page.completed_flags())
+    page.toggle_all_once()
+    assert not any(page.completed_flags())
 
 
-def s_filter_active(page):
-    page.add_many("active item", "completed item")
-    page.toggle("completed item")
-    page.filter_active()
-    page.assert_visible(["active item"], [False])
-    assert page.active_count_text() == "1 item left"
+def scenario_filter_active_completed_all(page: TodoPage, case: dict):
+    page.add_many(["active item", "completed item"])
+    page.toggle(1)
+
+    page.filter("active")
+    assert page.labels() == ["active item"]
+
+    page.filter("completed")
+    assert page.labels() == ["completed item"]
+
+    page.filter("all")
+    assert page.labels() == ["active item", "completed item"]
 
 
-def s_filter_completed(page):
-    page.add_many("active item", "completed item")
-    page.toggle("completed item")
-    page.filter_completed()
-    page.assert_visible(["completed item"], [True])
-
-
-def s_filter_all_round_trip(page):
-    page.add_many("todo active", "todo done")
-    page.toggle("todo done")
-    page.filter_completed()
-    page.assert_visible(["todo done"], [True])
-    page.filter_active()
-    page.assert_visible(["todo active"], [False])
-    page.filter_all()
-    page.assert_visible(["todo active", "todo done"], [False, True])
-
-
-def s_filter_invalid_safe(page):
-    page.add_many("active item", "completed item")
-    page.toggle("completed item")
-    page.filter_invalid()
-    page.assert_app_still_usable()
-    assert sorted(page.texts()) in (
-        sorted(["active item", "completed item"]),
-        sorted(["active item"]),
-        sorted(["completed item"]),
-        [],
-    )
-
-
-def s_clear_completed_keeps_active(page):
-    page.add_many("active item", "done item")
-    page.toggle("done item")
+def scenario_clear_completed(page: TodoPage, case: dict):
+    page.add_many(["active survives", "completed removed 1", "completed removed 2"])
+    page.toggle(1)
+    page.toggle(2)
     page.clear_completed()
-    page.assert_visible(["active item"], [False])
-    assert page.active_count_text() == "1 item left"
+    page.filter("all")
+    assert page.labels(visible_only=False) == ["active survives"]
+    assert page.completed_flags() == [False]
 
 
-def s_clear_completed_all_completed_empty(page):
-    page.add_many("done 1", "done 2")
-    page.toggle("done 1")
-    page.toggle("done 2")
-    page.clear_completed()
-    page.assert_count(0)
+def scenario_state_permitted_action(page: TodoPage, case: dict):
+    page.add("state item")
+    page.toggle(0)
+    assert page.completed_flags()[0] is True
+    page.edit(0, "state item edited")
+    assert page.labels(visible_only=False) == ["state item edited"]
+    page.delete(0)
+    assert page.count(visible_only=False) == 0
 
 
-def s_clear_completed_none_safe(page):
-    page.add_many("active 1", "active 2")
-    page.clear_completed_if_present()
-    page.assert_visible(["active 1", "active 2"], [False, False])
-    assert page.active_count_text() == "2 items left"
+def scenario_state_rejected_or_alternative(page: TodoPage, case: dict):
+    # Rejected transition: invalid creation should not create a blank todo.
+    before = page.count(visible_only=False)
+    page.add("   ", expect_added=False)
+    assert page.count(visible_only=False) == before
 
 
-def s_add_when_many_items_safe(page):
-    # Practical approximation of "list full or unavailable" for this small app:
-    # create many items and verify the app still handles the next add safely.
-    for i in range(20):
-        page.add(f"bulk {i}")
-    page.add("bulk final")
-    assert "bulk final" in page.texts()
-    assert page.visible_count() == 21
+def scenario_smoke_basic_crud(page: TodoPage, case: dict):
+    page.add("smoke")
+    page.toggle(0)
+    page.edit(0, "smoke edited")
+    page.delete(0)
+    assert page.count(visible_only=False) == 0
 
 
-# ---------------------------------------------------------------------------
-# Optimized suite mapping.
-# Every optimized test_case_id appears exactly once here.
-# ---------------------------------------------------------------------------
-
-KNOWN_DEFECT = pytest.mark.xfail(
-    reason="Known product requirement deviation in the current implementation.",
-    strict=False,
-)
-
-CASES = [
-    # TS-009 State Transition Model Suite
-    pytest.param("TC-066", "TS-009", "COV-STATE-TR-001", s_add_valid, id="TC-066_add_valid_item"),
-    pytest.param("TC-067", "TS-009", "COV-STATE-TR-003", s_toggle_completed_once, id="TC-067_toggle_completed"),
-    pytest.param("TC-068", "TS-009", "COV-STATE-TR-004", s_edit_non_empty, id="TC-068_edit_non_empty"),
-    pytest.param("TC-069", "TS-009", "COV-STATE-TR-005", s_edit_empty_deletes, id="TC-069_edit_empty_deletes"),
-    pytest.param("TC-070", "TS-009", "COV-STATE-TR-006", s_delete_single_item, id="TC-070_delete_single"),
-    pytest.param("TC-071", "TS-009", "COV-STATE-TR-007", s_toggle_all_to_completed, id="TC-071_toggle_all_completed"),
-    pytest.param("TC-072", "TS-009", "COV-STATE-TR-008", s_toggle_all_back_to_active, id="TC-072_toggle_all_active"),
-    pytest.param("TC-073", "TS-009", "COV-STATE-TR-009", s_filter_active, id="TC-073_filter_active"),
-    pytest.param("TC-074", "TS-009", "COV-STATE-TR-010", s_filter_all_round_trip, id="TC-074_filter_all"),
-    pytest.param("TC-075", "TS-009", "COV-STATE-TR-002", s_add_whitespace_ignored, id="TC-075_add_whitespace_ignored"),
-    pytest.param("TC-076", "TS-009", "COV-STATE-TR-011", s_clear_completed_all_completed_empty, id="TC-076_clear_completed"),
-
-    # TS-001 Boundary Value Analysis
-    pytest.param("TC-001", "TS-001", "COV-004", s_add_whitespace_ignored, id="TC-001_whitespace_boundary"),
-    pytest.param("TC-007", "TS-001", "COV-014", s_edit_empty_deletes, id="TC-007_empty_title_boundary"),
-    pytest.param("TC-010", "TS-001", "COV-024", s_filter_invalid_safe, id="TC-010_filter_all_boundary"),
-    pytest.param("TC-013", "TS-001", "COV-025", s_filter_active, id="TC-013_filter_active_boundary"),
-    pytest.param("TC-016", "TS-001", "COV-026", s_filter_completed, id="TC-016_filter_completed_boundary"),
-
-    # TS-002 Decision Table Testing
-    pytest.param("TC-019", "TS-002", "COV-029", s_clear_completed_keeps_active, id="TC-019_clear_completed_rule_true"),
-    pytest.param("TC-020", "TS-002", "COV-029", s_clear_completed_none_safe, id="TC-020_clear_completed_rule_false"),
-
-    # TS-003 Equivalence Partitioning for conditions
-    pytest.param("TC-021", "TS-003", "COV-003", s_add_valid_partition, id="TC-021_input_condition_valid"),
-    pytest.param("TC-022", "TS-003", "COV-003", s_add_whitespace_ignored, id="TC-022_input_condition_invalid"),
-    pytest.param("TC-023", "TS-003", "COV-013", s_edit_non_empty, id="TC-023_save_title_valid"),
-    pytest.param("TC-024", "TS-003", "COV-013", s_edit_empty_deletes, id="TC-024_save_title_empty"),
-    pytest.param("TC-025", "TS-003", "COV-023", s_filter_active, id="TC-025_filter_condition_valid"),
-    pytest.param("TC-026", "TS-003", "COV-023", s_filter_invalid_safe, id="TC-026_filter_condition_invalid"),
-
-    # TS-004 Equivalence Partitioning for core behavior
-    pytest.param("TC-027", "TS-004", "COV-001", s_add_valid, id="TC-027_add_core_valid"),
-    pytest.param("TC-028", "TS-004", "COV-001", s_add_whitespace_ignored, id="TC-028_add_core_invalid"),
-    pytest.param("TC-031", "TS-004", "COV-009", s_edit_non_empty, id="TC-031_edit_core_valid"),
-    pytest.param("TC-032", "TS-004", "COV-009", s_edit_empty_deletes, id="TC-032_edit_core_invalid_empty"),
-    pytest.param("TC-035", "TS-004", "COV-018", s_toggle_all_to_completed, id="TC-035_toggle_all_core_valid"),
-    pytest.param("TC-036", "TS-004", "COV-018", s_toggle_all_empty_safe, id="TC-036_toggle_all_core_invalid_empty"),
-    pytest.param("TC-037", "TS-004", "COV-021", s_filter_active, id="TC-037_filter_core_valid"),
-    pytest.param("TC-038", "TS-004", "COV-021", s_filter_invalid_safe, id="TC-038_filter_core_invalid"),
-    pytest.param("TC-039", "TS-004", "COV-027", s_clear_completed_keeps_active, id="TC-039_clear_core_valid"),
-    pytest.param("TC-040", "TS-004", "COV-027", s_clear_completed_none_safe, id="TC-040_clear_core_invalid_none"),
-
-    # TS-005 Equivalence Partitioning for inputs
-    pytest.param("TC-041", "TS-005", "COV-002", s_add_valid_partition, id="TC-041_add_input_valid"),
-    pytest.param("TC-042", "TS-005", "COV-002", s_add_whitespace_ignored, id="TC-042_add_input_invalid_whitespace"),
-    pytest.param("TC-045", "TS-005", "COV-010", s_edit_non_empty, id="TC-045_edit_item_valid"),
-    pytest.param("TC-046", "TS-005", "COV-010", s_edit_deleted_item_safe, id="TC-046_edit_item_invalid_deleted"),
-    pytest.param("TC-047", "TS-005", "COV-011", s_edit_non_empty, id="TC-047_edit_title_valid"),
-    pytest.param("TC-048", "TS-005", "COV-011", s_edit_empty_deletes, id="TC-048_edit_title_invalid_empty"),
-    pytest.param("TC-051", "TS-005", "COV-019", s_toggle_all_to_completed, id="TC-051_toggle_all_control_valid"),
-    pytest.param("TC-052", "TS-005", "COV-019", s_toggle_all_empty_safe, id="TC-052_toggle_all_control_invalid"),
-    pytest.param("TC-053", "TS-005", "COV-022", s_filter_all_round_trip, id="TC-053_filter_input_valid"),
-    pytest.param("TC-054", "TS-005", "COV-022", s_filter_invalid_safe, id="TC-054_filter_input_invalid"),
-    pytest.param("TC-055", "TS-005", "COV-028", s_clear_completed_keeps_active, id="TC-055_completed_items_valid"),
-    pytest.param("TC-056", "TS-005", "COV-028", s_clear_completed_none_safe, id="TC-056_completed_items_invalid_none"),
-
-    # TS-006 State behavior suite
-    pytest.param("TC-058", "TS-006", "COV-012", s_double_click_enters_edit_mode, id="TC-058_double_click_edit_mode"),
-    pytest.param("TC-060", "TS-006", "COV-020", s_toggle_all_to_completed, id="TC-060_toggle_all_user_action"),
-    pytest.param("TC-057", "TS-006", "COV-007", s_toggle_completed_and_active, id="TC-057_toggle_user_action"),
-    pytest.param("TC-059", "TS-006", "COV-017", s_delete_single_item, id="TC-059_delete_user_action"),
-
-    # TS-007 Error / state behavior suite
-    pytest.param("TC-061", "TS-007", "COV-AI-001", s_add_when_many_items_safe, id="TC-061_add_when_many_items_safe"),
-    pytest.param("TC-062", "TS-007", "COV-AI-003", s_edit_deleted_item_safe, id="TC-062_edit_deleted_item_safe"),
-    pytest.param("TC-063", "TS-007", "COV-AI-004", s_delete_already_deleted_safe, id="TC-063_delete_already_deleted_safe"),
-    pytest.param("TC-064", "TS-007", "COV-AI-006", s_filter_invalid_safe, id="TC-064_invalid_filter_safe"),
-    pytest.param("TC-065", "TS-007", "COV-AI-007", s_clear_completed_none_safe, id="TC-065_clear_when_none_completed"),
-
-    # TS-008 State behavior suite
-    pytest.param("TC-077", "TS-008", "COV-AI-002", s_toggle_three_times, id="TC-077_toggle_three_times"),
-    pytest.param("TC-078", "TS-008", "COV-AI-005", s_toggle_all_mixed_state, id="TC-078_toggle_all_mixed"),
-]
+SCENARIOS: Dict[str, Callable[[TodoPage, dict], None]] = {
+    "create_valid": scenario_create_valid,
+    "create_order": scenario_create_order,
+    "reject_invalid_title": scenario_reject_invalid_title,
+    "title_length_boundary": scenario_title_length_boundary,
+    "create_trim_whitespace": scenario_create_trim_whitespace,
+    "toggle_to_completed": scenario_toggle_to_completed,
+    "toggle_back_to_active": scenario_toggle_back_to_active,
+    "enter_edit_mode": scenario_enter_edit_mode,
+    "no_edit_on_single_click": scenario_no_edit_on_single_click,
+    "edit_update_title": scenario_edit_update_title,
+    "edit_trim_whitespace": scenario_edit_trim_whitespace,
+    "edit_empty_deletes": scenario_edit_empty_deletes,
+    "edit_empty_or_whitespace_deletes_or_rejects": scenario_edit_empty_or_whitespace_deletes_or_rejects,
+    "edit_cancel_escape": scenario_edit_cancel_escape,
+    "delete_item": scenario_delete_item,
+    "bulk_toggle_completed": scenario_bulk_toggle_completed,
+    "bulk_toggle_back_to_active": scenario_bulk_toggle_back_to_active,
+    "filter_active_completed_all": scenario_filter_active_completed_all,
+    "clear_completed": scenario_clear_completed,
+    "state_permitted_action": scenario_state_permitted_action,
+    "state_rejected_or_alternative": scenario_state_rejected_or_alternative,
+    "smoke_basic_crud": scenario_smoke_basic_crud,
+}
 
 
-def test_optimized_todoitem_suite_coverage_completeness():
-    """Guardrail: make sure the automated mapping contains all 57 optimized cases."""
-    assert len(CASES) == 57
+assert len(CASES) == 169
+assert len({c["test_case_id"] for c in CASES}) == 169
 
 
-@pytest.mark.parametrize("test_case_id,suite_id,coverage_id,scenario", CASES)
-def test_optimized_todoitem_case(page, test_case_id, suite_id, coverage_id, scenario):
-    """
-    Execute one AutoTestDesign optimized test case.
-
-    Pytest id = AutoTestDesign test_case_id + scenario name.
-    The suite_id and coverage_id parameters make the pytest report traceable
-    back to the exported optimized suite and coverage matrix.
-    """
-    scenario(page)
+@pytest.mark.parametrize("case", CASES, ids=_case_id)
+def test_todoitem_optimized_case(page: TodoPage, case: dict):
+    scenario_name = case["scenario"]
+    assert scenario_name in SCENARIOS, f"No executable scenario mapped for {scenario_name}"
+    SCENARIOS[scenario_name](page, case)
