@@ -1,3 +1,0 @@
-test_case_id,status,actual_result,defect_found,notes
-TC-001,Pass,Todo item was created,0,Mock execution result
-TC-002,Fail,Empty todo was accepted,1,Validation defect example
