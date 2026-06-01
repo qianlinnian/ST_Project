@@ -38,6 +38,62 @@ def _format_csv_upload_error(error: Exception) -> str:
     return f"Failed to read CSV file. Details: {error}"
 
 
+@st.fragment
+def _render_requirements_editor() -> None:
+    with st.form("requirements_editor_form"):
+        edited = st.data_editor(
+            editor_safe_frame(st.session_state.requirements_draft),
+            num_rows="dynamic",
+            key="requirements_editor",
+            hide_index=True,
+            column_order=["requirement_id", "module", "requirement_text"],
+        )
+        saved = st.form_submit_button("Save Edited Requirements")
+    if saved:
+        st.session_state.requirements_draft = edited
+        save_requirements(st.session_state.requirements_draft)
+        st.toast("Edited requirements saved.")
+
+
+@st.fragment
+def _render_structured_requirements_editor() -> None:
+    structured_frame = editable_structured_requirements()
+    with st.form("structured_requirements_editor_form"):
+        structured_editor = st.data_editor(
+            editor_safe_frame(structured_frame),
+            key="structured_requirements_editor",
+            hide_index=True,
+            num_rows="dynamic",
+            use_container_width=True,
+            column_config={
+                "input_fields": st.column_config.TextColumn(
+                    "input_fields",
+                    help="One recognized input field per line.",
+                ),
+                "data_ranges": st.column_config.TextColumn(
+                    "data_ranges",
+                    help="One recognized data range or boundary per line.",
+                ),
+                "conditions": st.column_config.TextColumn(
+                    "conditions",
+                    help="One recognized condition per line.",
+                ),
+                "actions": st.column_config.TextColumn(
+                    "actions",
+                    help="One recognized action per line.",
+                ),
+                "expected_results": st.column_config.TextColumn(
+                    "expected_results",
+                    help="One expected result per line.",
+                ),
+            },
+        )
+        saved = st.form_submit_button("Save Edited Structured Requirements")
+    if saved:
+        save_structured_requirements(structured_editor)
+        st.toast("Edited structured requirements saved.")
+
+
 def render_requirement_input_page(artifacts: dict[str, pd.DataFrame]) -> None:
     with st.container():
         section_header("Requirement Input", "file")
@@ -143,17 +199,7 @@ def render_requirement_input_page(artifacts: dict[str, pd.DataFrame]) -> None:
                         save_requirements(parsed_requirements)
                         st.toast("Text requirements converted to table.")
 
-        edited = st.data_editor(
-            editor_safe_frame(st.session_state.requirements_draft),
-            num_rows="dynamic",
-            key="requirements_editor",
-            hide_index=True,
-            column_order=["requirement_id", "module", "requirement_text"],
-        )
-        st.session_state.requirements_draft = edited
-        if st.button("Save Edited Requirements"):
-            save_requirements(st.session_state.requirements_draft)
-            st.toast("Edited requirements saved.")
+        _render_requirements_editor()
 
         local_col, llm_col = st.columns([1, 1], gap="medium")
         with local_col:
@@ -179,34 +225,4 @@ def render_requirement_input_page(artifacts: dict[str, pd.DataFrame]) -> None:
 
         if not st.session_state.structured_requirements.empty:
             section_header("Structured Requirement Preview", "file")
-            structured_editor = st.data_editor(
-                editor_safe_frame(editable_structured_requirements()),
-                key="structured_requirements_editor",
-                hide_index=True,
-                use_container_width=True,
-                column_config={
-                    "input_fields": st.column_config.TextColumn(
-                        "input_fields",
-                        help="One recognized input field per line.",
-                    ),
-                    "data_ranges": st.column_config.TextColumn(
-                        "data_ranges",
-                        help="One recognized data range or boundary per line.",
-                    ),
-                    "conditions": st.column_config.TextColumn(
-                        "conditions",
-                        help="One recognized condition per line.",
-                    ),
-                    "actions": st.column_config.TextColumn(
-                        "actions",
-                        help="One recognized action per line.",
-                    ),
-                    "expected_results": st.column_config.TextColumn(
-                        "expected_results",
-                        help="One expected result per line.",
-                    ),
-                },
-            )
-            if st.button("Save Edited Structured Requirements"):
-                save_structured_requirements(structured_editor)
-                st.toast("Edited structured requirements saved.")
+            _render_structured_requirements_editor()

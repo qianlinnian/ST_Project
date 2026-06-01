@@ -133,6 +133,24 @@ def state_model_to_dot(state_model: dict) -> str:
     return "\n".join(lines)
 
 
+@st.fragment
+def _render_state_transition_sequences_editor() -> None:
+    with st.form("state_transition_sequences_editor_form"):
+        edited_sequences = st.data_editor(
+            editor_safe_frame(st.session_state.state_transition_sequences_draft),
+            num_rows="dynamic",
+            key="state_transition_sequences_editor",
+            hide_index=True,
+        )
+        saved = st.form_submit_button("Save Edited State Transition Sequences")
+    if saved:
+        st.session_state.state_transition_sequences_draft = edited_sequences
+        save_state_transition_sequences(edited_sequences)
+        rerun_with_toast(
+            "Edited state transition sequences saved. Regenerate test suites and test cases."
+        )
+
+
 def render_state_model_section() -> None:
     if (
         st.session_state.structured_requirements.empty
@@ -158,23 +176,7 @@ def render_state_model_section() -> None:
                 rerun_with_toast("LLM state model improvement completed.")
         st.graphviz_chart(state_model_to_dot(state_model))
         if not st.session_state.state_transition_sequences.empty:
-            with st.form("state_transition_sequences_edit_form"):
-                edited_sequences = st.data_editor(
-                    editor_safe_frame(
-                        st.session_state.state_transition_sequences_draft
-                    ),
-                    num_rows="dynamic",
-                    key="state_transition_sequences_editor",
-                    hide_index=True,
-                )
-                saved_sequences = st.form_submit_button(
-                    "Save Edited State Transition Sequences"
-                )
-            if saved_sequences:
-                save_state_transition_sequences(edited_sequences)
-                rerun_with_toast(
-                    "Edited state transition sequences saved. Regenerate test suites and test cases."
-                )
+            _render_state_transition_sequences_editor()
 
 
 def render_risk_timing_details() -> None:

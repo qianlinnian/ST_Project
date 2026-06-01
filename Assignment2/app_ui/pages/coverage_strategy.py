@@ -37,6 +37,52 @@ VISIBLE_STRATEGY_COLUMNS = [
 ]
 
 
+@st.fragment
+def _render_coverage_items_editor() -> None:
+    coverage_draft = editor_safe_frame(st.session_state.coverage_items_draft)
+    with st.form("coverage_items_editor_form"):
+        edited_coverage = st.data_editor(
+            coverage_draft,
+            num_rows="dynamic",
+            column_order=[
+                column
+                for column in VISIBLE_COVERAGE_COLUMNS
+                if column in coverage_draft.columns
+            ],
+            key="coverage_items_editor",
+            hide_index=True,
+        )
+        saved = st.form_submit_button("Save Edited Coverage Items")
+    if saved:
+        st.session_state.coverage_items_draft = edited_coverage
+        save_coverage_items(edited_coverage)
+        rerun_with_toast(
+            "Edited coverage items saved. Regenerate strategy before test case generation."
+        )
+
+
+@st.fragment
+def _render_test_strategies_editor() -> None:
+    strategies_draft = editor_safe_frame(st.session_state.test_strategies_draft)
+    with st.form("test_strategies_editor_form"):
+        edited_strategies = st.data_editor(
+            strategies_draft,
+            num_rows="dynamic",
+            column_order=[
+                column
+                for column in VISIBLE_STRATEGY_COLUMNS
+                if column in strategies_draft.columns
+            ],
+            key="test_strategies_editor",
+            hide_index=True,
+        )
+        saved = st.form_submit_button("Save Edited Test Strategies")
+    if saved:
+        st.session_state.test_strategies_draft = edited_strategies
+        save_test_strategies(edited_strategies)
+        rerun_with_toast("Edited test strategies saved.")
+
+
 def render_coverage_strategy_page(artifacts: dict[str, pd.DataFrame]) -> None:
     section_header("Coverage Items", "map")
     local_col, llm_col = st.columns([1, 1], gap="medium")
@@ -70,25 +116,7 @@ def render_coverage_strategy_page(artifacts: dict[str, pd.DataFrame]) -> None:
     if artifacts["coverage_items"].empty:
         st.info("Run requirement structuring and risk analysis first.")
     else:
-        with st.form("coverage_items_edit_form"):
-            coverage_draft = editor_safe_frame(st.session_state.coverage_items_draft)
-            edited_coverage = st.data_editor(
-                coverage_draft,
-                num_rows="dynamic",
-                column_order=[
-                    column
-                    for column in VISIBLE_COVERAGE_COLUMNS
-                    if column in coverage_draft.columns
-                ],
-                key="coverage_items_editor",
-                hide_index=True,
-            )
-            saved_coverage = st.form_submit_button("Save Edited Coverage Items")
-        if saved_coverage:
-            save_coverage_items(edited_coverage)
-            rerun_with_toast(
-                "Edited coverage items saved. Regenerate strategy before test case generation."
-            )
+        _render_coverage_items_editor()
 
     coverage_improvement = st.session_state.get("coverage_ai_improvement")
     if coverage_improvement is not None and isinstance(coverage_improvement, pd.DataFrame):
@@ -121,23 +149,7 @@ def render_coverage_strategy_page(artifacts: dict[str, pd.DataFrame]) -> None:
     if artifacts["test_strategies"].empty:
         st.info("Coverage strategy has not been generated yet.")
     else:
-        with st.form("test_strategies_edit_form"):
-            strategies_draft = editor_safe_frame(st.session_state.test_strategies_draft)
-            edited_strategies = st.data_editor(
-                strategies_draft,
-                num_rows="dynamic",
-                column_order=[
-                    column
-                    for column in VISIBLE_STRATEGY_COLUMNS
-                    if column in strategies_draft.columns
-                ],
-                key="test_strategies_editor",
-                hide_index=True,
-            )
-            saved_strategies = st.form_submit_button("Save Edited Test Strategies")
-        if saved_strategies:
-            save_test_strategies(edited_strategies)
-            rerun_with_toast("Edited test strategies saved.")
+        _render_test_strategies_editor()
 
     render_state_model_section()
     render_performance_table(artifacts)

@@ -391,7 +391,7 @@ def improve_current_optimized_suite_with_llm() -> None:
     if not optimized_cases.empty:
         st.session_state.optimized_test_cases = optimized_cases
     st.session_state.suite_minimization_result = result
-    set_performance("llm_suite_minimization_seconds", llm_time)
+    set_performance("llm_suite_improve_seconds", llm_time)
     decisions = result.get("suite_minimization_decisions", pd.DataFrame())
     if decisions.empty:
         queue_toast(
@@ -432,6 +432,14 @@ def save_test_cases(test_cases: pd.DataFrame) -> None:
         st.session_state.test_strategies,
         st.session_state.test_cases,
     )
+
+
+def save_optimized_test_cases(optimized_test_cases: pd.DataFrame) -> None:
+    st.session_state.optimized_test_cases = assign_test_suites_to_cases(
+        ensure_columns(optimized_test_cases, TEST_CASE_COLUMNS),
+        st.session_state.test_suites,
+    )
+    st.session_state.suite_minimization_result = None
 
 
 def save_test_suites(test_suites: pd.DataFrame) -> None:

@@ -8,7 +8,11 @@ from app_ui.pages.export import render_export_page
 from app_ui.pages.requirement_input import render_requirement_input_page
 from app_ui.pages.risk_analysis import render_risk_analysis_page
 from app_ui.pages.test_cases import render_test_cases_page
-from app_ui.state import current_artifacts, flush_pending_toasts, init_state
+from app_ui.state import (
+    current_artifacts,
+    flush_pending_toasts,
+    init_state,
+)
 from app_ui.styles import inject_style
 
 

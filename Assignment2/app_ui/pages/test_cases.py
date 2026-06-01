@@ -13,6 +13,7 @@ from app_ui.actions import (
     generate_current_test_suites,
     improve_current_optimized_suite_with_llm,
     improve_current_test_suites_with_llm,
+    save_optimized_test_cases,
     save_test_cases,
     save_test_strategies,
     save_test_suites,
@@ -61,6 +62,98 @@ VISIBLE_OPTIMIZED_TEST_CASE_COLUMNS = [
     "risk_level",
     "source",
 ]
+
+
+@st.fragment
+def _render_test_suites_editor() -> None:
+    suite_sort_option = st.selectbox(
+        "Sort test suites by",
+        [
+            "Risk (High first)",
+            "Suite ID (Ascending)",
+        ],
+        index=0,
+    )
+    sorted_suites = _sort_test_suites(
+        st.session_state.test_suites_draft,
+        suite_sort_option,
+    )
+    visible_suite_columns = [
+        column
+        for column in VISIBLE_TEST_SUITE_COLUMNS
+        if column in sorted_suites.columns
+    ]
+    with st.form(f"test_suites_editor_form_{suite_sort_option}"):
+        edited_suites = st.data_editor(
+            editor_safe_frame(sorted_suites),
+            num_rows="dynamic",
+            key=f"test_suites_editor_{suite_sort_option}",
+            hide_index=True,
+            column_order=visible_suite_columns if visible_suite_columns else None,
+        )
+        saved = st.form_submit_button("Save Edited Test Suites")
+    if saved:
+        st.session_state.test_suites_draft = edited_suites
+        save_test_suites(edited_suites)
+        rerun_with_toast("Edited test suites saved.")
+
+
+@st.fragment
+def _render_test_cases_editor() -> None:
+    visible_columns = [
+        column
+        for column in VISIBLE_TEST_CASE_COLUMNS
+        if column in st.session_state.test_cases_draft.columns
+    ]
+    with st.form("test_cases_editor_form"):
+        edited_cases = st.data_editor(
+            editor_safe_frame(st.session_state.test_cases_draft),
+            num_rows="dynamic",
+            key="test_cases_editor",
+            hide_index=True,
+            column_order=visible_columns if visible_columns else None,
+        )
+        saved = st.form_submit_button("Save Edited Test Cases")
+    if saved:
+        st.session_state.test_cases_draft = edited_cases
+        save_test_cases(edited_cases)
+        rerun_with_toast("Edited test cases saved.")
+
+
+@st.fragment
+def _render_optimized_test_cases_editor() -> None:
+    optimized_sort_option = st.selectbox(
+        "Sort optimized suite by",
+        [
+            "Risk (High first)",
+            "ID (Ascending)",
+        ],
+        index=0,
+    )
+    visible_optimized_columns = [
+        column
+        for column in VISIBLE_OPTIMIZED_TEST_CASE_COLUMNS
+        if column in st.session_state.optimized_test_cases.columns
+    ]
+    with st.form("optimized_test_cases_editor_form"):
+        edited_optimized_cases = st.data_editor(
+            editor_safe_frame(
+                _sort_optimized_cases(
+                    st.session_state.optimized_test_cases,
+                    optimized_sort_option,
+                )
+            ),
+            num_rows="dynamic",
+            key=f"optimized_test_cases_editor_{optimized_sort_option}",
+            hide_index=True,
+            column_order=(
+                visible_optimized_columns if visible_optimized_columns else None
+            ),
+        )
+        saved = st.form_submit_button("Save Edited Optimized Suite")
+    if saved:
+        save_optimized_test_cases(edited_optimized_cases)
+        rerun_with_toast("Edited optimized suite saved.")
 
 
 def _coverage_count(value: object) -> int:
@@ -227,35 +320,7 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
     if artifacts["test_suites"].empty:
         st.info("Generate strategy first, then generate test suites.")
     else:
-        suite_sort_option = st.selectbox(
-            "Sort test suites by",
-            [
-                "Risk (High first)",
-                "Suite ID (Ascending)",
-            ],
-            index=0,
-        )
-        sorted_suites = _sort_test_suites(
-            st.session_state.test_suites_draft,
-            suite_sort_option,
-        )
-        with st.form("test_suites_edit_form"):
-            visible_suite_columns = [
-                column
-                for column in VISIBLE_TEST_SUITE_COLUMNS
-                if column in sorted_suites.columns
-            ]
-            edited_suites = st.data_editor(
-                editor_safe_frame(sorted_suites),
-                num_rows="dynamic",
-                key=f"test_suites_editor_{suite_sort_option}",
-                hide_index=True,
-                column_order=visible_suite_columns if visible_suite_columns else None,
-            )
-            saved_suites = st.form_submit_button("Save Edited Test Suites")
-        if saved_suites:
-            save_test_suites(edited_suites)
-            rerun_with_toast("Edited test suites saved.")
+        _render_test_suites_editor()
 
     section_header("Candidate Test Cases", "case")
     local_col, llm_col = st.columns([1, 1], gap="medium")
@@ -348,36 +413,12 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
         else:
             st.info("Generate test cases to continue.")
     else:
-        with st.form("test_cases_edit_form"):
-            visible_columns = [
-                column
-                for column in VISIBLE_TEST_CASE_COLUMNS
-                if column in st.session_state.test_cases_draft.columns
-            ]
-            edited_cases = st.data_editor(
-                editor_safe_frame(st.session_state.test_cases_draft),
-                num_rows="dynamic",
-                key="test_cases_editor",
-                hide_index=True,
-                column_order=visible_columns if visible_columns else None,
-            )
-            saved_cases = st.form_submit_button("Save Edited Test Cases")
-        if saved_cases:
-            save_test_cases(edited_cases)
-            rerun_with_toast("Edited test cases saved.")
+        _render_test_cases_editor()
     if not artifacts["optimized_test_cases"].empty:
         section_header("Optimized Test Suite", "case")
         with st.expander("Optimized test suite", expanded=True):
             improve_suite_disabled = not is_llm_enabled(
                 st.session_state.selected_provider
-            )
-            optimized_sort_option = st.selectbox(
-                "Sort optimized suite by",
-                [
-                    "Risk (High first)",
-                    "ID (Ascending)",
-                ],
-                index=0,
             )
             if st.button(
                 "Improve Optimized Suite With LLM",
@@ -386,20 +427,7 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
                 with st.spinner("Reviewing optimized suite with LLM..."):
                     improve_current_optimized_suite_with_llm()
                 rerun_with_toast("LLM optimized suite improvement completed.")
-            visible_optimized_columns = [
-                column
-                for column in VISIBLE_OPTIMIZED_TEST_CASE_COLUMNS
-                if column in st.session_state.optimized_test_cases.columns
-            ]
-            st.dataframe(
-                editor_safe_frame(
-                    _sort_optimized_cases(
-                        st.session_state.optimized_test_cases,
-                        optimized_sort_option,
-                    )
-                ),
-                column_order=visible_optimized_columns if visible_optimized_columns else None,
-            )
+            _render_optimized_test_cases_editor()
     section_header("Traceability Matrix", "map")
     if artifacts["traceability_matrix"].empty:
         st.info("Traceability matrix will appear after test case generation.")
