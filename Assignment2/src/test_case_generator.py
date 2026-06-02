@@ -26,10 +26,10 @@ from src.test_suite_designer import assign_test_suites_to_cases
 PRIORITY_BY_RISK = {"High": "High", "Medium": "Medium", "Low": "Low"}
 RISK_SCORE_BY_LEVEL = {"High": 5.0, "Medium": 3.0, "Low": 1.0}
 TECHNIQUE_CASE_LIMITS = {
-    "Boundary Value Analysis": 4,
-    "Decision Table Testing": 2,
-    "Equivalence Partitioning": 2,
-    "State Transition Testing": 1,
+    "Boundary Value Analysis": 5,
+    "Decision Table Testing": 3,
+    "Equivalence Partitioning": 3,
+    "State Transition Testing": 2,
 }
 REQUIRED_COLUMNS = [
     "test_case_id", "suite_id", "suite_name", "requirement_id", "coverage_id", "technique",
@@ -503,7 +503,7 @@ def _limit_cases_for_coverage(rows: list[dict], technique: str) -> list[dict]:
     if not rows:
         return rows
     default_limit = TECHNIQUE_CASE_LIMITS.get(str(technique), 2)
-    max_per_coverage = env_int("AUTOTESTDESIGN_MAX_TEST_CASES_PER_COVERAGE", 4, 1, 20)
+    max_per_coverage = env_int("AUTOTESTDESIGN_MAX_TEST_CASES_PER_COVERAGE", 6, 1, 40)
     return rows[: min(default_limit, max_per_coverage)]
 
 
@@ -512,8 +512,8 @@ def _limit_test_case_volume(test_cases: pd.DataFrame) -> pd.DataFrame:
         return test_cases
 
     data = _normalise_test_case_frame(test_cases)
-    max_per_coverage = env_int("AUTOTESTDESIGN_MAX_TEST_CASES_PER_COVERAGE", 4, 1, 20)
-    max_total = env_int("AUTOTESTDESIGN_MAX_GENERATED_TEST_CASES", 1000, 1, 10000)
+    max_per_coverage = env_int("AUTOTESTDESIGN_MAX_TEST_CASES_PER_COVERAGE", 6, 1, 40)
+    max_total = env_int("AUTOTESTDESIGN_MAX_GENERATED_TEST_CASES", 1500, 1, 20000)
 
     limited_groups = []
     group_key = "coverage_id" if "coverage_id" in data.columns else None
@@ -700,7 +700,7 @@ def _parse_missing_test_cases(parsed: dict, batch_size: int) -> pd.DataFrame:
     rows = []
     if isinstance(parsed.get("m"), list):
         items = parsed.get("m", [])
-        max_items = env_int("AUTOTESTDESIGN_MAX_MISSING_TEST_CASES_PER_BATCH", 8, 1, 50)
+        max_items = env_int("AUTOTESTDESIGN_MAX_MISSING_TEST_CASES_PER_BATCH", 12, 1, 80)
         if len(items) > max_items:
             print(
                 "[AutoTestDesign][TestCase][LIMIT] "
@@ -708,30 +708,96 @@ def _parse_missing_test_cases(parsed: dict, batch_size: int) -> pd.DataFrame:
                 flush=True,
             )
         for index, item in enumerate(_select_missing_case_items(items, max_items), start=1):
-            if not isinstance(item, list) or len(item) < 7:
+            parsed_item = _parse_compact_missing_case_item(item)
+            if not parsed_item:
                 continue
-            risk_level = str(item[8] if len(item) > 8 else "Medium")
+            risk_level = str(parsed_item.get("risk_level", "Medium") or "Medium")
+            target_test_case_id = str(parsed_item.get("test_case_id", "")).strip()
             rows.append(
                 {
-                    "test_case_id": "",
-                    "requirement_id": item[0],
-                    "coverage_id": item[1],
-                    "technique": item[2],
-                    "coverage_type": item[3] if len(item) > 3 else "",
+                    "test_case_id": target_test_case_id,
+                    "requirement_id": parsed_item.get("requirement_id", ""),
+                    "coverage_id": parsed_item.get("coverage_id", ""),
+                    "technique": parsed_item.get("technique", ""),
+                    "coverage_type": parsed_item.get("coverage_type", ""),
                     "precondition": "The system under test is available and the relevant feature can be exercised.",
-                    "test_data": item[4],
-                    "steps": item[5],
-                    "expected_result": item[6],
-                    "priority": item[7] if len(item) > 7 else risk_level,
+                    "test_data": parsed_item.get("test_data", ""),
+                    "steps": parsed_item.get("steps", ""),
+                    "expected_result": parsed_item.get("expected_result", ""),
+                    "priority": parsed_item.get("priority", risk_level),
                     "risk_score": RISK_SCORE_BY_LEVEL.get(risk_level, 3.0),
                     "risk_level": risk_level,
                     "automation_candidate": "Partial",
-                    "source": "LLM added",
-                    "design_basis": "LLM identified missing coverage in existing test cases.",
-                    "llm_reason": item[9] if len(item) > 9 else "",
+                    "source": "LLM updated" if target_test_case_id else "LLM added",
+                    "design_basis": (
+                        "LLM revised an existing weak test case."
+                        if target_test_case_id
+                        else "LLM identified missing coverage in existing test cases."
+                    ),
+                    "llm_reason": parsed_item.get("reason", ""),
                 }
             )
     return pd.DataFrame(rows)
+
+
+def _parse_compact_missing_case_item(item: Any) -> dict[str, str] | None:
+    if not isinstance(item, list) or len(item) < 7:
+        return None
+
+    values = [str(part or "").strip() for part in item]
+    first = values[0] if values else ""
+    second = values[1] if len(values) > 1 else ""
+    third = values[2] if len(values) > 2 else ""
+
+    # New format: [test_case_id_or_empty, req, cov, technique, ...]
+    if len(values) >= 11 and second.startswith("REQ") and third.startswith("COV"):
+        return {
+            "test_case_id": first if first.startswith("TC-") else "",
+            "requirement_id": second,
+            "coverage_id": third,
+            "technique": values[3],
+            "coverage_type": values[4],
+            "test_data": values[5],
+            "steps": values[6],
+            "expected_result": values[7],
+            "priority": values[8] if len(values) > 8 else "Medium",
+            "risk_level": values[9] if len(values) > 9 else "Medium",
+            "reason": values[10] if len(values) > 10 else "",
+        }
+
+    # Drifted variant: [req, test_case_id, cov, technique, ...]
+    if len(values) >= 11 and first.startswith("REQ") and second.startswith("TC-") and third.startswith("COV"):
+        return {
+            "test_case_id": second,
+            "requirement_id": first,
+            "coverage_id": third,
+            "technique": values[3],
+            "coverage_type": values[4],
+            "test_data": values[5],
+            "steps": values[6],
+            "expected_result": values[7],
+            "priority": values[8] if len(values) > 8 else "Medium",
+            "risk_level": values[9] if len(values) > 9 else "Medium",
+            "reason": values[10] if len(values) > 10 else "",
+        }
+
+    # Old format: [req, cov, technique, coverage_type, ...]
+    if first.startswith("REQ") and second.startswith("COV"):
+        return {
+            "test_case_id": "",
+            "requirement_id": first,
+            "coverage_id": second,
+            "technique": values[2] if len(values) > 2 else "",
+            "coverage_type": values[3] if len(values) > 3 else "",
+            "test_data": values[4] if len(values) > 4 else "",
+            "steps": values[5] if len(values) > 5 else "",
+            "expected_result": values[6] if len(values) > 6 else "",
+            "priority": values[7] if len(values) > 7 else "Medium",
+            "risk_level": values[8] if len(values) > 8 else "Medium",
+            "reason": values[9] if len(values) > 9 else "",
+        }
+
+    return None
 
 
 def _select_missing_case_items(items: list, max_items: int) -> list:
@@ -761,9 +827,11 @@ def _select_missing_case_items(items: list, max_items: int) -> list:
 
 
 def _missing_case_score(item: list) -> tuple[int, int, int]:
-    priority = str(item[6] if len(item) > 6 else "Medium")
-    risk_level = str(item[7] if len(item) > 7 else "Medium")
-    technique = str(item[2] if len(item) > 2 else "")
+    has_target_id = len(item) >= 11
+    base_index = 1 if has_target_id else 0
+    technique = str(item[base_index + 2] if len(item) > base_index + 2 else "")
+    priority = str(item[base_index + 7] if len(item) > base_index + 7 else "Medium")
+    risk_level = str(item[base_index + 8] if len(item) > base_index + 8 else "Medium")
     risk_score = {"High": 3, "Medium": 2, "Low": 1}.get(risk_level, 0)
     priority_score = {"High": 3, "Medium": 2, "Low": 1}.get(priority, 0)
     technique_score = 2 if technique in {"Boundary Value Analysis", "State Transition Testing"} else 1
@@ -842,6 +910,14 @@ def _extract_complete_missing_case_items(text: str) -> list[list]:
 
 
 def _looks_like_compact_missing_case(value: Any) -> bool:
+    if (
+        isinstance(value, list)
+        and len(value) >= 11
+        and all(not isinstance(part, (list, dict)) for part in value[:11])
+        and str(value[1]).startswith("REQ")
+        and str(value[2]).startswith("COV")
+    ):
+        return True
     return (
         isinstance(value, list)
         and len(value) >= 7

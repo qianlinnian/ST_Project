@@ -113,9 +113,10 @@ Rules:
   [requirement_id, coverage_type, description, related_techniques, reason]
 - Review current coverage against the requirements.
 - Prefer improving an overly generic existing coverage idea before suggesting a brand-new one.
+- You may return a correction of a weak existing coverage idea, not only a brand-new addition.
 - Return only items that should be added or used to improve weak current coverage.
 - Do not repeat unchanged existing coverage.
-- Prefer at most 2 missing items per requirement.
+- Prefer at most 4 suggestions per requirement when clearly justified.
 - Keep descriptions and reasons short.
 - Descriptions must be concrete and testable, not vague labels.
 - coverage_type must be one of: Functional, Input, Boundary, Condition, Error, State Transition.
@@ -128,22 +129,25 @@ TEST_STRATEGY_REVIEW_SYSTEM = (
 )
 
 COMPACT_TEST_CASE_IMPROVEMENT_SYSTEM = """
-You are a fast missing test case generator.
+You are a fast test case reviewer and improver.
 
 Return valid JSON only.
 No markdown. No explanation. No trailing comma.
 
 The output must be exactly this JSON object shape:
-{"m":[["REQ-ID","COV-ID","Technique","coverage type","test data","steps","expected result","priority","risk level","reason"]]}
+{"m":[["TEST-CASE-ID-or-empty","REQ-ID","COV-ID","Technique","coverage type","test data","steps","expected result","priority","risk level","reason"]]}
 
 Rules:
 - The root object must contain only key "m".
 - "m" must be an array.
 - Each item must be:
-  [requirement_id, coverage_id, technique, coverage_type, test_data, steps, expected_result, priority, risk_level, reason]
-- Return at most 8 items total for this batch.
-- Return at most 1 item for each coverage_id.
-- Return only missing test cases not already covered by existing cases.
+  [test_case_id_or_empty, requirement_id, coverage_id, technique, coverage_type, test_data, steps, expected_result, priority, risk_level, reason]
+- Return at most 12 items total for this batch.
+- Return at most 2 items for each coverage_id.
+- Return missing test cases or materially improved replacements for weak existing cases.
+- Prefer correcting an inaccurate existing case before proposing another case for the same coverage.
+- When revising an existing case, you must return its existing test_case_id.
+- Use empty string for test_case_id only when proposing a brand-new case.
 - Preserve existing requirement_id and coverage_id values.
 - coverage_type must match the coverage item and must be one of:
   Functional, Input, Boundary, Condition, Error, State Transition.
@@ -151,6 +155,8 @@ Rules:
 - Use numbered steps in one short sentence.
 - reason must be no more than 6 English words.
 - Use priority and risk_level values: High, Medium, or Low.
+- If the current expected_result is generic, ambiguous, or not observable, replace it with a clearer observable result.
+- Prefer concrete expected_result improvements over tiny wording edits.
 """.strip()
 
 TEST_CASE_GENERATION_SYSTEM = (
@@ -242,6 +248,13 @@ Rules:
 SUITE_DESIGN_IMPROVEMENT_SYSTEM = (
     "You improve high-level software test suite metadata. Return strict JSON only. "
     "Do not invent coverage IDs and do not remove traceability. Prefer concise names and objectives."
+)
+
+TEST_PLAN_DOCUMENT_IMPROVEMENT_SYSTEM = (
+    "You improve a software test plan markdown document. Return markdown only. "
+    "Preserve the existing section structure and headings. "
+    "Make the writing clearer, more formal, and more suitable for a master-level IEEE 829 style test plan. "
+    "Do not invent unsupported project facts."
 )
 
 
@@ -347,15 +360,18 @@ def test_case_generation_prompt(
 
 def oracle_review_prompt(test_case_summary: str) -> str:
     return (
-        "Review expected_result values. They must be observable, testable, and "
-        "consistent with the requirement, test_data, and technique.\n\n"
+        "Review expected_result values. Make them observable, specific, and consistent "
+        "with requirement, test_data, and technique.\n\n"
         f"Test cases:\n{test_case_summary}\n\n"
+        "Return strict JSON only. No markdown. No explanation outside JSON.\n"
+        "Only include rows that need a meaningful expected_result improvement.\n"
+        "Keep improved_expected_result under 40 words. Keep reason under 8 words.\n"
+        "Prefer concrete outcomes over wording tweaks.\n\n"
         "Return JSON with this shape:\n"
         "{\n"
         '  "oracle_reviews": [\n'
         "    {\n"
         '      "test_case_id": "...",\n'
-        '      "current_expected_result": "...",\n'
         '      "improved_expected_result": "...",\n'
         '      "reason": "..."\n'
         "    }\n"
@@ -492,7 +508,14 @@ def missing_test_case_prompt(
         else existing_test_cases
     )
 
-    lines = ["REQ|id|text"]
+    lines = [
+        "Review the current test cases for this coverage batch.",
+        "Return either missing test cases or improved replacements for weak existing cases.",
+        "Prefer correction over duplication when an existing case is present but vague, generic, or inaccurate.",
+        "When revising an existing case, return the same test_case_id so the tool can overwrite that case.",
+        "Prioritize improving unclear expected_result, vague test_data, and generic steps.",
+        "REQ|id|text",
+    ]
     for _, row in req_rows.iterrows():
         lines.append(
             f"REQ|{_compact_text(row.get('requirement_id', ''), 60)}|"
@@ -518,16 +541,18 @@ def missing_test_case_prompt(
             )
         )
 
-    lines.append("EXISTING|id|cov|tech|data|expected")
+    lines.append("EXISTING|id|req|cov|tech|data|steps|expected")
     for _, row in case_rows.iterrows():
         lines.append(
             "|".join(
                 [
                     "EXISTING",
                     _compact_text(row.get("test_case_id", ""), 40),
+                    _compact_text(row.get("requirement_id", ""), 60),
                     _compact_text(row.get("coverage_id", ""), 60),
                     _compact_text(row.get("technique", ""), 80),
                     _compact_text(row.get("test_data", ""), 140),
+                    _compact_text(row.get("steps", ""), 180),
                     _compact_text(row.get("expected_result", ""), 180),
                 ]
             )
@@ -628,4 +653,33 @@ def suite_improvement_prompt(batch: list[dict], coverage_lookup: dict[str, dict]
                     ]
                 )
             )
+    return "\n".join(lines)
+
+
+def test_plan_document_improvement_prompt(
+    project_name: str,
+    document_markdown: str,
+    structured_requirements: pd.DataFrame,
+    risk_analysis: pd.DataFrame,
+    coverage_items: pd.DataFrame,
+    test_strategies: pd.DataFrame,
+    test_suites: pd.DataFrame,
+) -> str:
+    lines = [
+        f"Project: {project_name}",
+        "Improve the following markdown test plan document.",
+        "Keep the same headings and overall structure.",
+        "Strengthen scope wording, suite-design explanation, schedule/checklist clarity, framework rationale, and cost-estimation wording.",
+        "Do not add unsupported architecture details or team names.",
+        "",
+        "Artifact summary:",
+        f"- Requirements: {len(structured_requirements)}",
+        f"- Risks: {len(risk_analysis)}",
+        f"- Coverage items: {len(coverage_items)}",
+        f"- Strategies: {len(test_strategies)}",
+        f"- Test suites: {len(test_suites)}",
+        "",
+        "Current markdown document:",
+        document_markdown,
+    ]
     return "\n".join(lines)

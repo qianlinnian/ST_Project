@@ -63,6 +63,12 @@ def improve_oracles_with_llm(
         return test_cases.copy()
 
     improved = test_cases.copy()
+    oracle_max_tokens = env_int(
+        "AUTOTESTDESIGN_ORACLE_MAX_TOKENS",
+        4200,
+        400,
+        12000,
+    )
 
     def review_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
         prompt = oracle_review_prompt(pd.DataFrame(batch).to_string(index=False))
@@ -71,7 +77,7 @@ def improve_oracles_with_llm(
             prompt,
             provider=provider,
             model=model,
-            max_tokens=max(800, 180 * len(batch)),
+            max_tokens=min(oracle_max_tokens, max(1200, 160 * len(batch) + 400)),
             task_label="Oracle Review",
         )
         return parsed.get("oracle_reviews", [])

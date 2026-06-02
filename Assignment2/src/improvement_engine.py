@@ -22,7 +22,41 @@ from src.test_case_generator import (
     renumber_test_case_ids,
     suggest_missing_test_cases_with_llm,
 )
+from src.oracle_generator import improve_oracles_with_llm
 from src.test_strategy_selector import select_strategies
+
+
+def _align_improved_test_cases_to_coverage(
+    test_cases: pd.DataFrame,
+    coverage_items: pd.DataFrame,
+) -> pd.DataFrame:
+    if (
+        test_cases is None
+        or test_cases.empty
+        or coverage_items is None
+        or coverage_items.empty
+        or "coverage_id" not in test_cases.columns
+        or "coverage_id" not in coverage_items.columns
+    ):
+        return test_cases.copy() if test_cases is not None else pd.DataFrame()
+
+    aligned = test_cases.copy()
+    coverage_lookup = coverage_items.set_index("coverage_id").to_dict("index")
+    for index, row in aligned.iterrows():
+        coverage_id = str(row.get("coverage_id", "")).strip()
+        coverage = coverage_lookup.get(coverage_id)
+        if not coverage:
+            continue
+        mapped_requirement_id = str(coverage.get("requirement_id", "")).strip()
+        mapped_coverage_type = str(coverage.get("coverage_type", "")).strip()
+        mapped_risk_level = str(coverage.get("risk_level", "")).strip()
+        if mapped_requirement_id:
+            aligned.at[index, "requirement_id"] = mapped_requirement_id
+        if mapped_coverage_type and "coverage_type" in aligned.columns:
+            aligned.at[index, "coverage_type"] = mapped_coverage_type
+        if mapped_risk_level and "risk_level" in aligned.columns:
+            aligned.at[index, "risk_level"] = mapped_risk_level
+    return aligned
 
 
 def _next_coverage_id(existing: pd.DataFrame, offset: int) -> str:
@@ -353,24 +387,30 @@ def improve_optimized_suite_with_llm(
     local_suite = optimize_suite(optimized_test_cases)
     suite_batches = _suite_minimization_groups(local_suite, test_suites, coverage_items)
 
-    def review_batch(_batch_index: int, batch: list[dict]) -> dict[str, Any]:
-        suite_payload = batch[0]
-        parsed = call_json_completion(
-            COMPACT_SUITE_MINIMIZATION_SYSTEM,
-            compact_suite_minimization_prompt(suite_payload),
-            provider=provider,
-            model=model,
-            max_tokens=max(700, 80 * len(suite_payload.get("test_cases", [])) + 300),
-            task_label="Suite LLM Improve",
-        )
-        return parsed
+    def review_batch(_batch_index: int, batch: list[dict]) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        for suite_payload in batch:
+            parsed = call_json_completion(
+                COMPACT_SUITE_MINIMIZATION_SYSTEM,
+                compact_suite_minimization_prompt(suite_payload),
+                provider=provider,
+                model=model,
+                max_tokens=max(700, 80 * len(suite_payload.get("test_cases", [])) + 300),
+                task_label="Suite LLM Improve",
+            )
+            results.append(parsed)
+        return results
 
-    def fallback_batch(_batch_index: int, _batch: list[dict], exc: Exception) -> dict[str, Any]:
-        return {"keep": [], "drop": [], "llm_error": str(exc)}
+    def fallback_batch(_batch_index: int, batch: list[dict], exc: Exception) -> list[dict[str, Any]]:
+        return [{"keep": [], "drop": [], "llm_error": str(exc)} for _ in batch]
 
     batch_results, _ = run_parallel_batches(
         suite_batches,
-        batch_size=1,
+        batch_size=(
+            max(1, int(batch_size))
+            if batch_size is not None
+            else max(1, len(suite_batches))
+        ),
         concurrency=concurrency or env_int("AUTOTESTDESIGN_LLM_CONCURRENCY", 4, 1, 16),
         process_batch=review_batch,
         fallback_batch=fallback_batch,
@@ -426,35 +466,43 @@ def _suite_minimization_groups(
     return payloads
 
 
-def _parse_suite_minimization_decisions(batch_results: list[dict]) -> pd.DataFrame:
+def _parse_suite_minimization_decisions(batch_results: list[Any]) -> pd.DataFrame:
     rows = []
-    for parsed in batch_results:
-        if parsed.get("llm_error"):
-            rows.append(
-                {
-                    "test_case_id": "",
-                    "decision": "error",
-                    "reason": parsed.get("llm_error", ""),
-                }
-            )
-            continue
-        for test_case_id in parsed.get("keep", []):
-            rows.append(
-                {
-                    "test_case_id": test_case_id,
-                    "decision": "keep",
-                    "reason": "LLM marked as useful",
-                }
-            )
-        for item in parsed.get("drop", []):
-            if isinstance(item, list) and item:
+    for batch_result in batch_results:
+        parsed_items = (
+            batch_result
+            if isinstance(batch_result, list)
+            else [batch_result]
+        )
+        for parsed in parsed_items:
+            if not isinstance(parsed, dict):
+                continue
+            if parsed.get("llm_error"):
                 rows.append(
                     {
-                        "test_case_id": item[0],
-                        "decision": "drop",
-                        "reason": item[1] if len(item) > 1 else "",
+                        "test_case_id": "",
+                        "decision": "error",
+                        "reason": parsed.get("llm_error", ""),
                     }
                 )
+                continue
+            for test_case_id in parsed.get("keep", []):
+                rows.append(
+                    {
+                        "test_case_id": test_case_id,
+                        "decision": "keep",
+                        "reason": "LLM marked as useful",
+                    }
+                )
+            for item in parsed.get("drop", []):
+                if isinstance(item, list) and item:
+                    rows.append(
+                        {
+                            "test_case_id": item[0],
+                            "decision": "drop",
+                            "reason": item[1] if len(item) > 1 else "",
+                        }
+                    )
     return pd.DataFrame(rows)
 
 
@@ -546,12 +594,17 @@ def merge_test_case_improvements(
     reviewed_ids: set[str] = set()
 
     for _, suggestion in suggested.iterrows():
+        target_test_case_id = str(suggestion.get("test_case_id", "")).strip()
         coverage_id = str(suggestion.get("coverage_id", "")).strip()
         technique = str(suggestion.get("technique", "")).strip()
-        matches = merged[
-            (merged["coverage_id"].astype(str) == coverage_id)
-            & (merged["technique"].astype(str) == technique)
-        ]
+        matches = (
+            merged[merged["test_case_id"].astype(str) == target_test_case_id]
+            if target_test_case_id
+            else merged[
+                (merged["coverage_id"].astype(str) == coverage_id)
+                & (merged["technique"].astype(str) == technique)
+            ]
+        )
         if len(matches) == 1:
             idx = matches.index[0]
             current_test_case_id = str(merged.at[idx, "test_case_id"]).strip()
@@ -610,6 +663,28 @@ def generate_improved_test_design_with_llm(
             existing_test_cases,
             missing_cases,
         )
+        enhanced_cases = _align_improved_test_cases_to_coverage(
+            enhanced_cases,
+            coverage_items,
+        )
+        before_oracle = enhanced_cases.copy()
+        enhanced_cases = improve_oracles_with_llm(
+            enhanced_cases,
+            provider=provider,
+            model=model,
+            use_llm=use_llm,
+            batch_size=batch_size,
+            concurrency=concurrency,
+        )
+        oracle_updated = 0
+        if not before_oracle.empty and not enhanced_cases.empty and "test_case_id" in before_oracle.columns:
+            before_expected = before_oracle.set_index("test_case_id")["expected_result"].astype(str)
+            after_expected = enhanced_cases.set_index("test_case_id")["expected_result"].astype(str)
+            shared_ids = before_expected.index.intersection(after_expected.index)
+            oracle_updated = int((before_expected.loc[shared_ids] != after_expected.loc[shared_ids]).sum())
+        stats["oracle_updated"] = oracle_updated
+    if "oracle_updated" not in stats:
+        stats["oracle_updated"] = 0
     if test_suites is not None:
         enhanced_cases = assign_test_suites_to_cases(enhanced_cases, test_suites)
 
