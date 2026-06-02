@@ -127,24 +127,26 @@ def render_coverage_strategy_page(artifacts: dict[str, pd.DataFrame]) -> None:
     strategy_col, strategy_llm_col = st.columns([1, 1], gap="medium")
     with strategy_col:
         strategy_disabled = artifacts["coverage_items"].empty
-        st.button(
+        if st.button(
             "Generate Strategy",
             type="primary",
             disabled=strategy_disabled,
-            on_click=handle_strategy_generation,
-            kwargs={"use_llm": False},
-        )
+        ):
+            with st.spinner("Generating coverage strategy..."):
+                handle_strategy_generation(use_llm=False)
+            rerun_with_toast("Coverage strategy generated.")
     with strategy_llm_col:
         strategy_llm_disabled = (
             not is_llm_enabled(st.session_state.selected_provider)
             or artifacts["coverage_items"].empty
         )
-        st.button(
+        if st.button(
             "Improve Strategy With LLM",
             disabled=strategy_llm_disabled,
-            on_click=handle_strategy_generation,
-            kwargs={"use_llm": True},
-        )
+        ):
+            with st.spinner("Improving coverage strategy with LLM..."):
+                handle_strategy_generation(use_llm=True)
+            rerun_with_toast("LLM strategy improvement completed.")
 
     if artifacts["test_strategies"].empty:
         st.info("Coverage strategy has not been generated yet.")
