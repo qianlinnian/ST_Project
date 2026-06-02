@@ -1,6 +1,6 @@
 # Plan Mapping Review
 
-Source of truth: `Assignment2/tests/test_todoitem_ui_selenium_codex.py`
+Source of truth: `./tests/test_todoitem_ui_selenium_codex.py`
 
 Summary:
 

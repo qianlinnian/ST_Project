@@ -11,7 +11,7 @@ Run prerequisites:
   1. Backend:  cd simpletodolist/backend && python app.py
   2. Frontend: cd simpletodolist && python -m http.server 8000
   3. Install:  pip install pytest selenium requests
-  4. Run:      pytest Assignment2/tests/test_todoitem_ui_selenium_csv.py -q -rA
+  4. Run:      pytest ./tests/test_todoitem_ui_selenium_csv.py -q -rA
 
 Optional environment variables:
   TODO_FRONTEND_BASE_URL=http://127.0.0.1:8000/todo.html

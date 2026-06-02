@@ -166,7 +166,7 @@ def chat_completion(
     if config is None:
         _log_llm_event(f"configuration missing provider={provider}")
         raise LLMCallError(
-            f"LLM provider '{provider}' is not configured. Create Assignment2/.env from .env.example."
+            f"LLM provider '{provider}' is not configured. Create .env from .env.example."
         )
 
     selected_model = model or config.models[0]
@@ -264,7 +264,7 @@ def chat_completion_stream(
     if config is None:
         _log_llm_event(f"configuration missing provider={provider}")
         raise LLMCallError(
-            f"LLM provider '{provider}' is not configured. Create Assignment2/.env from .env.example."
+            f"LLM provider '{provider}' is not configured. Create .env from .env.example."
         )
 
     selected_model = model or config.models[0]

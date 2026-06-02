@@ -53,7 +53,7 @@ def render_llm_status(artifacts: dict[str, pd.DataFrame]) -> None:
             "LLM call did not complete successfully. Local rule fallback was used.\n\n"
             + "\n\n".join(messages)
             + "\n\nTry a faster model, switch provider, check API quota/permissions, "
-            "or increase AUTOTESTDESIGN_LLM_TIMEOUT in Assignment2/.env."
+            "or increase AUTOTESTDESIGN_LLM_TIMEOUT in .env."
         )
 
 
