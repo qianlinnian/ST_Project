@@ -65,9 +65,9 @@ def improve_oracles_with_llm(
     improved = test_cases.copy()
     oracle_max_tokens = env_int(
         "AUTOTESTDESIGN_ORACLE_MAX_TOKENS",
-        4200,
+        7200,
         400,
-        12000,
+        16000,
     )
 
     def review_batch(_batch_index: int, batch: list[dict]) -> list[dict]:
@@ -77,7 +77,7 @@ def improve_oracles_with_llm(
             prompt,
             provider=provider,
             model=model,
-            max_tokens=min(oracle_max_tokens, max(1200, 160 * len(batch) + 400)),
+            max_tokens=min(oracle_max_tokens, max(1800, 220 * len(batch) + 800)),
             task_label="Oracle Review",
         )
         return parsed.get("oracle_reviews", [])

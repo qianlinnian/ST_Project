@@ -49,7 +49,7 @@ def _best_risk(values: list[str]) -> str:
 def _suite_name(module: str, technique: str, coverage_type: str) -> str:
     module_name = module or "General"
     if technique == "State Transition Testing":
-        suffix = "State Behavior Suite"
+        return "State Transition Model Suite"
     elif technique == "Decision Table Testing":
         suffix = "Decision Rule Suite"
     elif technique == "Boundary Value Analysis":
@@ -67,6 +67,37 @@ def _suite_objective(module: str, techniques: list[str], coverage_types: list[st
     return (
         f"Validate {module or 'the target module'} behavior using {technique_text} "
         f"for {coverage_text} coverage, prioritized by requirement risk and coverage value."
+    )
+
+
+def _infer_state_suite_module(structured_requirements: pd.DataFrame) -> str:
+    if (
+        structured_requirements is None
+        or structured_requirements.empty
+        or "module" not in structured_requirements.columns
+    ):
+        return "General"
+    modules = [
+        str(value).strip()
+        for value in structured_requirements["module"].astype(str)
+        if str(value).strip()
+    ]
+    if not modules:
+        return "General"
+    return modules[0]
+
+
+def _state_sequence_coverage_ids(state_transition_sequences: pd.DataFrame) -> list[str]:
+    if state_transition_sequences is None or state_transition_sequences.empty:
+        return []
+    if "coverage_id" not in state_transition_sequences.columns:
+        return []
+    return sorted(
+        {
+            str(value).strip()
+            for value in state_transition_sequences["coverage_id"].astype(str)
+            if str(value).strip()
+        }
     )
 
 
@@ -151,6 +182,50 @@ def design_test_suites(
                     "llm_changes": "",
                 }
             )
+
+    state_coverage_ids = _state_sequence_coverage_ids(state_transition_sequences)
+    if state_coverage_ids:
+        state_suite_index = next(
+            (
+                index
+                for index, row in enumerate(suite_rows)
+                if "State Transition Testing" in str(row.get("techniques", ""))
+            ),
+            None,
+        )
+        if state_suite_index is None:
+            module = _infer_state_suite_module(structured_requirements)
+            suite_rows.append(
+                {
+                    "suite_id": f"TS-{len(suite_rows) + 1:03d}",
+                    "suite_name": _suite_name(module, "State Transition Testing", "State Transition"),
+                    "module": module,
+                    "risk_level": "Medium",
+                    "priority": "Medium",
+                    "coverage_ids": "; ".join(state_coverage_ids),
+                    "techniques": "State Transition Testing",
+                    "coverage_types": "State Transition",
+                    "suite_objective": _suite_objective(module, ["State Transition Testing"], ["State Transition"]),
+                    "optimization_basis": "state-transition coverage and risk-based prioritization",
+                    "source": "Rule fallback - state transition model",
+                    "llm_changes": "",
+                }
+            )
+        else:
+            existing_ids = _split_values(suite_rows[state_suite_index].get("coverage_ids", ""))
+            merged_ids = sorted(set(existing_ids) | set(state_coverage_ids))
+            suite_rows[state_suite_index]["coverage_ids"] = "; ".join(merged_ids)
+            existing_types = _split_values(suite_rows[state_suite_index].get("coverage_types", ""))
+            if "State Transition" not in existing_types:
+                existing_types.append("State Transition")
+                suite_rows[state_suite_index]["coverage_types"] = "; ".join(sorted(set(existing_types)))
+            source = str(suite_rows[state_suite_index].get("source", "")).strip()
+            if "state transition model" not in source.lower():
+                suite_rows[state_suite_index]["source"] = (
+                    f"{source}; state transition model".strip("; ").strip()
+                    if source
+                    else "Rule fallback - state transition model"
+                )
 
     return pd.DataFrame(suite_rows, columns=SUITE_COLUMNS)
 

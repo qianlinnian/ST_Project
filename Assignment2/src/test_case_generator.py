@@ -432,6 +432,7 @@ def _suite_driven_fallback(
         techniques = str(suite.get("techniques", ""))
         coverage_type = str(suite.get("coverage_types", ""))
         source = str(suite.get("source", ""))
+        suite_coverage_ids = _split_suite_coverage_ids(suite.get("coverage_ids", ""))
         is_state_suite = (
             "State Transition Testing" in techniques
             and ("State Transition" in coverage_type or "state transition model" in source.lower())
@@ -442,12 +443,22 @@ def _suite_driven_fallback(
                 if state_transition_sequences is not None
                 else pd.DataFrame()
             )
-            state_rows = _state_sequence_cases(counter, sequence_frame)
-            rows.extend(state_rows)
-            counter += len(state_rows)
-            continue
+            matched_sequences = sequence_frame
+            if (
+                not sequence_frame.empty
+                and suite_coverage_ids
+                and "coverage_id" in sequence_frame.columns
+            ):
+                matched_sequences = sequence_frame[
+                    sequence_frame["coverage_id"].astype(str).isin(suite_coverage_ids)
+                ]
+            state_rows = _state_sequence_cases(counter, matched_sequences)
+            if state_rows:
+                rows.extend(state_rows)
+                counter += len(state_rows)
+                continue
 
-        for coverage_id in _split_suite_coverage_ids(suite.get("coverage_ids", "")):
+        for coverage_id in suite_coverage_ids:
             coverage_row = coverage_map.get(coverage_id)
             if not coverage_row:
                 continue

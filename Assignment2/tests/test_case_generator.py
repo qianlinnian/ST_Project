@@ -214,6 +214,50 @@ def test_design_test_suites_groups_coverage_and_links_cases():
     assert suites["techniques"].astype(str).str.contains("State Transition Testing").any()
 
 
+def test_design_test_suites_include_state_transition_sequence_coverage_ids():
+    structured = structure_requirements(_sample_requirements())
+    risks = analyze_risks(structured)
+    coverage = identify_coverage_items(structured, risks)
+    strategies = select_strategies(coverage)
+    state_sequences = generate_optimized_transition_sequence(
+        infer_state_model_from_requirements(structured)
+    )
+    suites = design_test_suites(
+        structured,
+        coverage,
+        strategies,
+        risks,
+        state_sequences,
+    )
+    suite_coverage = set()
+    for value in suites["coverage_ids"]:
+        suite_coverage.update(part.strip() for part in str(value).split(";") if part.strip())
+    state_ids = set(state_sequences["coverage_id"].astype(str))
+    assert state_ids.issubset(suite_coverage)
+
+
+def test_state_transition_suite_name_is_fixed():
+    structured = structure_requirements(_sample_requirements())
+    risks = analyze_risks(structured)
+    coverage = identify_coverage_items(structured, risks)
+    strategies = select_strategies(coverage)
+    state_sequences = generate_optimized_transition_sequence(
+        infer_state_model_from_requirements(structured)
+    )
+    suites = design_test_suites(
+        structured,
+        coverage,
+        strategies,
+        risks,
+        state_sequences,
+    )
+    state_suites = suites[
+        suites["techniques"].astype(str).str.contains("State Transition Testing", na=False)
+    ]
+    assert not state_suites.empty
+    assert (state_suites["suite_name"] == "State Transition Model Suite").all()
+
+
 def test_test_suite_ids_are_stable_for_same_inputs():
     structured, coverage, strategies, _, _, _ = _pipeline()
     risks = analyze_risks(structured)
