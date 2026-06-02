@@ -8,6 +8,7 @@ from app_ui.pages.export import render_export_page
 from app_ui.pages.requirement_input import render_requirement_input_page
 from app_ui.pages.risk_analysis import render_risk_analysis_page
 from app_ui.pages.test_cases import render_test_cases_page
+from app_ui.pages.test_plan_document import render_test_plan_document_page
 from app_ui.state import (
     current_artifacts,
     flush_pending_toasts,
@@ -27,8 +28,9 @@ def render_sidebar() -> str:
             [
                 "Requirement Input",
                 "Risk Analysis",
-                "Coverage & Strategy",
-                "Test Cases",
+                "Coverage, Strategy & Model",
+                "Suites & Cases",
+                "Test Plan Document",
                 "Export",
             ],
             label_visibility="collapsed",
@@ -96,10 +98,12 @@ def render_page(page: str, artifacts) -> None:
         render_requirement_input_page(artifacts)
     if page == "Risk Analysis":
         render_risk_analysis_page(artifacts)
-    if page == "Coverage & Strategy":
+    if page == "Coverage, Strategy & Model":
         render_coverage_strategy_page(artifacts)
-    if page == "Test Cases":
+    if page == "Suites & Cases":
         render_test_cases_page(artifacts)
+    if page == "Test Plan Document":
+        render_test_plan_document_page(artifacts)
     if page == "Export":
         render_export_page(artifacts)
 

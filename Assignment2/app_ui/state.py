@@ -30,6 +30,8 @@ def init_state() -> None:
         st.session_state.coverage_items_draft = pd.DataFrame()
     if "test_strategies_draft" not in st.session_state:
         st.session_state.test_strategies_draft = pd.DataFrame()
+    if "test_plan_document_draft" not in st.session_state:
+        st.session_state.test_plan_document_draft = ""
     if "test_suites_draft" not in st.session_state:
         st.session_state.test_suites_draft = pd.DataFrame()
     if "test_cases_draft" not in st.session_state:
@@ -66,6 +68,8 @@ def init_state() -> None:
             st.session_state[key] = pd.DataFrame()
     if "state_model" not in st.session_state:
         st.session_state.state_model = None
+    if "test_plan_document" not in st.session_state:
+        st.session_state.test_plan_document = ""
 
 
 def queue_toast(message: str) -> None:
@@ -88,13 +92,14 @@ def empty_requirements() -> pd.DataFrame:
     return pd.DataFrame(columns=["requirement_id", "module", "requirement_text"])
 
 
-def current_artifacts() -> dict[str, pd.DataFrame]:
+def current_artifacts() -> dict[str, object]:
     return {
         "requirements": st.session_state.requirements,
         "structured_requirements": st.session_state.structured_requirements,
         "risk_analysis": st.session_state.risk_analysis,
         "coverage_items": st.session_state.coverage_items,
         "test_strategies": st.session_state.test_strategies,
+        "test_plan_document": st.session_state.test_plan_document,
         "test_suites": st.session_state.test_suites,
         "test_cases": st.session_state.test_cases,
         "optimized_test_cases": st.session_state.optimized_test_cases,
@@ -340,6 +345,7 @@ def set_performance(metric: str, value: float) -> None:
 
 
 def reset_downstream(from_step: str) -> None:
+    text_keys = {"test_plan_document", "test_plan_document_draft"}
     order = {
         "requirements": [
             "structured_requirements",
@@ -349,6 +355,8 @@ def reset_downstream(from_step: str) -> None:
             "coverage_items_draft",
             "test_strategies",
             "test_strategies_draft",
+            "test_plan_document",
+            "test_plan_document_draft",
             "test_suites",
             "test_suites_draft",
             "test_cases",
@@ -366,6 +374,8 @@ def reset_downstream(from_step: str) -> None:
             "coverage_items_draft",
             "test_strategies",
             "test_strategies_draft",
+            "test_plan_document",
+            "test_plan_document_draft",
             "test_suites",
             "test_suites_draft",
             "test_cases",
@@ -380,6 +390,8 @@ def reset_downstream(from_step: str) -> None:
             "coverage_items_draft",
             "test_strategies",
             "test_strategies_draft",
+            "test_plan_document",
+            "test_plan_document_draft",
             "test_suites",
             "test_suites_draft",
             "test_cases",
@@ -390,6 +402,8 @@ def reset_downstream(from_step: str) -> None:
             "traceability_matrix",
         ],
         "strategy": [
+            "test_plan_document",
+            "test_plan_document_draft",
             "test_suites",
             "test_suites_draft",
             "test_cases",
@@ -399,7 +413,7 @@ def reset_downstream(from_step: str) -> None:
         ],
     }
     for key in order.get(from_step, []):
-        st.session_state[key] = pd.DataFrame()
+        st.session_state[key] = "" if key in text_keys else pd.DataFrame()
     if from_step in {"requirements", "structured", "risk"}:
         st.session_state.state_model = None
     if from_step in {"requirements", "structured", "risk"}:

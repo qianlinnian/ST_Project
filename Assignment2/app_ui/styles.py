@@ -102,7 +102,7 @@ def inject_style() -> None:
         }
         .metric-row {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
+          grid-template-columns: repeat(5, minmax(0, 1fr));
           gap: 0.8rem;
           margin: 1rem 0 1.15rem;
         }

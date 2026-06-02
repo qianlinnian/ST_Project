@@ -40,7 +40,7 @@ def render_llm_status(artifacts: dict[str, pd.DataFrame]) -> None:
         "optimized_test_cases",
     ]:
         artifact = artifacts.get(artifact_name, pd.DataFrame())
-        if not artifact.empty and "llm_error" in artifact.columns:
+        if isinstance(artifact, pd.DataFrame) and not artifact.empty and "llm_error" in artifact.columns:
             errors = [
                 str(error)
                 for error in artifact["llm_error"].dropna().unique()
@@ -73,6 +73,7 @@ def render_metrics(artifacts: dict[str, pd.DataFrame]) -> None:
         <div class="metric-row">
           <div class="metric-card"><div class="metric-label">Requirements</div><div class="metric-value">{len(artifacts["requirements"])}</div></div>
           <div class="metric-card"><div class="metric-label">Coverage Items</div><div class="metric-value">{len(artifacts["coverage_items"])}</div></div>
+          <div class="metric-card"><div class="metric-label">Test Suites</div><div class="metric-value">{len(artifacts["test_suites"])}</div></div>
           <div class="metric-card"><div class="metric-label">Test Cases</div><div class="metric-value">{len(artifacts["test_cases"])}</div></div>
           <div class="metric-card"><div class="metric-label">High Risk</div><div class="metric-value" style="{risk_color_style}">{high_risk_count}</div></div>
         </div>

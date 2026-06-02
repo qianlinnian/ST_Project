@@ -160,6 +160,13 @@ def export_json(data: pd.DataFrame | Mapping[str, Any], filename: str) -> Path:
     return path
 
 
+def export_markdown(markdown_text: str, filename: str) -> Path:
+    _ensure_export_dir()
+    path = EXPORT_DIR / _safe_filename(filename)
+    path.write_text(str(markdown_text or ""), encoding="utf-8")
+    return path
+
+
 def export_excel(sheets: Mapping[str, pd.DataFrame] | pd.DataFrame, filename: str) -> Path:
     _ensure_export_dir()
     path = EXPORT_DIR / _safe_filename(filename)
@@ -232,6 +239,7 @@ def build_traceability_matrix(
         coverage = coverage_items[cov_cols].drop_duplicates("coverage_id")
         coverage = coverage.rename(
             columns={
+                "requirement_id": "coverage_requirement_id",
                 "description": "coverage_description",
                 "coverage_item": "coverage_description",
                 "risk_level": "coverage_risk_level",
@@ -239,6 +247,10 @@ def build_traceability_matrix(
             }
         )
         matrix = matrix.merge(coverage, on="coverage_id", how="left", suffixes=("", "_coverage"))
+        if "coverage_requirement_id" in matrix.columns and "requirement_id" in matrix.columns:
+            mapped_requirement = matrix["coverage_requirement_id"].astype(str)
+            valid_mapped = ~matrix["coverage_requirement_id"].isna() & mapped_requirement.str.strip().ne("")
+            matrix.loc[valid_mapped, "requirement_id"] = matrix.loc[valid_mapped, "coverage_requirement_id"]
 
     if not matrix.empty and strategy_cols and "coverage_id" in matrix.columns:
         strategy = strategies[strategy_cols].drop_duplicates("coverage_id")
@@ -315,6 +327,7 @@ def export_test_artifacts(
     test_suites: pd.DataFrame | None = None,
     state_model: dict | None = None,
     export_format: str = "mixed",
+    test_plan_document: str | None = None,
 ) -> dict[str, Path]:
     traceability = build_traceability_matrix(
         structured_requirements,
@@ -356,6 +369,7 @@ def export_test_artifacts(
         "risk_analysis": risk_analysis.to_dict("records"),
         "coverage_items": coverage_items.to_dict("records"),
         "test_strategies": strategies.to_dict("records"),
+        "test_plan_document": str(test_plan_document or ""),
         "test_suites": test_suites.to_dict("records"),
         "test_cases": test_cases.to_dict("records"),
         "optimized_test_cases": final_suite.to_dict("records"),
@@ -365,22 +379,44 @@ def export_test_artifacts(
     }
 
     if export_format == "xlsx":
-        return {
+        artifacts = {
+            "test_plan_markdown": export_markdown(
+                str(test_plan_document or ""),
+                f"{prefix}_test_plan.md",
+            ),
             "test_design_excel": export_excel(
                 excel_sheets,
                 f"{prefix}_test_design_artifacts.xlsx",
             )
         }
+        return artifacts
 
     if export_format == "json":
-        return {
+        artifacts = {
+            "test_plan_markdown": export_markdown(
+                str(test_plan_document or ""),
+                f"{prefix}_test_plan.md",
+            ),
             "test_suite_json": export_json(
                 json_payload,
                 f"{prefix}_test_suite_artifacts.json",
             )
         }
+        return artifacts
+
+    if export_format == "markdown":
+        return {
+            "test_plan_markdown": export_markdown(
+                str(test_plan_document or ""),
+                f"{prefix}_test_plan.md",
+            )
+        }
 
     artifacts = {
+        "test_plan_markdown": export_markdown(
+            str(test_plan_document or ""),
+            f"{prefix}_test_plan.md",
+        ),
         "requirements_csv": export_csv(structured_requirements, f"{prefix}_requirements_structured.csv"),
         "risk_analysis_csv": export_csv(risk_analysis, f"{prefix}_risk_analysis.csv"),
         "coverage_csv": export_csv(coverage_items, f"{prefix}_coverage_items.csv"),

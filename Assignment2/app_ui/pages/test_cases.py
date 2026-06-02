@@ -15,7 +15,6 @@ from app_ui.actions import (
     improve_current_test_suites_with_llm,
     save_optimized_test_cases,
     save_test_cases,
-    save_test_strategies,
     save_test_suites,
 )
 from app_ui.components import render_performance_table, section_header
@@ -62,8 +61,6 @@ VISIBLE_OPTIMIZED_TEST_CASE_COLUMNS = [
     "risk_level",
     "source",
 ]
-
-
 @st.fragment
 def _render_test_suites_editor() -> None:
     suite_sort_option = st.selectbox(
@@ -296,15 +293,13 @@ def _sort_optimized_cases(test_cases: pd.DataFrame, sort_option: str) -> pd.Data
     return _sort_optimized_cases_by_id(test_cases)
 
 
-def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
+def render_test_cases_page(artifacts: dict[str, object]) -> None:
     section_header("Test Suites", "case")
     suite_col, suite_llm_col = st.columns([1, 1], gap="medium")
     with suite_col:
-        suite_disabled = artifacts["test_strategies"].empty
+        suite_disabled = artifacts["coverage_items"].empty or artifacts["test_strategies"].empty
         if st.button("Generate Test Suites", type="primary", disabled=suite_disabled):
             with st.spinner("Generating local test suites..."):
-                if not st.session_state.test_strategies_draft.empty:
-                    save_test_strategies(st.session_state.test_strategies_draft)
                 generate_current_test_suites()
             rerun_with_toast("Test suites generated.")
     with suite_llm_col:
@@ -318,7 +313,7 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
             rerun_with_toast("LLM test suite improvement completed.")
 
     if artifacts["test_suites"].empty:
-        st.info("Generate strategy first, then generate test suites.")
+        st.info("Generate coverage and strategy first, then generate test suites.")
     else:
         _render_test_suites_editor()
 
@@ -398,11 +393,13 @@ def render_test_cases_page(artifacts: dict[str, pd.DataFrame]) -> None:
                 else:
                     reviewed = 0
                     added = 0
+                    oracle_updated = 0
                     if isinstance(improvement_stats, pd.DataFrame) and not improvement_stats.empty:
                         reviewed = int(improvement_stats.iloc[0].get("reviewed", 0) or 0)
                         added = int(improvement_stats.iloc[0].get("added", 0) or 0)
+                        oracle_updated = int(improvement_stats.iloc[0].get("oracle_updated", 0) or 0)
                     queue_toast(
-                        f"LLM test design improvement completed. Reviewed {reviewed}, added {added}."
+                        f"LLM test design improvement completed. Revised {reviewed}, clarified {oracle_updated} expected results, added {added}."
                     )
             rerun_with_toast("LLM test design improvement completed.")
     if artifacts["test_cases"].empty:

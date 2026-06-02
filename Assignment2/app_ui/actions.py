@@ -31,6 +31,10 @@ from src.state_modeler import (
 )
 from src.suite_optimizer import optimize_suite
 from src.test_case_generator import generate_test_cases
+from src.test_plan_document_generator import (
+    generate_test_plan_document,
+    improve_test_plan_document_with_llm,
+)
 from src.test_suite_designer import (
     assign_test_suites_to_cases,
     design_test_suites,
@@ -211,6 +215,54 @@ def generate_current_strategy(use_llm: bool = False) -> None:
     reset_downstream("strategy")
 
 
+def generate_current_test_plan_document() -> None:
+    if st.session_state.coverage_items.empty or st.session_state.test_strategies.empty:
+        st.warning("Please generate coverage and strategy first.")
+        return
+
+    document_time, document_markdown = measure_time(
+        generate_test_plan_document,
+        st.session_state.project_name,
+        st.session_state.structured_requirements,
+        st.session_state.risk_analysis,
+        st.session_state.coverage_items,
+        st.session_state.test_strategies,
+        st.session_state.state_transition_sequences,
+        st.session_state.test_suites,
+        st.session_state.test_cases,
+    )
+    st.session_state.test_plan_document = document_markdown
+    st.session_state.test_plan_document_draft = document_markdown
+    set_performance("test_plan_document_generation_seconds", document_time)
+
+
+def improve_current_test_plan_document_with_llm() -> None:
+    if not str(st.session_state.get("test_plan_document", "")).strip():
+        st.warning("Please generate the test plan document first.")
+        return
+    if not is_llm_enabled(st.session_state.selected_provider):
+        st.warning("Selected LLM provider is not configured.")
+        return
+
+    llm_time, improved = measure_time(
+        improve_test_plan_document_with_llm,
+        st.session_state.test_plan_document,
+        st.session_state.project_name,
+        st.session_state.structured_requirements,
+        st.session_state.risk_analysis,
+        st.session_state.coverage_items,
+        st.session_state.test_strategies,
+        st.session_state.test_suites,
+        provider=st.session_state.selected_provider,
+        model=st.session_state.selected_model,
+        use_llm=True,
+    )
+    if str(improved).strip():
+        st.session_state.test_plan_document = improved
+        st.session_state.test_plan_document_draft = improved
+    set_performance("llm_test_plan_document_improvement_seconds", llm_time)
+
+
 def handle_strategy_generation(use_llm: bool = False) -> None:
     if not st.session_state.coverage_items_draft.empty:
         save_coverage_items(st.session_state.coverage_items_draft)
@@ -223,8 +275,8 @@ def handle_strategy_generation(use_llm: bool = False) -> None:
 
 
 def generate_current_test_suites() -> None:
-    if st.session_state.test_strategies.empty:
-        st.warning("Please generate strategy first.")
+    if st.session_state.coverage_items.empty or st.session_state.test_strategies.empty:
+        st.warning("Please generate coverage and strategy first.")
         return
     suite_time, suites = measure_time(
         design_test_suites,
@@ -352,6 +404,8 @@ def generate_current_test_cases() -> None:
         provider=st.session_state.selected_provider,
         model=st.session_state.selected_model,
         use_llm=False,
+        batch_size=int(st.session_state.get("llm_batch_size", 25)),
+        concurrency=int(st.session_state.get("llm_concurrency", 4)),
     )
     optimized_cases = optimize_suite(test_cases)
     traceability = build_traceability_matrix(
@@ -462,6 +516,8 @@ def save_test_suites(test_suites: pd.DataFrame) -> None:
             st.session_state.test_strategies,
             st.session_state.test_cases,
         )
+    st.session_state.test_plan_document = ""
+    st.session_state.test_plan_document_draft = ""
 
 
 def save_risk_analysis(risk_analysis: pd.DataFrame) -> None:
@@ -490,3 +546,8 @@ def save_test_strategies(test_strategies: pd.DataFrame) -> None:
     st.session_state.ai_improvement_result = None
     st.session_state.suite_minimization_result = None
     reset_downstream("strategy")
+
+
+def save_test_plan_document(document_markdown: str) -> None:
+    st.session_state.test_plan_document = str(document_markdown or "")
+    st.session_state.test_plan_document_draft = str(document_markdown or "")

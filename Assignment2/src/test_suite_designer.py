@@ -11,7 +11,6 @@ from src.prompt_templates import (
     SUITE_DESIGN_IMPROVEMENT_SYSTEM,
     suite_improvement_prompt,
 )
-from src.state_modeler import state_sequence_coverage_id
 
 
 RISK_ORDER = {"High": 0, "Medium": 1, "Low": 2}
@@ -40,11 +39,6 @@ def _split_values(value: Any) -> list[str]:
     if ";" in text:
         return [part.strip() for part in text.split(";") if part.strip()]
     return [part.strip() for part in text.split(",") if part.strip()]
-
-
-def _state_sequence_coverage_id(sequence: pd.Series | dict, offset: int) -> str:
-    return state_sequence_coverage_id(sequence, offset)
-
 
 def _best_risk(values: list[str]) -> str:
     if not values:
@@ -83,7 +77,7 @@ def design_test_suites(
     risk_analysis: pd.DataFrame,
     state_transition_sequences: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
-    if coverage_items.empty and (state_transition_sequences is None or state_transition_sequences.empty):
+    if coverage_items.empty:
         return pd.DataFrame(columns=SUITE_COLUMNS)
 
     requirements = (
@@ -102,6 +96,7 @@ def design_test_suites(
         else {}
     )
 
+    suite_rows = []
     rows = []
     for _, coverage_row in coverage_items.iterrows():
         coverage = coverage_row.to_dict()
@@ -131,8 +126,6 @@ def design_test_suites(
         )
 
     grouped = pd.DataFrame(rows)
-
-    suite_rows = []
     if not grouped.empty:
         for index, ((module, technique, coverage_type), group) in enumerate(
             grouped.groupby(["module", "technique", "coverage_type"], sort=True),
@@ -159,48 +152,6 @@ def design_test_suites(
                 }
             )
 
-    if state_transition_sequences is not None and not state_transition_sequences.empty:
-        state_module = _state_suite_module(structured_requirements)
-        coverage_goals = sorted(
-            {
-                str(value)
-                for value in state_transition_sequences.get("coverage_goal", pd.Series(dtype=str)).dropna()
-                if str(value).strip()
-            }
-        )
-        sequence_coverage_ids = [
-            _state_sequence_coverage_id(sequence, offset)
-            for offset, (_, sequence) in enumerate(state_transition_sequences.iterrows(), start=1)
-        ]
-        transition_ids = sorted(
-            {
-                str(value)
-                for value in state_transition_sequences.get("transition_id", pd.Series(dtype=str)).dropna()
-                if str(value).strip()
-            }
-        )
-        suite_rows.append(
-            {
-                "suite_id": f"TS-{len(suite_rows) + 1:03d}",
-                "suite_name": "State Transition Model Suite",
-                "module": state_module,
-                "risk_level": "Medium",
-                "priority": "Medium",
-                "coverage_ids": "; ".join(sequence_coverage_ids),
-                "techniques": "State Transition Testing",
-                "coverage_types": "State Transition",
-                "suite_objective": (
-                    "Validate behavior represented by the state transition model "
-                    f"using {', '.join(coverage_goals) or 'state/transition coverage'}."
-                ),
-                "optimization_basis": (
-                    "coverage-criterion-based optimized transition sequence"
-                    + (f"; transitions: {'; '.join(transition_ids)}" if transition_ids else "")
-                ),
-                "source": "Rule fallback - State transition model",
-                "llm_changes": "",
-            }
-        )
     return pd.DataFrame(suite_rows, columns=SUITE_COLUMNS)
 
 
@@ -343,20 +294,4 @@ def assign_test_suites_to_cases(test_cases: pd.DataFrame, test_suites: pd.DataFr
             assigned.at[index, column] = value
     return assigned
 
-
-def _state_suite_module(structured_requirements: pd.DataFrame) -> str:
-    if structured_requirements.empty or "module" not in structured_requirements.columns:
-        return "Cross-module behavior"
-    modules = sorted(
-        {
-            str(value).strip()
-            for value in structured_requirements["module"].dropna()
-            if str(value).strip()
-        }
-    )
-    if not modules:
-        return "Cross-module behavior"
-    if len(modules) == 1:
-        return modules[0]
-    return "Cross-module behavior"
 
