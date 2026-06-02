@@ -1,10 +1,19 @@
-from src.requirement_loader import load_sample_requirements
+from pathlib import Path
+
+import pandas as pd
+
 from src.requirement_parser import structure_requirements
 from src.risk_analyzer import analyze_risks, analyze_risks_with_llm_fallback, _risk_level
 
 
+def _sample_requirements() -> pd.DataFrame:
+    return pd.read_csv(
+        Path(__file__).resolve().parents[1] / "data" / "todo_item_requirement.csv"
+    )
+
+
 def test_analyze_risks_returns_levels():
-    structured = structure_requirements(load_sample_requirements())
+    structured = structure_requirements(_sample_requirements())
     risks = analyze_risks(structured)
     assert {
         "risk_id",
@@ -22,7 +31,7 @@ def test_analyze_risks_returns_levels():
 
 
 def test_analyze_risks_with_llm_fallback_uses_rules_without_provider():
-    structured = structure_requirements(load_sample_requirements())
+    structured = structure_requirements(_sample_requirements())
     risks, timing_details = analyze_risks_with_llm_fallback(structured, provider=None)
     assert {"risk_score", "risk_level", "source"}.issubset(risks.columns)
     assert not risks.empty

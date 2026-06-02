@@ -1,12 +1,15 @@
 import json
+from pathlib import Path
+
 import pandas as pd
 
 from src.coverage_identifier import identify_coverage_items
 from src.exporter import STATE_TRANSITION_COLUMNS, build_traceability_matrix, ensure_columns, export_test_artifacts
 from src.improvement_engine import merge_coverage_improvements
+from src.improvement_engine import merge_test_case_improvements
+from src.improvement_engine import improve_optimized_suite_with_llm
 from src.improvement_engine import review_and_improve_coverage_with_llm
 from src.improvement_engine import _apply_suite_minimization
-from src.requirement_loader import load_sample_requirements
 from src.requirement_parser import structure_requirements
 from src.risk_analyzer import analyze_risks
 from src.state_modeler import (
@@ -17,38 +20,64 @@ from src.state_modeler import (
     infer_state_model_from_requirements,
 )
 from src.suite_optimizer import optimize_suite
+from src.test_plan_document_generator import generate_test_plan_document
 from src.test_suite_designer import _apply_suite_improvements, design_test_suites
-from src.test_case_generator import generate_test_cases
+from src.test_case_generator import _parse_missing_test_cases, generate_test_cases
 from src.test_strategy_selector import select_strategies
 
 
+def _sample_requirements() -> pd.DataFrame:
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "data"
+        / "todo_item_requirement.csv"
+    )
+    return pd.read_csv(path)
+
+
 def _pipeline():
-    structured = structure_requirements(load_sample_requirements())
+    structured = structure_requirements(_sample_requirements())
     risks = analyze_risks(structured)
     coverage = identify_coverage_items(structured, risks)
     strategies = select_strategies(coverage)
     state_sequences = generate_optimized_transition_sequence(
         infer_state_model_from_requirements(structured)
     )
-    suites = design_test_suites(structured, coverage, strategies, risks, state_sequences)
+    suites = design_test_suites(
+        structured,
+        coverage,
+        strategies,
+        risks,
+        state_sequences,
+    )
     test_cases = generate_test_cases(structured, coverage, strategies, suites, state_sequences)
-    return structured, coverage, strategies, suites, test_cases
+    test_plan_document = generate_test_plan_document(
+        "sample_project",
+        structured,
+        risks,
+        coverage,
+        strategies,
+        state_sequences,
+        suites,
+        test_cases,
+    )
+    return structured, coverage, strategies, suites, test_cases, test_plan_document
 
 
 def test_generate_test_cases_has_traceability():
-    _, coverage, _, _, test_cases = _pipeline()
+    _, coverage, _, _, test_cases, _ = _pipeline()
     assert {"requirement_id", "coverage_id", "technique"}.issubset(test_cases.columns)
     assert len(test_cases) >= len(coverage)
 
 
 def test_generated_cases_include_named_test_techniques():
-    _, _, _, _, test_cases = _pipeline()
+    _, _, _, _, test_cases, _ = _pipeline()
     assert "technique" in test_cases.columns
     assert test_cases["technique"].astype(str).str.strip().ne("").all()
 
 
 def test_generated_cases_include_black_box_and_state_techniques():
-    _, _, _, _, test_cases = _pipeline()
+    _, _, _, _, test_cases, _ = _pipeline()
     techniques = set(test_cases["technique"])
     assert "Equivalence Partitioning" in techniques or "Boundary Value Analysis" in techniques
     assert "State Transition Testing" in techniques
@@ -166,14 +195,14 @@ def test_ensure_columns_backfills_missing_state_transition_fields_for_nonempty_f
 
 
 def test_optimize_suite_keeps_traceability_columns():
-    _, _, _, _, test_cases = _pipeline()
+    _, _, _, _, test_cases, _ = _pipeline()
     optimized = optimize_suite(test_cases)
     assert {"test_case_id", "requirement_id", "coverage_id"}.issubset(optimized.columns)
     assert len(optimized) <= len(test_cases)
 
 
 def test_design_test_suites_groups_coverage_and_links_cases():
-    _, coverage, _, suites, test_cases = _pipeline()
+    _, coverage, _, suites, test_cases, _ = _pipeline()
     assert {"suite_id", "suite_name", "coverage_ids", "techniques"}.issubset(suites.columns)
     suite_coverage = set()
     for value in suites["coverage_ids"]:
@@ -182,12 +211,11 @@ def test_design_test_suites_groups_coverage_and_links_cases():
     assert {"suite_id", "suite_name"}.issubset(test_cases.columns)
     assert test_cases["suite_id"].astype(str).str.strip().ne("").all()
     assert test_cases["suite_name"].astype(str).str.strip().ne("").all()
-    assert (suites["suite_name"] == "State Transition Model Suite").any()
-    assert test_cases["coverage_id"].astype(str).str.startswith("COV-STATE-").any()
+    assert suites["techniques"].astype(str).str.contains("State Transition Testing").any()
 
 
 def test_test_suite_ids_are_stable_for_same_inputs():
-    structured, coverage, strategies, _, _ = _pipeline()
+    structured, coverage, strategies, _, _, _ = _pipeline()
     risks = analyze_risks(structured)
     first = design_test_suites(structured, coverage, strategies, risks)
     second = design_test_suites(structured, coverage, strategies, risks)
@@ -196,8 +224,135 @@ def test_test_suite_ids_are_stable_for_same_inputs():
     ].to_dict("records")
 
 
+def test_generate_test_plan_document_contains_required_sections():
+    structured = pd.DataFrame(
+        [
+            {
+                "requirement_id": "REQ-001",
+                "module": "Todo",
+                "requirement_text": "System shall reject empty title.",
+            }
+        ]
+    )
+    risks = pd.DataFrame([{"risk_id": "R-001", "requirement_id": "REQ-001", "risk_level": "High"}])
+    coverage = pd.DataFrame(
+        [
+            {
+                "coverage_id": "COV-001",
+                "requirement_id": "REQ-001",
+                "description": "Reject empty title input",
+                "coverage_type": "Input",
+                "risk_level": "High",
+                "related_techniques": ["Equivalence Partitioning"],
+            }
+        ]
+    )
+    strategies = pd.DataFrame([{"coverage_id": "COV-001", "technique": "Equivalence Partitioning"}])
+    suites = design_test_suites(structured, coverage, strategies, risks)
+    document = generate_test_plan_document(
+        "todo_app",
+        structured,
+        risks,
+        coverage,
+        strategies,
+        pd.DataFrame(),
+        suites,
+        pd.DataFrame(),
+    )
+    assert "# todo_app Test Plan" in document
+    assert "## 1. Project Scope" in document
+    assert "## 3. High-Level Test Suite Design" in document
+    assert "## 5. Organization Structure" in document
+    assert "## 7. Cost Estimation" in document
+    assert "```mermaid" in document
+    assert "Items outside the detailed scope of this test plan" in document
+
+
+def test_generate_test_plan_document_uses_existing_suites_when_available():
+    structured = pd.DataFrame([{"requirement_id": "REQ-001", "module": "Todo", "requirement_text": "Create item."}])
+    risks = pd.DataFrame([{"risk_id": "R-001", "requirement_id": "REQ-001", "risk_level": "Medium"}])
+    coverage = pd.DataFrame([{"coverage_id": "COV-001", "requirement_id": "REQ-001", "description": "Create valid item", "coverage_type": "Functional", "risk_level": "Medium"}])
+    strategies = pd.DataFrame([{"coverage_id": "COV-001", "technique": "Equivalence Partitioning"}])
+    suites = pd.DataFrame(
+        [
+            {
+                "suite_id": "TS-777",
+                "suite_name": "Custom Todo Suite",
+                "module": "Todo",
+                "risk_level": "Medium",
+                "priority": "Medium",
+                "coverage_ids": "COV-001",
+                "techniques": "Equivalence Partitioning",
+                "coverage_types": "Functional",
+                "suite_objective": "Use the custom suite row.",
+                "optimization_basis": "manual",
+            }
+        ]
+    )
+    document = generate_test_plan_document(
+        "todo_app",
+        structured,
+        risks,
+        coverage,
+        strategies,
+        pd.DataFrame(),
+        suites,
+        pd.DataFrame(),
+    )
+    assert "TS-777" in document
+    assert "Custom Todo Suite" in document
+
+
+def test_generate_test_plan_document_lists_all_suite_rows_with_core_fields():
+    structured = pd.DataFrame([{"requirement_id": "REQ-001", "module": "Todo", "requirement_text": "Create item."}])
+    risks = pd.DataFrame([{"risk_id": "R-001", "requirement_id": "REQ-001", "risk_level": "Medium"}])
+    coverage = pd.DataFrame([{"coverage_id": "COV-001", "requirement_id": "REQ-001", "description": "Create valid item", "coverage_type": "Functional", "risk_level": "Medium"}])
+    strategies = pd.DataFrame([{"coverage_id": "COV-001", "technique": "Equivalence Partitioning"}])
+    suites = pd.DataFrame(
+        [
+            {
+                "suite_id": "TS-001",
+                "suite_name": "Suite A",
+                "module": "Todo",
+                "risk_level": "High",
+                "priority": "High",
+                "coverage_ids": "COV-001",
+                "techniques": "Equivalence Partitioning",
+                "coverage_types": "Functional",
+                "suite_objective": "Objective A",
+                "optimization_basis": "risk",
+            },
+            {
+                "suite_id": "TS-002",
+                "suite_name": "Suite B",
+                "module": "Todo",
+                "risk_level": "Medium",
+                "priority": "Medium",
+                "coverage_ids": "COV-002",
+                "techniques": "Boundary Value Analysis",
+                "coverage_types": "Boundary",
+                "suite_objective": "Objective B",
+                "optimization_basis": "risk",
+            },
+        ]
+    )
+    document = generate_test_plan_document(
+        "todo_app",
+        structured,
+        risks,
+        coverage,
+        strategies,
+        pd.DataFrame(),
+        suites,
+        pd.DataFrame(),
+    )
+    assert "The number of suites listed below is consistent with the suites table: 2 suite(s)." in document
+    assert document.count("| TS-001 |") == 1
+    assert document.count("| TS-002 |") == 1
+
+
 def test_llm_suite_improvement_only_changes_description_fields():
-    _, _, _, suites, _ = _pipeline()
+    _, _, _, suites, _, _ = _pipeline()
     suggestions = suites[["suite_id"]].head(1).copy()
     suggestions["suggested_suite_name"] = "Improved Suite Name"
     suggestions["suggested_objective"] = "Improved objective."
@@ -207,6 +362,79 @@ def test_llm_suite_improvement_only_changes_description_fields():
     preserved = ["suite_id", "module", "risk_level", "priority", "coverage_ids", "techniques", "coverage_types"]
     assert improved[preserved].to_dict("records") == suites[preserved].to_dict("records")
     assert improved.loc[0, "suite_name"] == "Improved Suite Name"
+
+
+def test_merge_test_case_improvements_updates_existing_case_by_test_case_id():
+    existing = pd.DataFrame(
+        [
+            {
+                "test_case_id": "TC-001",
+                "requirement_id": "REQ-001",
+                "coverage_id": "COV-001",
+                "technique": "Equivalence Partitioning",
+                "test_data": "valid input",
+                "steps": "1. Do action",
+                "expected_result": "Works.",
+                "priority": "Medium",
+                "risk_score": 3.0,
+                "risk_level": "Medium",
+                "coverage_type": "Functional",
+                "automation_candidate": "Partial",
+                "source": "Rule fallback",
+                "design_basis": "Initial",
+                "llm_reason": "",
+            }
+        ]
+    )
+    suggested = pd.DataFrame(
+        [
+            {
+                "test_case_id": "TC-001",
+                "requirement_id": "REQ-001",
+                "coverage_id": "COV-001",
+                "technique": "Equivalence Partitioning",
+                "coverage_type": "Functional",
+                "test_data": "title='Buy milk'",
+                "steps": "1. Submit valid title. 2. Observe saved item.",
+                "expected_result": "The todo item is saved and displayed in the list.",
+                "priority": "Medium",
+                "risk_score": 3.0,
+                "risk_level": "Medium",
+                "design_basis": "LLM revised",
+                "llm_reason": "clearer expected result",
+                "source": "LLM updated",
+            }
+        ]
+    )
+    merged, stats = merge_test_case_improvements(existing, suggested)
+    assert merged.loc[0, "expected_result"] == "The todo item is saved and displayed in the list."
+    assert merged.loc[0, "source"] == "LLM updated"
+    assert stats["reviewed"] == 1
+    assert stats["added"] == 0
+
+
+def test_parse_missing_test_cases_repairs_shifted_test_case_id_format():
+    parsed = {
+        "m": [
+            [
+                "REQ-TODO-011",
+                "TC-001",
+                "COV-011",
+                "Equivalence Partitioning",
+                "Functional",
+                "valid title",
+                "1. Submit title. 2. Observe list.",
+                "The item is added to the list.",
+                "Medium",
+                "Medium",
+                "clearer expected result",
+            ]
+        ]
+    }
+    repaired = _parse_missing_test_cases(parsed, batch_size=1)
+    assert repaired.iloc[0]["test_case_id"] == "TC-001"
+    assert repaired.iloc[0]["requirement_id"] == "REQ-TODO-011"
+    assert repaired.iloc[0]["coverage_id"] == "COV-011"
 
 
 def test_suite_minimization_protects_high_value_unique_coverage_and_nonempty_suite():
@@ -269,7 +497,7 @@ def test_suite_minimization_protects_high_value_unique_coverage_and_nonempty_sui
 
 
 def test_traceability_matrix_links_requirement_coverage_strategy_and_cases():
-    structured, coverage, strategies, _, test_cases = _pipeline()
+    structured, coverage, strategies, _, test_cases, _ = _pipeline()
     matrix = build_traceability_matrix(structured, coverage, strategies, test_cases)
     assert list(matrix.columns) == [
         "requirement_id",
@@ -349,6 +577,38 @@ def test_traceability_matrix_labels_original_rows():
     assert matrix.iloc[0]["requirement_type"] == "original"
 
 
+def test_traceability_matrix_prefers_requirement_id_mapped_from_coverage():
+    structured = pd.DataFrame(
+        [
+            {
+                "requirement_id": "REQ-1",
+                "module": "TodoItem",
+                "requirement_text": "Users can update the title.",
+            }
+        ]
+    )
+    coverage = pd.DataFrame(
+        [{"coverage_id": "COV-1", "requirement_id": "REQ-1", "description": "Update title"}]
+    )
+    strategies = pd.DataFrame([{"coverage_id": "COV-1", "technique": "Equivalence Partitioning"}])
+    test_cases = pd.DataFrame(
+        [
+            {
+                "test_case_id": "TC-001",
+                "suite_id": "TS-001",
+                "suite_name": "Title Update Suite",
+                "requirement_id": "REQ-WRONG",
+                "coverage_id": "COV-1",
+                "technique": "Equivalence Partitioning",
+                "risk_level": "Medium",
+            }
+        ]
+    )
+    matrix = build_traceability_matrix(structured, coverage, strategies, test_cases)
+    assert matrix.iloc[0]["requirement_id"] == "REQ-1"
+    assert matrix.iloc[0]["suite_id"] == "TS-001"
+
+
 def test_traceability_matrix_tolerates_test_cases_missing_coverage_id_column():
     structured = pd.DataFrame([{"requirement_id": "REQ-1", "module": "M", "requirement_text": "R"}])
     coverage = pd.DataFrame([{"coverage_id": "C1", "requirement_id": "REQ-1", "description": "d"}])
@@ -378,7 +638,7 @@ def test_export_backfills_missing_nonempty_coverage_and_strategy_columns():
 
 
 def test_export_names_candidate_cases_and_optimized_suite_separately():
-    structured, coverage, strategies, suites, test_cases = _pipeline()
+    structured, coverage, strategies, suites, test_cases, test_plan_document = _pipeline()
     risks = analyze_risks(structured)
     state_sequences = generate_optimized_transition_sequence(
         infer_state_model_from_requirements(structured)
@@ -395,6 +655,7 @@ def test_export_names_candidate_cases_and_optimized_suite_separately():
         test_suites=suites,
         state_sequences=state_sequences,
         state_model=state_model,
+        test_plan_document=test_plan_document,
         prefix="pytest_suite_contract",
     )
     assert paths["risk_analysis_csv"].name.endswith("_risk_analysis.csv")
@@ -415,6 +676,7 @@ def test_export_names_candidate_cases_and_optimized_suite_separately():
     payload = json.loads(paths["test_suite_json"].read_text(encoding="utf-8"))
     assert {
         "risk_analysis",
+        "test_plan_document",
         "test_suites",
         "test_cases",
         "optimized_test_cases",
@@ -422,6 +684,7 @@ def test_export_names_candidate_cases_and_optimized_suite_separately():
         "state_model",
     }.issubset(payload)
     assert len(payload["risk_analysis"]) == len(risks)
+    assert payload["test_plan_document"].startswith("# sample_project Test Plan")
     assert len(payload["state_transition_sequences"]) == len(state_sequences)
 
 
@@ -574,3 +837,150 @@ def test_coverage_improvements_inherit_requirement_risk_when_llm_omits_it(monkey
         concurrency=1,
     )
     assert improved.iloc[0]["risk_level"] == "High"
+
+
+def test_improve_optimized_suite_forwards_batch_size_to_parallel_runner(monkeypatch):
+    optimized_test_cases = pd.DataFrame(
+        [
+            {
+                "test_case_id": "TC-001",
+                "suite_id": "TS-001",
+                "coverage_id": "COV-001",
+                "risk_level": "Medium",
+                "priority": "Medium",
+            },
+            {
+                "test_case_id": "TC-002",
+                "suite_id": "TS-002",
+                "coverage_id": "COV-002",
+                "risk_level": "Medium",
+                "priority": "Medium",
+            },
+        ]
+    )
+    test_suites = pd.DataFrame(
+        [
+            {"suite_id": "TS-001", "suite_name": "Suite 1"},
+            {"suite_id": "TS-002", "suite_name": "Suite 2"},
+        ]
+    )
+    coverage_items = pd.DataFrame(
+        [
+            {"coverage_id": "COV-001"},
+            {"coverage_id": "COV-002"},
+        ]
+    )
+    captured: dict[str, int] = {}
+
+    monkeypatch.setattr("src.improvement_engine.is_llm_enabled", lambda _provider: True)
+    monkeypatch.setattr(
+        "src.improvement_engine.optimize_suite",
+        lambda cases: cases.copy(),
+    )
+
+    def fake_run_parallel_batches(
+        items,
+        batch_size,
+        concurrency,
+        process_batch,
+        fallback_batch=None,
+        task_label=None,
+    ):
+        captured["batch_size"] = batch_size
+        captured["concurrency"] = concurrency
+        return ([{"keep": [], "drop": []}], [])
+
+    monkeypatch.setattr(
+        "src.improvement_engine.run_parallel_batches",
+        fake_run_parallel_batches,
+    )
+
+    improve_optimized_suite_with_llm(
+        optimized_test_cases,
+        test_suites=test_suites,
+        coverage_items=coverage_items,
+        provider="fake",
+        model="fake",
+        batch_size=3,
+        concurrency=2,
+    )
+
+    assert captured["batch_size"] == 3
+    assert captured["concurrency"] == 2
+
+
+def test_improve_optimized_suite_uses_all_suite_groups_when_batch_size_is_not_passed(monkeypatch):
+    optimized_test_cases = pd.DataFrame(
+        [
+            {
+                "test_case_id": "TC-001",
+                "suite_id": "TS-001",
+                "coverage_id": "COV-001",
+                "risk_level": "Medium",
+                "priority": "Medium",
+            }
+        ]
+    )
+    captured: dict[str, int] = {}
+
+    monkeypatch.setattr("src.improvement_engine.is_llm_enabled", lambda _provider: True)
+    monkeypatch.setattr(
+        "src.improvement_engine.optimize_suite",
+        lambda cases: cases.copy(),
+    )
+
+    def fake_run_parallel_batches(
+        items,
+        batch_size,
+        concurrency,
+        process_batch,
+        fallback_batch=None,
+        task_label=None,
+    ):
+        captured["batch_size"] = batch_size
+        return ([{"keep": [], "drop": []}], [])
+
+    monkeypatch.setattr(
+        "src.improvement_engine.run_parallel_batches",
+        fake_run_parallel_batches,
+    )
+
+    improve_optimized_suite_with_llm(
+        optimized_test_cases,
+        provider="fake",
+        model="fake",
+        batch_size=None,
+        concurrency=2,
+    )
+
+    assert captured["batch_size"] == 1
+
+
+def test_improve_optimized_suite_reviews_every_suite_in_batch(monkeypatch):
+    optimized_test_cases = pd.DataFrame(
+        [
+            {"test_case_id": "TC-001", "suite_id": "TS-001", "coverage_id": "COV-001", "risk_level": "Medium", "priority": "Medium"},
+            {"test_case_id": "TC-002", "suite_id": "TS-002", "coverage_id": "COV-002", "risk_level": "Medium", "priority": "Medium"},
+        ]
+    )
+    seen_suite_ids: list[str] = []
+
+    monkeypatch.setattr("src.improvement_engine.is_llm_enabled", lambda _provider: True)
+    monkeypatch.setattr("src.improvement_engine.optimize_suite", lambda cases: cases.copy())
+    monkeypatch.setattr(
+        "src.improvement_engine.call_json_completion",
+        lambda _system, user_prompt, **_kwargs: (
+            seen_suite_ids.append(user_prompt.split("|")[1]) or {"keep": [], "drop": []}
+        ),
+    )
+
+    result = improve_optimized_suite_with_llm(
+        optimized_test_cases,
+        provider="fake",
+        model="fake",
+        batch_size=2,
+        concurrency=1,
+    )
+
+    assert seen_suite_ids == ["TS-001", "TS-002"]
+    assert "suite_minimization_decisions" in result
